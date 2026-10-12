@@ -15,12 +15,12 @@ Main memiliki **3 active accounts /2 role types**:2 Student dan1 Building Manage
 **Password:** buka file lokal berikut melalui Explorer/editor, lalu lihat field `password` milik email yang dipilih:
 
 ```text
-C:\xampp\htdocs\ReFind_0.2.0\storage\setup\demo-accounts.json
+C:\xampp\htdocs\ReFind_0.2.3\storage\setup\demo-accounts.json
 ```
 
 File ini berisi credential demo yang dibuat otomatis oleh CLI, bukan password personal. File tidak bisa diunduh melalui HTTP dan tidak masuk Git/submission ZIP. Jangan menaruh password atau secret di README publik.
 
-Login URL: `http://localhost/ReFind_0.2.0/login.html`.
+Login URL: `http://localhost/ReFind_0.2.3/login.html` (v0.2.5 build).
 
 Student diarahkan ke Student Home; BM ke Review Queue. Account menu menyediakan My profile, Account settings, dan Logout. Profile/password, Student discovery/report/claim serta BM review/status/handover kini aktif. Wrong-role pages/APIs tetap ditolak403 di server.
 

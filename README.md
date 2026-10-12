@@ -1,6 +1,14 @@
-# ReFind 0.2.0 — UX01 UI/UX Polish
+# ReFind 0.2.5 — QA fixes
 
-## Current local UX02 / folder ReFind_0.2.3
+## Current release v0.2.5 / folder ReFind_0.2.3
+
+v0.2.5 fixes all 49 findings of the full QA pass (15 bugs, 10 flows, 9 redundancies, 15 copy issues) in four tiers. Highlights: no self-matches and a stricter match score; one active claim per Lost report; withdraw a claim; rejection is final; only active claims lock reports; a configurable Building Management pickup desk plus claimant contact for BM; "I found this item"; a `release` pickup operation for no-shows; History as the closed-report archive; quieter notifications with mark-all-read; confirmation only for final BM decisions; plain-language copy and the 0.2.5 label. No database change. Details, tests and gaps: [v0.2.5 report](docs/V025_REPORT.md). Repository: `https://github.com/fahrezimahifa-ui/ReFind-v0.2.5`.
+
+Pickup desk text comes from `pickup_desk_name`, `pickup_desk_location`, `pickup_desk_hours` and `pickup_desk_contact` in `app/config.php` (override them in `app/config.local.php`). To recompute stored suggestions in an existing demo with the new rules, back up first and run `C:\xampp\php\php.exe tools/refresh-matches.php --dry-run`, then without `--dry-run`.
+
+Tests: `python tools/prepare-test.py`, then `node tools/test-v025.cjs` and the regression suites with `REFIND_EVIDENCE_BATCH=v025` (`test-auth`, `test-account`, `test-student`, `test-workflow`), `node tools/test-ux.cjs --v025` and `node tools/smoke-auth.cjs --v025`. Evidence goes to `docs/verification/v025/`.
+
+## Previous local UX02 / folder ReFind_0.2.3
 
 Local-only edition: `C:\xampp\htdocs\ReFind_0.2.3`, login `http://localhost/ReFind_0.2.3/login.html`, docs `http://localhost/ReFind_0.2.3/docs/`. Nine underlined UI navigation labels now have outline-button affordance; own report Edit/Delete use navy/red outlines.15 UX groups and24/24/27 Student/account/BM regressions pass. [UX02 report](docs/UX02_REPORT.md) contains current evidence.
 
@@ -21,6 +29,10 @@ ReFind adalah Lost & Found kampus UMN dengan target **mobile-first**, top navbar
 5. Semua diagram memakai **draw.io / diagrams.net**: sitemap, ERD, FC01–FC06, user flow/app flow; editable sources dengan PDF/PNG exports. Wireframe boards juga memiliki editable `.drawio` components.
 6. B06 memperbanyak mock data untuk demo, melalui workflow valid dan seeding idempotent.
 7. UX02 converts standalone underlined links to outline-button anchors, aligns Edit/Delete, renames only the local main folder to ReFind_0.2.3, and has no GitHub push/new ZIP.
+8. v0.2.5 pickup contact: a configurable BM desk for students and claimant email/student ID for BM.
+9. v0.2.5 claim rules: students can withdraw a claim under review; a rejected claim is final; only active claims lock reports.
+10. v0.2.5 History is the archive of closed reports and appears in the Student navigation; Explore shows active reports by default.
+11. v0.2.5 visible version label; DB names, folder and config defaults unchanged. Published to the ReFind-v0.2.5 repository.
 
 Folder: `C:\xampp\htdocs\ReFind_0.2.0`. Database: `refind_db_0_2_0`. Database test: `refind_db_0_2_0_test`.
 

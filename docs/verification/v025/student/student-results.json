@@ -1,0 +1,66 @@
+{
+  "scope": "B04 Student real integration on _test; BM decisions/handover B05 pending",
+  "run": "B04-mv5ozh0e",
+  "results": [
+    "Reference taxonomy includes active input options, legacy filter options and campus time",
+    "Lost creation persists four public/two private photos, NULL time, history and notifications",
+    "Found creation persists rule-based matches and clear suggestion state on both reports",
+    "Search/category/location/type/status/date, literal characters and paging are SQL-backed",
+    "Public API/photos omit ownership data; BM-only evidence and direct storage guards hold",
+    "Server field/date/time/active category/location boundaries reject without partial records",
+    "Server upload independently rejects MIME/dimensions/size/count and Found ownership photos",
+    "Own edit retains/replaces media; combined limits and foreign photo IDs are enforced",
+    "Controlled metadata failure rolls back new report/history/notifs and removes new files",
+    "Eligible delete cascades metadata/files, retains NULL notification refs and updates suggestions",
+    "Valid ownership claim links own Lost, keeps evidence private and locks related edits",
+    "Duplicate and concurrent same-user claims create exactly one active record",
+    "Request-more-info resubmit reuses ID, preserves selected evidence, replaces only after commit",
+    "Controlled failure after claim file save rolls back claim/item/history/notifs and files",
+    "Terminal items/Lost links and approved claims are not eligible; suggestions stay suggestions",
+    "Time/location legacy read/filter and own notifications are persisted and isolated",
+    "Approved/ready-pickup reports reject renewed claims and show only authorized pickup records",
+    "Browser Lost form validates and uploads prepared public/private photos with gallery and NULL time",
+    "Browser Found report switches fields, uploads and appears in searchable discovery cards",
+    "Browser claim and NEED_MORE_INFO resubmit preserve ID, answer/Lost link and explicit evidence",
+    "Browser failed save retains draft; upload invalid formats/size are explained and retry works",
+    "Own activity cards and delete confirmation cancel/commit behave without a wide table",
+    "Notifications persist read state before claim link; history cards are read-only and empty states useful",
+    "All seven Student pages are responsive and usable at all five required viewports"
+  ],
+  "passed": 24,
+  "browserErrors": [],
+  "viewportChecks": [
+    {
+      "width": 360,
+      "height": 800,
+      "pages": 7,
+      "horizontalOverflow": false
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "pages": 7,
+      "horizontalOverflow": false
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "pages": 7,
+      "horizontalOverflow": false
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "pages": 7,
+      "horizontalOverflow": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "pages": 7,
+      "horizontalOverflow": false
+    }
+  ],
+  "complete": true,
+  "chrome": "154.0.8037.98"
+}

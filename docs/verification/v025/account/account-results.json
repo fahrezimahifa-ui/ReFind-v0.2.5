@@ -1,0 +1,146 @@
+{
+  "scope": "B03 real profile/password/navbar integration on _test; future workflows pending",
+  "run": "B03-mv5p0fsn",
+  "results": [
+    "Profile/Settings real routes are protected and own data is scoped",
+    "Student/BM names persist after reload and relogin",
+    "Display name follows DB public reporter projection without leaking identifiers",
+    "Name validation handles UTF-8 boundaries and rejects invalid fields atomically",
+    "Readonly identity/role and foreign account targets cannot be mutated",
+    "Guest/invalid CSRF/foreign origin account writes leave data unchanged",
+    "Password validation rejects incorrect old, mismatch, unchanged and unsafe lengths",
+    "Password change rotates current session/CSRF, revokes other sessions, and changes login",
+    "BM can change own password without gaining Student-only actions",
+    "Maximum bcrypt byte boundary works and suffix/overlong UTF-8 is rejected",
+    "Failed current-password attempts are limited across sessions and refresh",
+    "Two concurrent password changes produce one winner, not two overwrites",
+    "Expired session cannot submit a profile/password mutation",
+    "Profile UI readonly fields and private Student identifier differ correctly by role",
+    "Profile save updates summary/navbar, reload and relogin",
+    "Client validation and reset keep a meaningful draft and keyboard focus",
+    "Failed save keeps draft/retry state, and busy controls prevent duplicate requests",
+    "Password UI success clears inputs, keeps current login, revokes peer and permits logout",
+    "Password client mismatch/byte errors are inline and secrets stay out of localStorage",
+    "Expired browser form redirects to login with a safe return instead of replaying POST",
+    "DB display-name HTML is escaped in summary/menu/input",
+    "Own unread count is real and does not include another account notifications",
+    "Both roles use top-nav/account menu with active page, keyboard/Escape/outside close",
+    "Profile/Settings and nav are usable for both roles at all five required viewports"
+  ],
+  "passed": 24,
+  "browserErrors": [],
+  "viewportChecks": [
+    {
+      "width": 360,
+      "height": 800,
+      "role": "STUDENT",
+      "pages": [
+        "profile",
+        "settings"
+      ],
+      "horizontalOverflow": false,
+      "menu": true
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "role": "BUILDING_MANAGEMENT",
+      "pages": [
+        "profile",
+        "settings"
+      ],
+      "horizontalOverflow": false,
+      "menu": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "role": "STUDENT",
+      "pages": [
+        "profile",
+        "settings"
+      ],
+      "horizontalOverflow": false,
+      "menu": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "role": "BUILDING_MANAGEMENT",
+      "pages": [
+        "profile",
+        "settings"
+      ],
+      "horizontalOverflow": false,
+      "menu": true
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "role": "STUDENT",
+      "pages": [
+        "profile",
+        "settings"
+      ],
+      "horizontalOverflow": false,
+      "menu": true
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "role": "BUILDING_MANAGEMENT",
+      "pages": [
+        "profile",
+        "settings"
+      ],
+      "horizontalOverflow": false,
+      "menu": true
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "role": "STUDENT",
+      "pages": [
+        "profile",
+        "settings"
+      ],
+      "horizontalOverflow": false,
+      "menu": true
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "role": "BUILDING_MANAGEMENT",
+      "pages": [
+        "profile",
+        "settings"
+      ],
+      "horizontalOverflow": false,
+      "menu": true
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "role": "STUDENT",
+      "pages": [
+        "profile",
+        "settings"
+      ],
+      "horizontalOverflow": false,
+      "menu": true
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "role": "BUILDING_MANAGEMENT",
+      "pages": [
+        "profile",
+        "settings"
+      ],
+      "horizontalOverflow": false,
+      "menu": true
+    }
+  ],
+  "complete": true,
+  "chrome": "154.0.8037.98"
+}

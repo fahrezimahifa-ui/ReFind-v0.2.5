@@ -1,0 +1,70 @@
+{
+  "scope": "B02 real auth + role/ownership foundation; business workflow mutations NOT implemented/tested",
+  "run": "B02-mv5p1znr",
+  "results": [
+    "Fresh schema has 14 tables, 2 views, 25 FK and correct handover enum",
+    "Repeat setup preserves accounts/password hashes and reference data",
+    "Guest bootstrap has no implicit user; cookies HttpOnly/SameSite/scoped",
+    "Credential login rotates ID/token and resolves three roles from DB",
+    "Reload/bootstrap retains identity, with no credential/fingerprint exposure",
+    "Wrong/unknown/inactive credentials share generic failure response",
+    "Forged client role/account/user_id and old demo switching cannot grant BM",
+    "Protected pages enforce role before delivering HTML, including case/query bypasses",
+    "Guest/wrong-role protected API requests reject without DB mutations",
+    "CSRF missing/stale and cross-origin mutations are denied",
+    "Ownership guards reject cross-user edits/claims/profile and isolate own reads",
+    "Public projections omit evidence/clue/email/NIM and private photos require BM",
+    "Own notification read state persists; another user cannot mark it",
+    "Mismatched public photo metadata cannot expose evidence/claim storage",
+    "Direct internal/config/storage/tool paths and traversal attempts are blocked",
+    "Logout destroys authorization and old session/token cannot be replayed",
+    "Idle and absolute expiry invalidate real server sessions",
+    "Inactive account revokes an existing login immediately",
+    "Role guards read current DB role instead of trusting session/client role",
+    "Credential fingerprint revokes other sessions after hash change",
+    "Safe return rejects external/traversal/wrong-role routes and allows authorized local routes",
+    "Throttling survives fresh sessions and serializes concurrent failed logins",
+    "Aggregate IP throttling blocks failures across different account emails",
+    "Login rejects bcrypt suffix truncation beyond 72 bytes",
+    "CLI fixture rejects main database; no public debug endpoint",
+    "Real browser Student/BM login, wrong-password recovery, logout and server page guards",
+    "Authentication UI works at five required viewports with keyboard controls",
+    "Displayed DB names are escaped and produce no browser exceptions"
+  ],
+  "passed": 28,
+  "browserErrors": [],
+  "viewportChecks": [
+    {
+      "width": 360,
+      "height": 800,
+      "horizontalOverflow": false,
+      "keyboardLoginLogout": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "horizontalOverflow": false,
+      "keyboardLoginLogout": true
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "horizontalOverflow": false,
+      "keyboardLoginLogout": true
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "horizontalOverflow": false,
+      "keyboardLoginLogout": true
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "horizontalOverflow": false,
+      "keyboardLoginLogout": true
+    }
+  ],
+  "complete": true,
+  "chrome": "154.0.8037.98"
+}

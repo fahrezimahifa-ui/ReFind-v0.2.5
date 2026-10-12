@@ -30,6 +30,10 @@ Prioritas requirement: instruksi pengguna terbaru > revisi dosen eksplisit > gui
 | D13 | Perbanyak mock data pada B06 | Instruksi pengguna dan approval B06; target 40 laporan total, 12 claims dan 6 handovers synthetic, melalui valid business workflow dan seeding idempotent |
 | D14 | Implementasikan fixes dari audit UI/UX setelah B06 | Pengguna menyetujui selection/navigation, Returned clarity, button hierarchy, colour/contrast, upload/microcopy polish; tetap memakai stack dan draw.io yang disetujui |
 | D15 | UX02 outline navigation + Edit/Delete pairing | User approved9 standalone labels as button-styled native anchors; Delete uses danger outline and existing confirmation |
+| D17 | v0.2.5 pickup contact | QA finding A01; user chose a configurable BM desk for students and claimant email/student ID for BM, without schema change |
+| D18 | v0.2.5 claim rules | QA findings A03/A04/F03; user chose withdraw for claims under review, final rejection, and locks only from active claims |
+| D19 | v0.2.5 History archive | QA finding R01; user chose History = Returned/Never retrieved archive in the Student nav, Explore active by default |
+| D20 | v0.2.5 version label and publication | User chose visible label 0.2.5 with unchanged DB names/folder/config defaults; push to ReFind-v0.2.5 after all checks pass |
 | D16 | Rename local folder only / no publication or ZIP | User requested ReFind_0.2.3 directory label; main base-path override only, existing DB/app identity/data retained, no commit/push/new ZIP |
 
 ## Audit baseline R01–R12
@@ -107,3 +111,7 @@ Audit and user approval led to synced filtered selection with exact pinned outco
 ## UX02 — local-only navigation buttons and folder rename
 
 GitHub checkpoint85436aa was inspected before moving the main directory to ReFind_0.2.3. Ignored local base-path configuration preserves existing DB/schema/credentials/runtime. Native anchor routes and Enter/new-tab behavior are preserved with secondary-outline styling; actual Delete remains a confirmed mutation button.15 UX groups plus24/24/27 relevant regressions pass, with main read-only smoke verifying the new URL/data preservation. Current report: [UX02_REPORT.md](UX02_REPORT.md).
+
+## v0.2.5 — QA fixes
+
+A full QA pass of the UX02 build produced 49 findings. They were fixed in four tiers (integrity, flows, polish, copy) under decisions D17–D20, without schema change. Matching now excludes the reporter's own reports and other categories with a higher threshold; one Lost report backs one claim under review; withdraw and release operations close the remaining dead ends. See [V025_REPORT.md](V025_REPORT.md).

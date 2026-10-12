@@ -1,0 +1,101 @@
+{
+  "scope": "B05 actual BM review/handover + full Lost→Returned on isolated _test",
+  "run": "B05-mv5pbgt4",
+  "results": [
+    "Role/CSRF/explicit confirmation guards block unauthorized BM writes without changes",
+    "Real Student submissions produce BM queue, scoped private detail and evidence",
+    "Request more info notifies owner privately, logs generic event and rejects repeated/stale request",
+    "Student resubmit closes actual BM request-more-info loop with same claim ID",
+    "Review note/confirmation/version validation rejects invalid decisions atomically",
+    "Rejecting one claim retains Verification while another claim remains active",
+    "Forced approval notification failure rolls back claim/pair/items/handover/history/notifs",
+    "Approval confirms exactly one pair/owner/handover and locks both reports",
+    "Schedule validates future campus time and converts to explicit UTC",
+    "Reschedule stores private before/after audit and rejects stale/same schedule",
+    "Cancel schedule returns same handover to Pending without reopening ownership",
+    "Forced completion audit failure rolls back pickup/pair timestamps/history/notifications",
+    "Completion atomically returns linked Lost/Found and leaves terminal/read-only outcomes",
+    "Last rejection renews item availability and the rejection is final for the same claimant",
+    "Manual status/archive/recovered Lost transitions are guarded and audited",
+    "Active claim blocks manual status changes and revision catches intervening review",
+    "Concurrent competing approvals produce one winner/owner/handover and reject competitor",
+    "A Lost report can back only one claim under review, so shared-Lost approvals cannot conflict",
+    "Concurrent same-revision completion/reschedule detects stale updates without duplicate audit",
+    "Concurrent same-state reschedules preserve one fresh revision and reject the stale writer",
+    "Actual browser Student→BM request-info→Student resubmit→BM approve preserves target record",
+    "Browser schedule/cancel/reschedule/completion dialogs enforce explicit confirmation",
+    "Reviewed deep link remains exact/read-only instead of jumping to another queued claim",
+    "Stale/error dialog retains note and offers explicit refresh, with no automatic replay",
+    "Actual operational report UI changes eligible status and terminal archive becomes readonly",
+    "BM Claims/Reports/Handover tabs and dialogs are usable at five required viewports",
+    "Browser reschedule changes actual pickup area/time and preserves private audit"
+  ],
+  "passed": 27,
+  "browserErrors": [],
+  "viewportChecks": [
+    {
+      "width": 360,
+      "height": 800,
+      "tabs": 3,
+      "dialog": true,
+      "horizontalOverflow": false
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "tabs": 3,
+      "dialog": true,
+      "horizontalOverflow": false
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "tabs": 3,
+      "dialog": true,
+      "horizontalOverflow": false
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "tabs": 3,
+      "dialog": true,
+      "horizontalOverflow": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "tabs": 3,
+      "dialog": true,
+      "horizontalOverflow": false
+    }
+  ],
+  "complete": true,
+  "chrome": "154.0.8037.98",
+  "invariants": {
+    "database": "refind_db_0_2_0_test",
+    "passed": true,
+    "checks": {
+      "public_private_limits": true,
+      "claim_photo_limits": true,
+      "ownership_only_lost": true,
+      "claim_relations": true,
+      "one_approved_owner": true,
+      "one_confirmed_lost": true,
+      "one_confirmed_found": true,
+      "confirmed_pair_status": true,
+      "approved_handover": true,
+      "completed_handover": true,
+      "latest_history_status": true,
+      "handover_approved_claim": true,
+      "one_active_claim_per_lost": true,
+      "scheduled_pickup_timestamp": true,
+      "active_claim_not_assigned": true,
+      "media_collection_paths": true,
+      "media_exists": true,
+      "no_orphan_media": true
+    },
+    "missing": [],
+    "orphan": [],
+    "invalid": []
+  }
+}

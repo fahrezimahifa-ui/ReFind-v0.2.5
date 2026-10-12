@@ -1,4 +1,6 @@
-# Installation & release — ReFind 0.2.0 B06
+# Installation & release — ReFind 0.2.0 B06 (updated v0.2.5)
+
+v0.2.5 needs no database migration. Clone the repository into a folder whose name matches `base_path` (default `/ReFind_0.2.0/`), or set `base_path` in `app/config.local.php`. The optional `pickup_desk_*` keys set the pickup desk shown to students. Existing demos can recompute match suggestions with `tools/refresh-matches.php` (back up first). See [V025_REPORT.md](V025_REPORT.md).
 
 ## Fresh XAMPP installation
 

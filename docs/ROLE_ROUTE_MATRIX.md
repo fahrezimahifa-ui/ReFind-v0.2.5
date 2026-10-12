@@ -53,13 +53,13 @@ UX01 read models add `notification_type`, `item_title`, authorized `handover_id`
 | api/session.php | Guest/auth state + CSRF token; own minimal identity when authenticated | Tidak menyediakan account switch |
 | api/auth.php | — | Login untuk guest; logout untuk session sendiri; CSRF |
 | api/account.php | Own profile; requires login | Edit display name / change password; own session ID, CSRF |
-| api/references.php | Reference labels/categories/locations | — |
-| api/items.php | Authenticated public list/detail/matches; mine from session; editable private metadata only own eligible report | Create/update/delete: Student; ownership + status + transaction |
-| api/claims.php | Student's own claims / BM authorized queue/detail | Submit/resubmit: Student; own Lost link + Found eligibility + unique pair |
+| api/references.php | Reference labels/categories/locations; v0.2.5 filters list active categories and 6 areas, UI status names, `pickup_desk` | — |
+| api/items.php | Authenticated public list/detail/matches; mine from session; editable private metadata only own eligible report; v0.2.5 `active=1` / `closed=1` | Create/update/delete: Student; ownership + status + transaction |
+| api/claims.php | Student's own claims / BM authorized queue/detail | Submit/resubmit/withdraw (v0.2.5): Student; own Lost link (one active claim per Lost) + Found eligibility + unique pair; rejected claims final |
 | api/staff.php | BM-only scoped report clue/evidence/review data | BM-only review/status, CSRF, allowed transition, transaction |
-| api/handovers.php | Student's own claimed-item pickup record / BM operational queue | BM-only schedule/reschedule/cancel_schedule/complete |
-| api/photos.php | ITEM public; OWNERSHIP/claim photo requires BM | — |
-| api/notifications.php | Own notifications | Mark own record read |
+| api/handovers.php | Student's own claimed-item pickup record / BM operational queue (claimant email/student ID for BM) | BM-only schedule/reschedule/cancel_schedule/complete/release |
+| api/photos.php | ITEM needs any signed-in user (v0.2.5); OWNERSHIP/claim photo requires BM | — |
+| api/notifications.php | Own notifications; `count=1` returns only the unread count | Mark own record read; `action=read_all` |
 
 GET memakai explicit query allowlist; sensitive fields tidak tersedia dalam public response. Private photo physical path tidak dikirim ke browser. Student boleh mendapatkan count/retained photo IDs untuk edit own report/claim; actual private photo read tetap BM-only pada MVP.
 
@@ -82,15 +82,15 @@ GET memakai explicit query allowlist; sensitive fields tidak tersedia dalam publ
 - `api/staff.php` GET: `resource=claims|reports`, optional `id`, `q`, `status`, `type`, `page`, `limit`. Default resource reports; claim queue default active PENDING/NEED_MORE_INFO. Direct `id` membaca outcome tanpa mengganti selection dengan record aktif lain.
 - `api/staff.php` POST review: `action=review`, `id` claim, `decision=approved|rejected|need_more_info`, `note` 8–500 karakter, `revision`, `confirm=1`, `_csrf`.
 - `api/staff.php` POST status: `action=status`, `id` report, `status` dari `allowed_statuses`, `note` 8–500 karakter, `revision`, `confirm=1`, `_csrf`.
-- `api/handovers.php` GET: optional `id`, `status=PENDING|SCHEDULED|COMPLETED|all`, `q`, `page`, `limit`; Student scope hanya own claim. BM detail menambah `revision`, eligible `operations` dan private `audit`.
-- `api/handovers.php` POST: `action=schedule|reschedule|cancel_schedule|complete`, `id` handover, `revision`, `confirm=1`, `_csrf`; schedule/reschedule membutuhkan active campus `pickup_location_id` dan future `scheduled_at` format `YYYY-MM-DDTHH:mm` Asia/Jakarta. `note` maksimal 250 karakter; wajib minimal 8 untuk reschedule/cancel_schedule, optional untuk schedule/complete.
+- `api/handovers.php` GET: optional `id`, `status=PENDING|SCHEDULED|COMPLETED|active|all`, `q`, `page`, `limit`; Student scope hanya own claim. BM detail menambah `revision`, eligible `operations` dan private `audit`.
+- `api/handovers.php` POST: `action=schedule|reschedule|cancel_schedule|complete|release`, `id` handover, `revision`, `confirm=1`, `_csrf`; schedule/reschedule membutuhkan active campus `pickup_location_id` dan future `scheduled_at` format `YYYY-MM-DDTHH:mm` Asia/Jakarta. `note` maksimal 250 karakter; wajib minimal 8 untuk reschedule/cancel_schedule/release, optional untuk schedule/complete. Area/tanggal kosong memberi field error.
 - Cancel schedule mengosongkan scheduled time pada handover yang sama; claim APPROVED dan item HANDOVER tetap. Complete mencatat physical return, item/pair RESOLVED dan timestamp UTC bersama history/notifs.
 
 ## Session/auth decisions
 
 - Login email + password; lookup users, `password_verify()`, active account check, generic failed-login message.
 - Session authority = server `user_id`. Request fields `role`, `account`, `user_id` tidak dapat menentukan identitas/permission.
-- `session.use_strict_mode`, HttpOnly, SameSite=Lax, scoped cookie path `/ReFind_0.2.0/`, Secure bila HTTPS, regenerate ID setelah login/change password.
+- `session.use_strict_mode`, HttpOnly, SameSite=Lax, scoped cookie path = `base_path` (local folder: `/ReFind_0.2.3/`), Secure bila HTTPS, regenerate ID setelah login/change password.
 - Idle expiry target 30 menit, absolute expiry 8 jam; configurable. Expired protected request → 401, UI login + allowlisted local return route.
 - Logout: CSRF-protected POST, clear session data, destroy session, expire cookie. Replaying old cookie harus ditolak.
 - CSRF bootstrap tersedia bagi guest login; token baru setelah login/logout/credential change.
