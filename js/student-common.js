@@ -6,6 +6,7 @@ window.StudentUI=(()=>{
   const stateKinds={OPEN:'neutral',UNDER_REVIEW:'pending',POTENTIAL_MATCH:'possible',VERIFICATION:'pending',HANDOVER:'pickup',RESOLVED:'done',UNCLAIMED_CLOSED:'neutral',PENDING:'pending',NEED_MORE_INFO:'attention',APPROVED:'done',REJECTED:'rejected',WITHDRAWN:'neutral',SCHEDULED:'pending',COMPLETED:'done'};
   const itemUrl=id=>app.base+'item.html?id='+encodeURIComponent(id);
   const claimUrl=id=>app.base+'claim.html?id='+encodeURIComponent(id);
+  const navAction=(label,href)=>$('<a>').addClass('btn btn-outline navigation-action').attr('href',href).text(label);
   const urlParams=()=>new URLSearchParams(location.search);
   function date(value,time=false){if(!value)return 'Not specified';const d=/^\d{4}-\d{2}-\d{2}$/.test(value)?new Date(value+'T00:00:00+07:00'):new Date(value);return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Jakarta',day:'numeric',month:'short',year:'numeric',...(time?{hour:'2-digit',minute:'2-digit'}:{})}).format(d)+(time?' WIB':'');}
   function eventDate(item){return date(item.event_date)+(item.event_time?' · '+item.event_time.slice(0,5)+' WIB':' · Time not specified');}
@@ -28,5 +29,5 @@ window.StudentUI=(()=>{
   function pager(data,load){const box=$('#pager').empty();if(data.pages<=1)return;box.append($('<button>').addClass('btn btn-outline').attr('type','button').prop('disabled',data.page<=1).text('Previous').on('click',()=>load(data.page-1)),$('<span>').text('Page '+data.page+' of '+data.pages),$('<button>').addClass('btn btn-outline').attr('type','button').prop('disabled',data.page>=data.pages).text('Next').on('click',()=>load(data.page+1)));}
   function fillSelect(selector,values,label,idKey='id',nameKey='name'){const select=$(selector).empty().append($('<option>').val('').text(label));values.forEach(value=>select.append($('<option>').val(value[idKey]).text(value[nameKey])));}
   function campusDay(value=new Date()){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(value));return ['year','month','day'].map(k=>parts.find(p=>p.type===k).value).join('-');}
-  return {statusNames,claimNames,pickupNames,stateKinds,stateChip,titleParts,demoChip,focusRecord,revealField,pickupSummary,pickupMessage,itemUrl,claimUrl,urlParams,date,eventDate,locationText,chip,chips,card,empty,showError,formError,clearErrors,required,pager,fillSelect,campusDay};
+  return {navAction,statusNames,claimNames,pickupNames,stateKinds,stateChip,titleParts,demoChip,focusRecord,revealField,pickupSummary,pickupMessage,itemUrl,claimUrl,urlParams,date,eventDate,locationText,chip,chips,card,empty,showError,formError,clearErrors,required,pager,fillSelect,campusDay};
 })();

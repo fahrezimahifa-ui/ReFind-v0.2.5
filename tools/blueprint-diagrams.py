@@ -375,7 +375,7 @@ SITEMAP_NODES = [
     ("report", "page", "Report Item Page", "report.html", "Student only"),
     ("report_fields", "feature", "Lost / Found / eligible edit", None, "Public media vs private clue/proof"),
     ("activity", "page", "My Activity Page", "my-reports.html", "Own records"),
-    ("activity_tabs", "feature", "Reports / Claims / Closed / resubmit", None, "Eligible edit/delete; pickup status"),
+    ("activity_tabs", "feature", "Reports / Claims / Closed / resubmit", None, "Outline Edit / confirmed Delete; pickup status"),
     ("student_history", "page", "Campus History Page", "history.html", "Read-only"),
     ("student_notif", "page", "Notifications Page", "notifications.html", "Own notifications"),
     ("student_profile", "page", "Profile Page", "profile.html", "Own account"),

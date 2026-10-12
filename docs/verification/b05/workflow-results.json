@@ -1,6 +1,6 @@
 {
   "scope": "B05 actual BM review/handover + full Lost→Returned on isolated _test",
-  "run": "B05-mv4tnbqw",
+  "run": "B05-mv5cbgyf",
   "results": [
     "Role/CSRF/explicit confirmation guards block unauthorized BM writes without changes",
     "Real Student submissions produce BM queue, scoped private detail and evidence",

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ReFind — Conceptual wireframes, UX01 updates</title>
+  <title>ReFind — Conceptual wireframes, local UX02 navigation</title>
   <style>
     :root { --navy:#17266d; --cyan:#10b7cf; --ink:#202a40; --muted:#59687e; --line:#dce3ec; --control:#7b8aa0; --paper:#f5f7fa; --mint:#e9f9f4; --amber:#fff6df; }
     * { box-sizing:border-box; }
@@ -30,6 +30,8 @@
     .headline p { color:var(--muted); font-size:14px; margin-top:7px; }
     .button { min-height:44px; padding:10px 14px; border:1px solid var(--navy); border-radius:11px; background:var(--navy); color:white; display:flex; justify-content:center; align-items:center; text-align:center; font-size:14px; font-weight:650; }
     .button.outline { background:white; color:var(--navy); border-color:var(--control); }
+    .button.navigation { display:inline-flex; max-width:100%; min-height:44px; font-size:13px; padding:10px 12px; }
+    .section-head { flex-wrap:wrap; }
     .button.soft { color:var(--navy); background:#edfafd; border-color:#b8e7ef; }
     .button.danger { background:white; color:#9e3346; border-color:#e7c2ca; }
     .actions { display:flex; gap:9px; } .actions > * { flex:1; }
@@ -97,7 +99,7 @@
 <body data-blueprint="B06" data-status="concept">
   <header class="doc-header">
     <h1>ReFind — Conceptual wireframe references</h1>
-    <p><strong>Static design reference · UX01 updates.</strong> Controls inside these boards are illustrations. The actual application, API, persistence and responsive tests are verified separately. UX01 reconciles button hierarchy, focus/contrast, optional media and Returned presentation.</p>
+    <p><strong>Static design reference · local UX02 navigation update.</strong> Controls inside these boards are illustrations. The actual app is verified separately; outline navigation links keep native destinations/keyboard behavior, with navy Edit and danger-outline Delete. The local main folder is ReFind_0.2.3 only.</p>
     <p><a href="#WF01">Student discovery</a><a href="#WF04">Login &amp; account</a><a href="#WF05">BM review</a><a href="#WF07">Desktop</a><a href="exports/WIREFRAMES.pdf">PDF export</a></p>
   </header>
 
@@ -110,8 +112,9 @@
           <div class="headline"><span class="eyebrow">UMN Lost &amp; Found</span><h1>Let's find it<br>together.</h1><p>Look for your item or help someone get theirs back.</p></div>
           <div class="search"><div class="search-box">Search item or location</div><span class="touch">Find</span></div>
           <div class="actions"><div class="button">I lost something</div><div class="button soft">I found something</div></div>
+          <div class="button outline navigation">Follow my reports and claims</div>
           <div class="callout"><strong>Your claim is ready for pickup</strong><p>Check the pickup details in My Activity.</p><span class="text-link">View my claim →</span></div>
-          <div class="section-head"><h3>Recently reported</h3><span class="text-link">Explore all</span></div>
+          <div class="section-head"><h3>Recently reported</h3><span class="button outline navigation">Explore all →</span></div>
           <div class="mini-card"><div class="mini-photo">PHOTO</div><div class="mini-copy"><h3>Black headphones</h3><p>Gedung C · 7 Oct</p><span class="chip found">Found</span></div></div>
           <div class="mini-card"><div class="mini-photo">PHOTO</div><div class="mini-copy"><h3>Brown leather wallet</h3><p>Gedung A · 7 Oct</p><span class="chip">Lost</span></div></div>
           <div class="divider"><h3>How it works</h3><p class="small" style="margin-top:8px">Report → discover → BM verifies → return.</p></div>
@@ -136,7 +139,7 @@
     <div class="phones">
       <div><p class="device-label">Item Detail · mobile concept</p><div class="phone">
         <div class="topnav"><span class="brand">ReFind</span><span class="touch">Menu</span></div><div class="screen">
-          <span class="text-link">← Back to Explore</span>
+          <span class="button outline navigation">← Back to Explore</span>
           <div class="card"><div class="photo" style="height:238px">Public gallery · 1 / 3</div><div class="card-body"><div class="chips"><span class="chip found">Found</span><span class="chip">Reported</span></div><h1 style="font-size:25px">Black headphones</h1><p class="meta">Electronics · Gedung C, near lift<br>7 Oct · time not specified</p><p class="small">Black over-ear headphones with gold rings. Handed in to Building Management.</p></div></div>
           <div class="button">I think this is mine</div>
           <p class="small">Your claim will be reviewed by BM. Public reports do not confirm ownership.</p>
@@ -147,7 +150,7 @@
       </div></div>
       <div><p class="device-label">Claim / resubmit · mobile concept</p><div class="phone">
         <div class="topnav"><span class="brand">ReFind</span><span class="touch">Menu</span></div><div class="screen">
-          <span class="text-link">← Back to item</span><div class="headline"><h1>Is this yours?</h1><p>Help BM verify ownership with a detail only you would know.</p></div>
+          <span class="button outline navigation">← Back to item</span><div class="headline"><h1>Is this yours?</h1><p>Help BM verify ownership with a detail only you would know.</p></div>
           <div class="mini-card"><div class="mini-photo">PHOTO</div><div class="mini-copy"><h3>Black headphones</h3><p>Found · Gedung C</p></div></div>
           <div class="field"><label>Related own Lost report · optional</label><div class="input">Choose your Lost report</div></div>
           <div class="field"><label>Identifying detail *</label><div class="input textarea">Describe a private scratch, repair,<br>contents or other identifying detail…</div><p class="small" style="margin-top:6px">Private to you and authorized BM.</p></div>
@@ -179,7 +182,7 @@
           <div class="activity"><div class="chips"><span class="chip wait">More info requested</span></div><h3>Black headphones</h3><p class="small">BM: Please clarify the identifying mark.</p><div class="button">Update my claim</div></div>
           <div class="activity"><div class="chips"><span class="chip done">Approved · pickup scheduled</span></div><h3>Brown leather satchel</h3><p class="small">12 Oct · 14:00 WIB · campus desk</p><div class="button outline">View pickup details</div></div>
           <div class="activity"><span class="chip done">Returned</span><h3>Scientific calculator</h3><p class="small">Returned 12 Oct · 14:00 WIB · Gedung C</p><span class="text-link">View returned item</span></div>
-          <div class="divider"><span class="text-link">View campus history →</span><p class="small" style="margin-top:8px">Own pickup details and review notes are private.</p></div>
+          <div class="divider"><span class="button outline navigation">View campus history →</span><p class="small" style="margin-top:8px">Own pickup details and review notes are private.</p><div class="actions" style="margin-top:10px"><span class="button outline navigation">Edit report</span><span class="button danger navigation">Delete</span></div></div>
         </div>
       </div></div>
     </div><p class="board-foot">Expanded media/private sections scroll naturally; required clue is validated before submit. Found mode changes location labels and excludes Lost evidence upload.</p>
@@ -216,6 +219,7 @@
       <div><p class="device-label">Account Settings · mobile concept</p><div class="phone">
         <div class="topnav"><span class="brand">ReFind</span><span class="touch">Menu</span></div><div class="screen">
           <div class="headline"><h1>Account settings</h1><p>Keep your account secure.</p></div>
+          <div class="button outline navigation">Back to my profile</div>
           <h3>Change password</h3>
           <div class="field"><label>Current password</label><div class="input">••••••••••••</div></div>
           <div class="field"><label>New password</label><div class="input">••••••••••••</div></div>
@@ -251,7 +255,7 @@
           <div class="activity"><h3>Claimant answer</h3><p class="small">Illustrative identifying detail supplied by the claimant.</p></div>
           <div class="upload private"><strong>Finder's private clue · BM only</strong><p class="small">Illustrative verification detail. Never available in Student item detail.</p></div>
           <div><h3>Claim evidence · private</h3><div class="evidence" style="margin-top:9px"><div>Proof 1</div><div>Proof 2</div></div><p class="small" style="margin-top:6px">Tap to enlarge in a protected modal.</p></div>
-          <div class="activity"><h3>Linked Lost report</h3><p class="small">Own Lost link, clue and supporting evidence.</p><span class="text-link">Open evidence</span></div>
+          <div class="activity"><h3>Linked Lost report</h3><p class="small">Own Lost link, clue and supporting evidence.</p><span class="button outline navigation">Open linked report</span></div>
           <div class="button outline">Request more info</div><div class="actions"><div class="button danger">Reject</div><div class="button">Approve</div></div>
           <p class="small">Confirmation names the item and claimant. Refresh retains the note and requires a new confirmation.</p>
         </div>

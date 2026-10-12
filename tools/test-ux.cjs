@@ -1,11 +1,12 @@
 // UX01 real browser/HTTP acceptance. Fresh fixture actors and cleanup stay in owned _test.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto');
 const {execFileSync}=require('node:child_process');
-const root=path.resolve(__dirname,'..'),target=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php='C:\\xampp\\php\\php.exe',out=path.join(root,'docs','verification','ux01');
+const edition=process.argv.includes('--ux02')?'ux02':'ux01';
+const root=path.resolve(__dirname,'..'),target=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php='C:\\xampp\\php\\php.exe',out=path.join(root,'docs','verification',edition);
 assert.equal(JSON.parse(fs.readFileSync(path.join(target,'.refind-b02-test.json'))).source,root);
 const {chromium}=require(process.env.REFIND_PLAYWRIGHT_MODULE||path.join(os.tmpdir(),'opencode','refind-multipage-check','node_modules','playwright-core'));
 fs.mkdirSync(out,{recursive:true});
-const run='UX01-'+Date.now().toString(36),actors=[],results=[],browserErrors=[],viewportChecks=[],contrastChecks=[];let browser;
+const run=edition.toUpperCase()+'-'+Date.now().toString(36),actors=[],results=[],browserErrors=[],viewportChecks=[],contrastChecks=[];let browser;
 function driver(input){return JSON.parse(execFileSync(php,[path.join(target,'tools','b02-fixture.php')],{input:JSON.stringify(input),encoding:'utf8'}));}
 function q(query,values=[]){return driver({action:'query',query,values});}
 function actor(label,role='STUDENT'){const password='UX!'+crypto.randomBytes(10).toString('hex'),email=run.toLowerCase()+'-'+label+'@refind.test',hash=execFileSync(php,['-r','echo password_hash(stream_get_contents(STDIN),PASSWORD_DEFAULT);'],{input:password,encoding:'utf8'}),id=q('INSERT INTO users(full_name,email,role,password_hash,student_id) VALUES (?,?,?,?,?)',[run+' '+label,email,role,hash,role==='STUDENT'?run+'-'+label:null]).id;actors.push(id);return{id,email,password};}
@@ -17,7 +18,7 @@ class Session{
 }
 function report(type,label){return{action:'create',type,title:run+' '+label,description:'Classroom verification item with a hidden identifying detail.',category_id:'1',location_id:'37',date:'2026-10-10',time:'',clue:'Private hidden mark for UX acceptance.'};}
 async function found(s,label){return(await s.ok('api/items.php',report('FOUND',label))).id;}
-async function claim(s,id){return(await s.ok('api/claims.php',{itemId:id,answer:'Private identifying detail from the owner.'})).id;}
+async function claim(s,id,lost=''){return(await s.ok('api/claims.php',{itemId:id,lostItemId:lost,answer:'Private identifying detail from the owner.'})).id;}
 async function review(s,id,decision){const d=(await s.ok('api/staff.php?resource=claims&id='+id)).claim;return s.ok('api/staff.php',{action:'review',id,decision,revision:d.revision,confirm:'1',note:'Private '+run+' '+decision+' review reason.'});}
 async function pickup(s,id,action,extra={}){const d=(await s.ok('api/handovers.php?id='+id)).handovers[0];return s.ok('api/handovers.php',{action,id,revision:d.revision,confirm:'1',note:'Private '+run+' '+action+' reason.',...extra});}
 function future(){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(Date.now()+3*86400000)),v=k=>parts.find(p=>p.type===k).value;return v('year')+'-'+v('month')+'-'+v('day')+'T'+v('hour')+':'+v('minute');}
@@ -100,14 +101,41 @@ async function group(name,fn){await fn();results.push(name);console.log('PASS UX
     await group('Reduced usable viewport keeps confirmation scrollable with explicit confirmation required',async()=>{
       await p.page.setViewportSize({width:390,height:420});await go(p.page,'admin.html?tab=claims&claim='+idB);await p.page.click('[data-bm-action="approved"]');assert.ok(await p.page.locator('#operation-dialog').evaluate(e=>{const r=e.getBoundingClientRect();return r.height<=innerHeight-32&&r.top>=0;}));await p.page.fill('#operation-note','Small viewport review note.');await p.page.check('#operation-confirm');await p.page.locator('#operation-submit').scrollIntoViewIfNeeded();assert.equal(await p.page.locator('#operation-submit').isEnabled(),true);await p.page.keyboard.press('Escape');
     });
+    if(edition==='ux02'){
+      const ownItem=(await a.ok('api/items.php',report('LOST','Own editable report'))).id;
+      const pairLost=(await a.ok('api/items.php',report('LOST','Linked Lost'))).id,pairFound=await found(b,'Linked Found'),pairClaim=await claim(a,pairFound,pairLost);await review(bm,pairClaim,'approved');
+      async function clickDestination(page,link,pathEnd,query={}){await link.click();await page.waitForURL(url=>url.pathname.endsWith('/'+pathEnd)&&Object.entries(query).every(([key,value])=>url.searchParams.get(key)===String(value)));await page.waitForSelector('body[data-ready="true"]');}
+      await group('Nine navigation labels preserve real anchor destinations, keyboard activation and native new tabs',async()=>{
+        await owner.page.setViewportSize({width:390,height:844});await go(owner.page,'index.html');await clickDestination(owner.page,owner.page.getByRole('link',{name:'Follow my reports and claims',exact:true}),'my-reports.html');
+        await go(owner.page,'index.html');const popup=owner.context.waitForEvent('page');await owner.page.getByRole('link',{name:'Explore all',exact:true}).click({modifiers:['Control']});const opened=await popup;await opened.waitForURL(url=>url.pathname.endsWith('/browse.html'));await opened.waitForSelector('body[data-ready="true"]');await opened.close();assert.ok(new URL(owner.page.url()).pathname.endsWith('/index.html'));
+        await go(owner.page,'item.html?id='+itemB);await owner.page.getByRole('link',{name:'← Back to Explore',exact:true}).focus();await owner.page.keyboard.press('Enter');await owner.page.waitForURL(url=>url.pathname.endsWith('/browse.html'));
+        await go(owner.page,'claim.html?id='+itemB);await clickDestination(owner.page,owner.page.locator('#back-to-item'),'item.html',{id:itemB});
+        await go(owner.page,'profile.html');await clickDestination(owner.page,owner.page.locator('.profile-summary .navigation-action'),'settings.html');await clickDestination(owner.page,owner.page.locator('.profile-summary .navigation-action'),'profile.html');
+        await go(owner.page,'my-reports.html');await clickDestination(owner.page,owner.page.getByRole('link',{name:'View read-only campus history',exact:true}),'history.html');
+        await go(owner.page,'my-reports.html');await clickDestination(owner.page,owner.page.locator('[data-item-id="'+ownItem+'"] .own-report-actions a'),'report.html',{edit:ownItem});assert.equal(await owner.page.inputValue('#r-title'),run+' Own editable report');
+        await go(owner.page,'item.html?id='+pairFound);await clickDestination(owner.page,owner.page.getByRole('link',{name:'Open linked report',exact:true}),'item.html',{id:pairLost});
+        await go(p.page,'admin.html?tab=claims&claim='+pairClaim);await clickDestination(p.page,p.page.getByRole('link',{name:'Open linked report',exact:true}),'item.html',{id:pairLost});
+      });
+      await group('Outline Edit and danger Delete retain ownership/confirmation/cancel/commit behavior',async()=>{
+        await go(owner.page,'my-reports.html');const card=owner.page.locator('[data-item-id="'+ownItem+'"]');assert.equal(await card.getByRole('link',{name:'Edit report',exact:true}).count(),1);const remove=card.getByRole('button',{name:'Delete',exact:true});assert.ok(await remove.evaluate(e=>e.classList.contains('btn-danger-outline')));await remove.click();await owner.page.locator('#confirm-dialog [data-close-dialog]').click();assert.equal((await a.call('api/items.php?id='+ownItem)).status,200);
+        assert.equal((await b.call('api/items.php',{action:'delete',id:ownItem})).status,403);await remove.click();await owner.page.click('#confirm-delete');await owner.page.waitForFunction(id=>!document.querySelector('[data-item-id="'+id+'"]'),ownItem);assert.equal((await a.call('api/items.php?id='+ownItem)).status,404);
+      });
+      await group('Button-link touch/focus/readability and layout fit the five required viewports',async()=>{
+        const routes=['index.html','profile.html','settings.html','my-reports.html','item.html?id='+pairFound,'claim.html?id='+itemB];
+        for(const[width,height]of[[360,800],[390,844],[768,1024],[1280,800],[1440,900]]){
+          await owner.page.setViewportSize({width,height});for(const route of routes){await go(owner.page,route);if(route==='index.html')await owner.page.waitForSelector('#home-discovery:not([hidden])');const checks=await owner.page.locator('a.navigation-action').evaluateAll(links=>links.filter(e=>e.getClientRects().length).map(e=>{const r=e.getBoundingClientRect(),style=getComputedStyle(e);return{height:r.height,width:r.width,left:r.left,right:r.right,decoration:style.textDecorationLine,href:e.href,clipped:e.scrollWidth>e.clientWidth+1};}));assert.ok(checks.length);checks.forEach(check=>{assert.ok(check.height>=44&&check.width>=44);assert.ok(check.left>=0&&check.right<=width);assert.equal(check.decoration,'none');assert.equal(check.clipped,false);assert.ok(check.href.startsWith(base));});assert.ok(await owner.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));if((width===390||width===1440)&&route==='index.html'){await owner.page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));await owner.page.screenshot({path:path.join(out,'home-'+width+'.png'),fullPage:true});}}
+          await go(owner.page,'profile.html');await owner.page.keyboard.press('Tab');await owner.page.locator('.profile-summary .navigation-action').focus();assert.equal(await owner.page.locator('.profile-summary .navigation-action').evaluate(e=>getComputedStyle(e).outlineStyle),'solid');
+        }
+      });
+    }
     assert.deepEqual(browserErrors,[]);await p.context.close();await owner.context.close();
     const invariants=JSON.parse(execFileSync(php,[path.join(target,'tools','check-workflow.php')],{encoding:'utf8'}));assert.equal(invariants.passed,true);
-    fs.writeFileSync(path.join(out,'ux-results.json'),JSON.stringify({scope:'UX01 real isolated HTTP/browser selection, navigation, statuses, presentation/accessibility fixes',results,passed:results.length,complete:true,browserErrors,viewportChecks,contrastChecks,invariants,realDeviceKeyboard:'Manual check pending; reduced viewport simulated'},null,2)+'\n');
-  }catch(e){fs.writeFileSync(path.join(out,'ux-results.json'),JSON.stringify({scope:'UX01',results,passed:results.length,complete:false,failure:String(e),browserErrors,viewportChecks,contrastChecks},null,2)+'\n');throw e;}
+    fs.writeFileSync(path.join(out,'ux-results.json'),JSON.stringify({scope:edition.toUpperCase()+' real isolated HTTP/browser selection, navigation, statuses, presentation/accessibility fixes',results,passed:results.length,complete:true,browserErrors,viewportChecks,contrastChecks,invariants,realDeviceKeyboard:'Manual check pending; reduced viewport simulated'},null,2)+'\n');
+  }catch(e){fs.writeFileSync(path.join(out,'ux-results.json'),JSON.stringify({scope:edition.toUpperCase(),results,passed:results.length,complete:false,failure:String(e),browserErrors,viewportChecks,contrastChecks},null,2)+'\n');throw e;}
   finally{
     if(browser)await browser.close();const ids=actors.map(Number),marks=ids.map(()=>'?').join(','),items=q('SELECT item_id FROM items WHERE reporter_user_id IN ('+marks+')',ids).rows.map(r=>Number(r.item_id));let files=[];
     if(items.length){const m=items.map(()=>'?').join(',');files=q('SELECT file_path FROM item_photos WHERE item_id IN ('+m+') UNION ALL SELECT p.file_path FROM claim_photos p JOIN claims c ON c.claim_id=p.claim_id WHERE c.item_id IN ('+m+')',[...items,...items]).rows.map(r=>r.file_path);q('DELETE FROM notifications WHERE item_id IN ('+m+')',items);q('DELETE FROM items WHERE item_id IN ('+m+')',items);}
     q('DELETE FROM notifications WHERE user_id IN ('+marks+')',ids);for(const id of actors)q('DELETE FROM users WHERE user_id=?',[Number(id)]);for(const relative of files){assert.match(relative,/^(items|evidence|claims)\/[a-f0-9]{32}\.(jpg|png|webp)$/);const file=path.join(target,'storage',relative);if(fs.existsSync(file))fs.unlinkSync(file);}driver({action:'clear_throttle'});
   }
-  console.log('UX01: '+results.length+' scenario groups PASS.');
+  console.log(edition.toUpperCase()+': '+results.length+' scenario groups PASS.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

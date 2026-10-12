@@ -1,0 +1,23 @@
+{
+  "scope": "UX02 local-only folder rename and outline native navigation controls",
+  "folder": "C:\\xampp\\htdocs\\ReFind_0.2.3",
+  "main_base_path": "/ReFind_0.2.3/",
+  "database": "refind_db_0_2_0",
+  "qa_folder": "C:\\xampp\\htdocs\\ReFind_0.2.0_Test",
+  "product_identity": "0.2.0 retained; 0.2.3 is the requested directory label",
+  "ux_groups": 15,
+  "regression_groups": {"student": 24, "account": 24, "bm": 27},
+  "main_accounts": 3,
+  "main_business_dataset_unchanged": true,
+  "schema_checks_each_main_test": 9,
+  "workflow_invariants": 17,
+  "artefact_checks": 81,
+  "native_link_destinations_keyboard_new_tabs": true,
+  "edit_delete_ownership_confirmation": true,
+  "five_required_viewports": true,
+  "git_checkpoint": "85436aaac9332dab5e05a297efba4283c7f21961",
+  "new_commit": false,
+  "github_push": false,
+  "new_zip": false,
+  "passed": true
+}

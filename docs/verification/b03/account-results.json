@@ -1,6 +1,6 @@
 {
   "scope": "B03 real profile/password/navbar integration on _test; future workflows pending",
-  "run": "B03-mv4u0qk7",
+  "run": "B03-mv5cacav",
   "results": [
     "Profile/Settings real routes are protected and own data is scoped",
     "Student/BM names persist after reload and relogin",

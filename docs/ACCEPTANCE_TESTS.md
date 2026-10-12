@@ -16,6 +16,8 @@ Status B01–B05 di atas adalah checkpoint historis. The final approved MVP has 
 
 ## Auth / account
 
+**UX02 local update:**15 UX groups (the12 prior scenarios plus3 navigation/conditional-action/responsive groups),24 Student/24 account/27 BM regressions and3-account main smoke PASS. All9 formerly underlined standalone labels remain native anchors with correct record destinations, Enter/native new tabs and outline presentation; Edit/Delete roles/cancel/commit remain valid. Local main folder is ReFind_0.2.3 with base-path override; schema/version/data preserved, no new ZIP or push. Evidence: [UX02_REPORT.md](UX02_REPORT.md), `verification/ux02/`.
+
 **UX01 update:**12 additional HTTP/browser UX groups exercise selection reset/late response, queue paging, one-primary review/identified confirmation, pinned/deep-link focus/back, retained draft/reconfirmation, Returned completion time, direct private pickup links, accessible uploads/disclosure and computed contrast. Five required viewports and a reduced-height simulation pass. Physical Android/iOS keyboard checks remain manual. [UX01 report](UX01_REPORT.md), `verification/ux01/ux-results.json` and latest regression outputs document this update.
 
 | ID | Skenario | Expected / evidence |

@@ -29,6 +29,8 @@ Prioritas requirement: instruksi pengguna terbaru > revisi dosen eksplisit > gui
 | D12 | Semua diagram final memakai draw.io/diagrams.net | Instruksi pengguna sebelum B06; editable `.drawio` untuk sitemap, ERD, flowcharts, user/app flow dan artefak diagram terkait, dengan PDF/PNG exports |
 | D13 | Perbanyak mock data pada B06 | Instruksi pengguna dan approval B06; target 40 laporan total, 12 claims dan 6 handovers synthetic, melalui valid business workflow dan seeding idempotent |
 | D14 | Implementasikan fixes dari audit UI/UX setelah B06 | Pengguna menyetujui selection/navigation, Returned clarity, button hierarchy, colour/contrast, upload/microcopy polish; tetap memakai stack dan draw.io yang disetujui |
+| D15 | UX02 outline navigation + Edit/Delete pairing | User approved9 standalone labels as button-styled native anchors; Delete uses danger outline and existing confirmation |
+| D16 | Rename local folder only / no publication or ZIP | User requested ReFind_0.2.3 directory label; main base-path override only, existing DB/app identity/data retained, no commit/push/new ZIP |
 
 ## Audit baseline R01–R12
 
@@ -101,3 +103,7 @@ Auth28/account24/Student24/BM27 regression, seed7 groups, main read-only smoke d
 ## UX01 — approved post-B06 polish
 
 Audit and user approval led to synced filtered selection with exact pinned outcomes, target identity in confirmations, mobile detail/back focus, correct Returned time, semantic colours/stronger contrast, authorized friendly audit/notification links and optional custom upload controls. Original audit messages, schema, main data and credentials are preserved.12 meaningful UX browser scenarios and28/24/24/27 regression groups pass. Current checkpoint/evidence: [UX01_REPORT.md](UX01_REPORT.md).
+
+## UX02 — local-only navigation buttons and folder rename
+
+GitHub checkpoint85436aa was inspected before moving the main directory to ReFind_0.2.3. Ignored local base-path configuration preserves existing DB/schema/credentials/runtime. Native anchor routes and Enter/new-tab behavior are preserved with secondary-outline styling; actual Delete remains a confirmed mutation button.15 UX groups plus24/24/27 relevant regressions pass, with main read-only smoke verifying the new URL/data preservation. Current report: [UX02_REPORT.md](UX02_REPORT.md).

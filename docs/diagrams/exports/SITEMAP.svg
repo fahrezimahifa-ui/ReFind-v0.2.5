@@ -242,7 +242,7 @@
 <title>activity_tabs</title>
 <polygon fill="#edfafd" stroke="#16899b" points="1100.39,-723.15 858.98,-723.15 858.98,-681.75 1100.39,-681.75 1100.39,-723.15"/>
 <text xml:space="preserve" text-anchor="middle" x="979.68" y="-705.5" font-family="Arial" font-size="11.00">(Feature) Reports / Claims / Closed / resubmit</text>
-<text xml:space="preserve" text-anchor="middle" x="979.68" y="-692" font-family="Arial" font-size="11.00">Eligible edit/delete; pickup status</text>
+<text xml:space="preserve" text-anchor="middle" x="979.68" y="-692" font-family="Arial" font-size="11.00">Outline Edit / confirmed Delete; pickup status</text>
 </g>
 <!-- activity&#45;&gt;activity_tabs -->
 <g id="edge13" class="edge">

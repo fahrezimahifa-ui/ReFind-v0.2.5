@@ -1,5 +1,11 @@
 # ReFind 0.2.0 — UX01 UI/UX Polish
 
+## Current local UX02 / folder ReFind_0.2.3
+
+Local-only edition: `C:\xampp\htdocs\ReFind_0.2.3`, login `http://localhost/ReFind_0.2.3/login.html`, docs `http://localhost/ReFind_0.2.3/docs/`. Nine underlined UI navigation labels now have outline-button affordance; own report Edit/Delete use navy/red outlines.15 UX groups and24/24/27 Student/account/BM regressions pass. [UX02 report](docs/UX02_REPORT.md) contains current evidence.
+
+The directory name is the user's version label only. Existing app labels/DB `refind_db_0_2_0`/credentials/data retain their0.2.0 identity. Ignored `app/config.local.php` sets `base_path` to `/ReFind_0.2.3/`; preserve this local override if copying the renamed folder. QA remains the owned `ReFind_0.2.0_Test` copy with updated source marker. This patch is not pushed or packaged into a new ZIP; GitHub/B06/UX01 paragraphs below describe previous checkpoints.
+
 **Status B06: Verified — seluruh enam batch selesai.** Fitur auth/account/Student/BM dan full Lost → Returned sudah teruji. Final artefak draw.io, 40 synthetic reports/12 claims/6 handovers, fresh-install acceptance dan clean release ZIP tersedia. [Laporan B06](docs/B06_REPORT.md) memuat hasil nyata; [installation & release guide](docs/INSTALLATION_AND_RELEASE.md) memuat setup lengkap, termasuk mock seed.
 
 **Latest update UX01:** synced BM selection, focused mobile detail/Back, identified confirmations, single-primary/danger hierarchy, Returned timestamps, direct pickup notifications, human-readable private history, improved contrast and optional/custom uploads.12 UX groups and auth/account/Student/BM28/24/24/27 regressions PASS. [UX01 report](docs/UX01_REPORT.md) records current evidence and physical-device keyboard manual check.
@@ -14,6 +20,7 @@ ReFind adalah Lost & Found kampus UMN dengan target **mobile-first**, top navbar
 4. Kerjakan **per batch**. B01 blueprint, B02 database/auth, B03 profile/settings/shell, B04 Student, B05 BM workflows, B06 verification/release telah disetujui dan selesai.
 5. Semua diagram memakai **draw.io / diagrams.net**: sitemap, ERD, FC01–FC06, user flow/app flow; editable sources dengan PDF/PNG exports. Wireframe boards juga memiliki editable `.drawio` components.
 6. B06 memperbanyak mock data untuk demo, melalui workflow valid dan seeding idempotent.
+7. UX02 converts standalone underlined links to outline-button anchors, aligns Edit/Delete, renames only the local main folder to ReFind_0.2.3, and has no GitHub push/new ZIP.
 
 Folder: `C:\xampp\htdocs\ReFind_0.2.0`. Database: `refind_db_0_2_0`. Database test: `refind_db_0_2_0_test`.
 

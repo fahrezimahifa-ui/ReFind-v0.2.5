@@ -72,3 +72,14 @@
 }
 @media(prefers-reduced-motion:reduce) { * { scroll-behavior:auto !important; } }
 .account-actions>.btn-primary,.account-actions>.btn-danger{flex:2}
+
+/* UX02: standalone navigation keeps native anchor behavior with secondary button affordance. */
+.navigation-action{min-height:46px;max-width:100%;min-width:0;gap:8px;padding:10px 14px;font-size:14px;text-decoration:none;white-space:normal;overflow-wrap:anywhere}
+.navigation-action:hover,.navigation-action:focus-visible{text-decoration:none}
+.navigation-action--back{margin-bottom:18px}
+#member-home>.navigation-action{margin-top:16px}
+.profile-summary>.navigation-action{display:flex;width:fit-content;margin:16px auto 0}
+.activity-history{margin-top:24px}
+.home-discovery .section-heading{flex-wrap:wrap;gap:12px;align-items:center}
+.home-discovery .section-heading h2{flex:1 1 190px;min-width:0;margin:0}
+.home-discovery .section-heading .navigation-action{flex:0 0 auto}

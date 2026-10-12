@@ -67,7 +67,7 @@ $(async function () {
     box.append(U.stateChip(claim.claim_status, U.claimNames[claim.claim_status]), U.demoChip(claim.item.title), heading(claim.item.title), meta([['Claimant',claim.claimant_name],['Submitted',U.date(claim.created_at,true)],['Location',U.locationText(claim.item)],['Related Lost',claim.lost ? U.titleParts(claim.lost.title).display : 'No linked Lost report']]));
     if (claim.item.photos.length) box.append($('<img>').addClass('bm-public-image').attr({src:claim.item.photos[0],alt:U.titleParts(claim.item.title).display}));
     box.append($('<div>').addClass('bm-compare').append(block('Claimant answer',claim.ownership_answer), block("Finder's private clue",claim.item.verification_clue,true)), evidence(claim.ownership_photos,'Private claim evidence'));
-    if (claim.lost) box.append($('<section>').addClass('bm-audit').append(block('Linked Lost identifying detail',claim.lost.verification_clue,true), evidence(claim.lost.ownership_photos,'Private Lost evidence'), $('<a>').addClass('text-link').attr('href',U.itemUrl(claim.lost.item_id)).text('Open linked report')));
+    if (claim.lost) box.append($('<section>').addClass('bm-audit').append(block('Linked Lost identifying detail',claim.lost.verification_clue,true), evidence(claim.lost.ownership_photos,'Private Lost evidence'), U.navAction('Open linked report',U.itemUrl(claim.lost.item_id))));
     if (claim.review_note) box.append($('<div>').addClass('bm-outcome').text(claim.review_note + (claim.reviewed_at ? '\nReviewed ' + U.date(claim.reviewed_at,true) : '')));
     const actions = $('<div>').addClass('bm-detail-actions');
     claim.decisions.forEach(action => actions.append(actionButton(action,{kind:'claim',id:claim.claim_id,revision:claim.revision,record:claim})));

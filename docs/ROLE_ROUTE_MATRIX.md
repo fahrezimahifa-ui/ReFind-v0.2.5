@@ -44,6 +44,8 @@ Server page gateway harus memeriksa session/role **sebelum HTML protected dikiri
 
 ## API contract current
 
+UX02 standalone navigation controls remain native anchor links with outline-button styling. Eligible own Edit versus confirmed Delete preserve separate navigation/mutation semantics. Local main base path is `/ReFind_0.2.3/` via ignored config; all12 route/role/API definitions and DB names retain the existing identity.
+
 UX01 read models add `notification_type`, `item_title`, authorized `handover_id` and parsed `pickup_event` to own notifications, plus parsed private events to BM pickup audit. Stored messages are unchanged. BM metadata is role-authorized; Student handover links require the same claimant. UI filters/page changes reset transient selection, while explicit record deep links/saved outcomes remain pinned and identified.
 
 | Endpoint | GET | POST / permission |

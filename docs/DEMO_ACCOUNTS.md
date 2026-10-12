@@ -1,5 +1,7 @@
 # Akun demo, mock inventory & SOP final B06
 
+**Current local UX02 path:** `http://localhost/ReFind_0.2.3/login.html`. The main folder was renamed only; the same DB/accounts/passwords remain. Current private credential receipt is `C:\xampp\htdocs\ReFind_0.2.3\storage\setup\demo-accounts.json`. Older0.2.0 paths below belong to the prior B06 checkpoint.
+
 Credential authentication sudah berfungsi. Tidak ada account/privilege selector.
 
 Main memiliki **3 active accounts /2 role types**:2 Student dan1 Building Management. Existing main credentials tetap berlaku; fresh installation generates different random credentials in its own protected receipt.

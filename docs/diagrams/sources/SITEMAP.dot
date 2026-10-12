@@ -15,7 +15,7 @@ proof [label="(Feature) Answer / own Lost link / private proof\nExplicit submit 
 report [label="[Page] Report Item Page\nreport.html\nStudent only", style="filled,rounded", fillcolor="#eef1fb", color="#17266d"];
 report_fields [label="(Feature) Lost / Found / eligible edit\nPublic media vs private clue/proof", style="filled,solid", fillcolor="#edfafd", color="#16899b"];
 activity [label="[Page] My Activity Page\nmy-reports.html\nOwn records", style="filled,rounded", fillcolor="#eef1fb", color="#17266d"];
-activity_tabs [label="(Feature) Reports / Claims / Closed / resubmit\nEligible edit/delete; pickup status", style="filled,solid", fillcolor="#edfafd", color="#16899b"];
+activity_tabs [label="(Feature) Reports / Claims / Closed / resubmit\nOutline Edit / confirmed Delete; pickup status", style="filled,solid", fillcolor="#edfafd", color="#16899b"];
 student_history [label="[Page] Campus History Page\nhistory.html\nRead-only", style="filled,rounded", fillcolor="#eef1fb", color="#17266d"];
 student_notif [label="[Page] Notifications Page\nnotifications.html\nOwn notifications", style="filled,rounded", fillcolor="#eef1fb", color="#17266d"];
 student_profile [label="[Page] Profile Page\nprofile.html\nOwn account", style="filled,rounded", fillcolor="#eef1fb", color="#17266d"];

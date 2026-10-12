@@ -1,0 +1,69 @@
+{
+  "scope": "UX02 main app positive smoke + schema checks; no business mutations",
+  "mainSchema": {
+    "database": "refind_db_0_2_0",
+    "passed": true,
+    "checks": {
+      "table_names": true,
+      "views": true,
+      "columns_types_nullability": true,
+      "foreign_key_columns": true,
+      "unique_constraints": true,
+      "constraint_counts": true,
+      "hashed_accounts": true,
+      "no_implicit_profile_table": true,
+      "schema_fingerprint": true
+    },
+    "tables": 14,
+    "foreign_keys": 25,
+    "users": 3
+  },
+  "testSchema": {
+    "database": "refind_db_0_2_0_test",
+    "passed": true,
+    "checks": {
+      "table_names": true,
+      "views": true,
+      "columns_types_nullability": true,
+      "foreign_key_columns": true,
+      "unique_constraints": true,
+      "constraint_counts": true,
+      "hashed_accounts": true,
+      "no_implicit_profile_table": true,
+      "schema_fingerprint": true
+    },
+    "tables": 14,
+    "foreign_keys": 25,
+    "users": 3
+  },
+  "browserErrors": [],
+  "accounts": [
+    {
+      "email": "student-a@refind.test",
+      "role": "STUDENT",
+      "loginLogout": true
+    },
+    {
+      "email": "student-b@refind.test",
+      "role": "STUDENT",
+      "loginLogout": true
+    },
+    {
+      "email": "bm@refind.test",
+      "role": "BUILDING_MANAGEMENT",
+      "loginLogout": true
+    }
+  ],
+  "dataUnchanged": true,
+  "databaseCounts": {
+    "users": 3,
+    "items": 40,
+    "claims": 12,
+    "handovers": 6,
+    "notifications": 176,
+    "item_photos": 60,
+    "claim_photos": 12,
+    "users_fingerprint": "23acdc9cff4dac3d07fa057fb2426c474488155812f57f9880590b6a6d7ed4f2"
+  },
+  "passed": true
+}
