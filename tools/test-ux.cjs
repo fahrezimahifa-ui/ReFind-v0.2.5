@@ -1,8 +1,8 @@
 // UX01 real browser/HTTP acceptance. Fresh fixture actors and cleanup stay in owned _test.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto');
 const {execFileSync}=require('node:child_process');
-const edition=process.argv.includes('--ux02')?'ux02':'ux01';
-const root=path.resolve(__dirname,'..'),target=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php='C:\\xampp\\php\\php.exe',out=path.join(root,'docs','verification',edition);
+const edition=process.argv.includes('--v025')?'v025':process.argv.includes('--ux02')?'ux02':'ux01';
+const root=path.resolve(__dirname,'..'),target=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php='C:\\xampp\\php\\php.exe',out=edition==='v025'?path.join(root,'docs','verification','v025','ux'):path.join(root,'docs','verification',edition);
 assert.equal(JSON.parse(fs.readFileSync(path.join(target,'.refind-b02-test.json'))).source,root);
 const {chromium}=require(process.env.REFIND_PLAYWRIGHT_MODULE||path.join(os.tmpdir(),'opencode','refind-multipage-check','node_modules','playwright-core'));
 fs.mkdirSync(out,{recursive:true});
@@ -39,7 +39,7 @@ async function group(name,fn){await fn();results.push(name);console.log('PASS UX
     for(let index=0;index<25;index++)await claim(a,await found(b,'Other queued '+index));
     await pickup(bm,scheduled,'schedule',{pickup_location_id:'37',scheduled_at:future()});
     browser=await chromium.launch({executablePath:process.env.REFIND_CHROME||'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true});
-    const p=await logged(BM),owner=await logged(A);
+    const p=await logged(BM),owner=await logged(A),peerPage=await logged(BM2);
     await group('Search/filter clears stale action targets immediately and empty results have no decisions',async()=>{
       await go(p.page,'admin.html?tab=claims&claim='+idA);await p.page.fill('#bm-search',run+' Pending B');await exact(p.page,idB);assert.equal(await p.page.locator('[data-detail-claim-id="'+idA+'"]').count(),0);
       await p.page.fill('#bm-search','NoSuch'+run);await p.page.waitForFunction(()=>document.querySelector('#bm-queue-list').textContent.includes('Queue is clear'));assert.equal(await p.page.locator('[data-bm-action]').count(),0);
@@ -74,7 +74,7 @@ async function group(name,fn){await fn();results.push(name);console.log('PASS UX
       const data=await bm.ok('api/handovers.php?id='+scheduled),event=data.handovers[0].audit[0];assert.match(event.message,/Before:/);assert.equal(event.pickup_event.after.location,'Gedung C');assert.equal(event.pickup_event.operation,'schedule');
       await go(owner.page,'notifications.html');const note=owner.page.locator('.notification-card').filter({hasText:'Pickup scheduled'}).first();assert.match(await note.innerText(),/Gedung C/);assert.match(await note.innerText(),/WIB/);assert.ok(!(await note.innerText()).includes('location 37'));assert.ok(!(await note.innerText()).includes('Before: PENDING'));
       assert.ok(!JSON.stringify((await a.ok('api/items.php?id='+scheduledItem)).item.history).includes('Private '+run));assert.equal((await b.call('api/handovers.php?id='+scheduled)).status,404);
-      await go(p.page,'notifications.html');const staffNote=p.page.locator('.notification-card').filter({hasText:'Pickup scheduled'}).first();const nid=await staffNote.getAttribute('data-notification-id');assert.match(await staffNote.locator('a').getAttribute('href'),new RegExp('tab=handover&handover='+scheduled));await staffNote.locator('a').click();await p.page.waitForURL('**/admin.html?tab=handover&handover=*');assert.equal(await p.page.locator('[data-detail-handover-id]').getAttribute('data-detail-handover-id'),String(scheduled));assert.equal(Number(q('SELECT is_read FROM notifications WHERE notification_id=?',[Number(nid)]).rows[0].is_read),1);
+      await go(p.page,'notifications.html');assert.equal(await p.page.locator('.notification-card').filter({hasText:'Pickup scheduled'}).filter({hasText:run+' Scheduled appointment'}).count(),0);await go(peerPage.page,'notifications.html');const staffNote=peerPage.page.locator('.notification-card').filter({hasText:'Pickup scheduled'}).first();const nid=await staffNote.getAttribute('data-notification-id');assert.match(await staffNote.locator('a').getAttribute('href'),new RegExp('tab=handover&handover='+scheduled));await staffNote.locator('a').click();await peerPage.page.waitForURL('**/admin.html?tab=handover&handover=*');assert.equal(await peerPage.page.locator('[data-detail-handover-id]').getAttribute('data-detail-handover-id'),String(scheduled));assert.equal(Number(q('SELECT is_read FROM notifications WHERE notification_id=?',[Number(nid)]).rows[0].is_read),1);
     });
     await group('Optional custom upload disclosure works by keyboard and reveals errors/prepared photos',async()=>{
       await go(owner.page,'report.html?type=lost');assert.ok(await owner.page.evaluate(()=>document.querySelector('#report-submit').getBoundingClientRect().width>document.querySelector('.sticky-form-actions .btn-outline').getBoundingClientRect().width));assert.equal(await owner.page.locator('#public-photo-section').evaluate(e=>e.open),false);await owner.page.locator('#public-photo-section summary').focus();await owner.page.keyboard.press('Enter');assert.equal(await owner.page.locator('#public-photo-section').evaluate(e=>e.open),true);
@@ -101,7 +101,7 @@ async function group(name,fn){await fn();results.push(name);console.log('PASS UX
     await group('Reduced usable viewport keeps confirmation scrollable with explicit confirmation required',async()=>{
       await p.page.setViewportSize({width:390,height:420});await go(p.page,'admin.html?tab=claims&claim='+idB);await p.page.click('[data-bm-action="approved"]');assert.ok(await p.page.locator('#operation-dialog').evaluate(e=>{const r=e.getBoundingClientRect();return r.height<=innerHeight-32&&r.top>=0;}));await p.page.fill('#operation-note','Small viewport review note.');await p.page.check('#operation-confirm');await p.page.locator('#operation-submit').scrollIntoViewIfNeeded();assert.equal(await p.page.locator('#operation-submit').isEnabled(),true);await p.page.keyboard.press('Escape');
     });
-    if(edition==='ux02'){
+    if(['ux02','v025'].includes(edition)){
       const ownItem=(await a.ok('api/items.php',report('LOST','Own editable report'))).id;
       const pairLost=(await a.ok('api/items.php',report('LOST','Linked Lost'))).id,pairFound=await found(b,'Linked Found'),pairClaim=await claim(a,pairFound,pairLost);await review(bm,pairClaim,'approved');
       async function clickDestination(page,link,pathEnd,query={}){await link.click();await page.waitForURL(url=>url.pathname.endsWith('/'+pathEnd)&&Object.entries(query).every(([key,value])=>url.searchParams.get(key)===String(value)));await page.waitForSelector('body[data-ready="true"]');}
@@ -128,7 +128,7 @@ async function group(name,fn){await fn();results.push(name);console.log('PASS UX
         }
       });
     }
-    assert.deepEqual(browserErrors,[]);await p.context.close();await owner.context.close();
+    assert.deepEqual(browserErrors,[]);await p.context.close();await owner.context.close();await peerPage.context.close();
     const invariants=JSON.parse(execFileSync(php,[path.join(target,'tools','check-workflow.php')],{encoding:'utf8'}));assert.equal(invariants.passed,true);
     fs.writeFileSync(path.join(out,'ux-results.json'),JSON.stringify({scope:edition.toUpperCase()+' real isolated HTTP/browser selection, navigation, statuses, presentation/accessibility fixes',results,passed:results.length,complete:true,browserErrors,viewportChecks,contrastChecks,invariants,realDeviceKeyboard:'Manual check pending; reduced viewport simulated'},null,2)+'\n');
   }catch(e){fs.writeFileSync(path.join(out,'ux-results.json'),JSON.stringify({scope:edition.toUpperCase(),results,passed:results.length,complete:false,failure:String(e),browserErrors,viewportChecks,contrastChecks},null,2)+'\n');throw e;}

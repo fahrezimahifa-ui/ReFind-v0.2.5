@@ -10,7 +10,7 @@ const testRoot = path.resolve(root,'..','ReFind_0.2.0_Test');
 const base = 'http://localhost/ReFind_0.2.0_Test/';
 const php = 'C:\\xampp\\php\\php.exe';
 const {chromium} = require(process.env.REFIND_PLAYWRIGHT_MODULE || path.join(os.tmpdir(),'opencode','refind-multipage-check','node_modules','playwright-core'));
-const out = path.join(root,'docs','verification','b03');
+const out = process.env.REFIND_EVIDENCE_BATCH ? path.join(root,'docs','verification',process.env.REFIND_EVIDENCE_BATCH,'account') : path.join(root,'docs','verification','b03');
 assert.ok(fs.existsSync(path.join(testRoot,'.refind-b02-test.json')));
 fs.mkdirSync(out,{recursive:true});
 const run = 'B03-' + Date.now().toString(36);

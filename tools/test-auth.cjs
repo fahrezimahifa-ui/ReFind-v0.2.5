@@ -9,7 +9,7 @@ const testRoot = path.resolve(root, '..', 'ReFind_0.2.0_Test');
 const base = 'http://localhost/ReFind_0.2.0_Test/';
 const php = 'C:\\xampp\\php\\php.exe';
 const {chromium} = require(process.env.REFIND_PLAYWRIGHT_MODULE || path.join(os.tmpdir(), 'opencode', 'refind-multipage-check', 'node_modules', 'playwright-core'));
-const out = path.join(root, 'docs', 'verification', 'b02');
+const out = process.env.REFIND_EVIDENCE_BATCH ? path.join(root, 'docs', 'verification', process.env.REFIND_EVIDENCE_BATCH, 'auth') : path.join(root, 'docs', 'verification', 'b02');
 assert.ok(fs.existsSync(testRoot) && fs.existsSync(path.join(testRoot, '.refind-b02-test.json')));
 assert.equal(new URL(base).pathname, '/ReFind_0.2.0_Test/');
 fs.mkdirSync(out, {recursive: true});
@@ -171,7 +171,7 @@ function seedFixtures() {
     });
     await test('Public projections omit evidence/clue/email/NIM and private photos require BM', async () => {
       const projection = await second.call('api/items.php?id=' + f.lost); assert.ok(!projection.text.includes('PRIVATE-CLUE') && !projection.text.includes('verification_clue') && !projection.text.includes('ownership_photo') && !projection.text.includes(A.email) && !projection.text.includes(A.student_id));
-      const guest = new Session(); assert.equal((await guest.call('api/photos.php?kind=item&id=' + f.publicPhoto.id)).status, 200);
+      const guest = new Session(); assert.equal((await guest.call('api/photos.php?kind=item&id=' + f.publicPhoto.id)).status, 401);
       assert.equal((await guest.call('api/photos.php?kind=item&id=' + f.privatePhoto.id)).status, 401);
       assert.equal((await student.call('api/photos.php?kind=item&id=' + f.privatePhoto.id)).status, 403);
       assert.equal((await second.call('api/photos.php?kind=claim&id=' + f.claimPhoto.id)).status, 403);
@@ -186,7 +186,8 @@ function seedFixtures() {
     });
     await test('Mismatched public photo metadata cannot expose evidence/claim storage', async () => {
       const malformed = query("INSERT INTO item_photos(item_id,photo_kind,file_path) VALUES (?,'ITEM',?)", [Number(f.lost), f.privatePhoto.path]).id;
-      const guest = new Session(); assert.equal((await guest.call('api/photos.php?kind=item&id=' + malformed)).status, 404);
+      const guest = new Session(); assert.equal((await guest.call('api/photos.php?kind=item&id=' + malformed)).status, 401);
+      assert.equal((await second.call('api/photos.php?kind=item&id=' + malformed)).status, 404);
       query('DELETE FROM item_photos WHERE photo_id=?', [Number(malformed)]);
     });
     await test('Direct internal/config/storage/tool paths and traversal attempts are blocked', async () => {

@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT.with_name('ReFind_0.2.0_Test')
 MARKER = TARGET / '.refind-b02-test.json'
 FOLDERS = ['app', 'api', 'css', 'js', 'assets', 'vendor', 'database', 'docs', 'tools/demo-photos']
-FILES = ['.htaccess', 'page.php', 'tools/.htaccess', 'tools/setup-db.php', 'tools/setup-demo.php', 'tools/b02-fixture.php', 'tools/check-database.php', 'tools/check-workflow.php', 'tools/seed-student-demo.php', 'tools/seed-expanded-demo.php', 'tools/demo-summary.php']
+FILES = ['.htaccess', 'page.php', 'tools/.htaccess', 'tools/setup-db.php', 'tools/setup-demo.php', 'tools/b02-fixture.php', 'tools/check-database.php', 'tools/check-workflow.php', 'tools/seed-student-demo.php', 'tools/seed-expanded-demo.php', 'tools/demo-summary.php', 'tools/refresh-matches.php']
 
 if not ROOT.parent.is_dir() or TARGET.name != 'ReFind_0.2.0_Test':
     raise RuntimeError('Unexpected test parent/name')
