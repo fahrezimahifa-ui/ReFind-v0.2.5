@@ -3,6 +3,8 @@ require __DIR__ . '/bootstrap.php';
 method('GET'); allowed_fields($_GET, ['kind', 'id']);
 $id = record_id($_GET['id'] ?? null);
 if (($_GET['kind'] ?? '') === 'item') {
+    // Report pages are for signed-in users only, so their public photos are too.
+    request_user();
     $photo = row('SELECT file_path, photo_kind FROM item_photos WHERE photo_id = ?', [$id]);
     if ($photo && $photo['photo_kind'] === 'OWNERSHIP') request_user('BUILDING_MANAGEMENT');
     $collection = ($photo['photo_kind'] ?? '') === 'OWNERSHIP' ? 'evidence' : 'items';

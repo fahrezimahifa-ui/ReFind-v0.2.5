@@ -4,7 +4,7 @@ require __DIR__ . '/../app/reports.php';
 method('GET', 'POST');
 $post = $_SERVER['REQUEST_METHOD'] === 'POST';
 $user = request_user($post ? 'STUDENT' : null, $post);
-allowed_fields($_GET, ['id','mine','editable','q','type','category_id','location_id','status','date','closed','page','limit']);
+allowed_fields($_GET, ['id','mine','editable','q','type','category_id','location_id','status','date','closed','active','page','limit']);
 if ($post) {
     $result=mutate_report($user,$_POST);
     json_response($result,$result['action']==='create'?201:200);
@@ -20,6 +20,7 @@ foreach (['category_id','location_id'] as $key) if (isset($_GET[$key])&&$_GET[$k
 if (isset($_GET['status'])&&$_GET['status']!=='') {$status=strtoupper(text($_GET,'status',40));if (!row('SELECT status_id FROM item_statuses WHERE status_code=?',[$status])) fail('Invalid status filter.',400);$where[]='v.status_code=?';$values[]=$status;}
 if (isset($_GET['date'])&&$_GET['date']!=='') {$where[]='v.event_date=?';$values[]=valid_event_date(text($_GET,'date',10));}
 if (isset($_GET['closed'])) {if ($_GET['closed']!=='1') fail('Invalid archive filter.',400);$where[]="v.status_code IN ('RESOLVED','UNCLAIMED_CLOSED')";}
+if (isset($_GET['active'])) {if ($_GET['active']!=='1'||isset($_GET['closed'])) fail('Invalid active filter.',400);$where[]="v.status_code NOT IN ('RESOLVED','UNCLAIMED_CLOSED')";}
 if (isset($_GET['q'])) {$q=text($_GET,'q',200,false);if ($q!=='') {$where[]="LOCATE(?,CONCAT_WS(' ',v.title,v.description,v.category_name,v.location_name,v.location_detail,v.floor_name))>0";$values[]=$q;}}
 $clause=$where?' WHERE '.implode(' AND ',$where):'';
 [$page,$limit,$offset]=pagination($_GET);
@@ -35,7 +36,7 @@ if (isset($_GET['editable'])) {
 }
 if (isset($_GET['id'])) {
     $id=record_id($_GET['id']);
-    $items[0]['history']=array_map(fn($h)=>['status_code'=>$h['status_code'],'status_name'=>$h['status_name'],'at'=>utc_iso($h['changed_at']),'note'=>$h['note']],rows('SELECT s.status_code,s.status_name,h.changed_at,h.note FROM item_status_history h JOIN item_statuses s ON s.status_id=h.status_id WHERE h.item_id=? ORDER BY h.changed_at,h.history_id',[$id]));
+    $items[0]['history']=array_map(fn($h)=>['status_code'=>$h['status_code'],'status_name'=>ui_status_name($h['status_code']),'at'=>utc_iso($h['changed_at']),'note'=>$h['note']],rows('SELECT s.status_code,s.status_name,h.changed_at,h.note FROM item_status_history h JOIN item_statuses s ON s.status_id=h.status_id WHERE h.item_id=? ORDER BY h.changed_at,h.history_id',[$id]));
     $items[0]['matches']=$items[0]['matched_item_id']||in_array($items[0]['status_code'],['RESOLVED','UNCLAIMED_CLOSED'],true)?[]:possible_matches($id,$user);
     json_response(['item'=>$items[0]]);
 }

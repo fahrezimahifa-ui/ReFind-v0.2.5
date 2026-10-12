@@ -6,7 +6,7 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST';
 $user = request_user($post ? 'STUDENT' : null, $post);
 allowed_fields($_GET, ['id','itemId','page','limit']);
 if ($post) {
-    $result=mutate_claim($user,$_POST);json_response($result,$result['resubmitted']?200:201);
+    $result=mutate_claim($user,$_POST);json_response($result,$result['resubmitted']||isset($result['status'])?200:201);
 }
 $where = []; $values = [];
 if ($user['role'] === 'STUDENT') { $where[] = 'c.claimant_user_id = ?'; $values[] = (int) $user['user_id']; }
@@ -23,6 +23,8 @@ foreach ($claims as &$claim) {
     $claim['ownership_photo_count']=count($photos);$claim['ownership_photo_ids']=array_column($photos,'claim_photo_id');
     if ($user['role']==='BUILDING_MANAGEMENT') $claim['ownership_photos']=array_map(fn($p)=>app_config()['base_path'].'api/photos.php?kind=claim&id='.$p['claim_photo_id'],$photos);
     foreach (['created_at','updated_at','reviewed_at'] as $key) $claim[$key]=utc_iso($claim[$key]);
-    $item=find_item((int)$claim['item_id']);$claim['can_resubmit']=in_array($claim['claim_status'],['NEED_MORE_INFO','REJECTED','WITHDRAWN'],true)&&in_array($item['status_code'],ACTIVE_ITEM_CODES,true)&&!confirmed_match((int)$item['item_id']);
+    $item=find_item((int)$claim['item_id']);$open=in_array($item['status_code'],ACTIVE_ITEM_CODES,true)&&!confirmed_match((int)$item['item_id']);
+    $claim['can_resubmit']=in_array($claim['claim_status'],RESUBMITTABLE_CLAIM_CODES,true)&&$open;
+    $claim['can_withdraw']=$user['role']==='STUDENT'&&in_array($claim['claim_status'],['PENDING','NEED_MORE_INFO'],true);
 }unset($claim);
 json_response(['claims'=>$claims,'total'=>$total,'page'=>$page,'pages'=>max(1,(int)ceil($total/$limit))]);

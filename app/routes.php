@@ -39,8 +39,9 @@ function safe_return(mixed $value, ?array $user = null): string
     $clean = [];
     foreach ($query as $key => $v) {
         if (!is_string($v) || preg_match('/[\x00-\x1f\x7f]/', $v)) return $fallback;
-        if (in_array($key, ['id', 'edit', 'claim','report','handover','category_id','location_id','page'], true) && preg_match('/^[1-9][0-9]{0,9}$/D', $v) && (float) $v <= 4294967295) $clean[$key] = $v;
+        if (in_array($key, ['id', 'edit', 'claim','report','handover','category_id','location_id','page','from'], true) && preg_match('/^[1-9][0-9]{0,9}$/D', $v) && (float) $v <= 4294967295) $clean[$key] = $v;
         elseif ($key === 'tab' && in_array($v, ['reports', 'claims', 'handover','closed'], true)) $clean[$key] = $v;
+        elseif ($key === 'view' && in_array($v, ['all', 'returned', 'unclaimed', 'lost', 'found'], true)) $clean[$key] = $v;
         elseif ($key === 'type' && in_array(strtolower($v), ['lost', 'found'], true)) $clean[$key] = strtolower($v);
         elseif (in_array($key, ['q', 'category', 'location', 'status', 'date'], true) && mb_check_encoding($v, 'UTF-8') && mb_strlen($v) <= 200) $clean[$key] = $v;
         else return $fallback;

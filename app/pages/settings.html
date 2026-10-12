@@ -20,17 +20,17 @@
         <form id="password-form" novalidate>
           <fieldset id="password-fields" disabled>
             <div class="field"><label for="current-password">Current password</label><input class="form-control" id="current-password" type="password" autocomplete="current-password" required aria-describedby="current-password-error"><span class="field-error" id="current-password-error" hidden></span></div>
-            <div class="field"><label for="new-password">New password</label><input class="form-control" id="new-password" type="password" autocomplete="new-password" required aria-describedby="password-policy new-password-error"><span class="policy-count" id="password-policy" aria-live="polite">At least 10 characters; maximum 72 UTF-8 bytes.</span><span class="field-error" id="new-password-error" hidden></span></div>
+            <div class="field"><label for="new-password">New password</label><input class="form-control" id="new-password" type="password" autocomplete="new-password" required aria-describedby="password-policy new-password-error"><span class="policy-count" id="password-policy" aria-live="polite">Use at least 10 characters.</span><span class="field-error" id="new-password-error" hidden></span></div>
             <div class="field"><label for="confirm-password">Confirm new password</label><input class="form-control" id="confirm-password" type="password" autocomplete="new-password" required aria-describedby="confirm-password-error"><span class="field-error" id="confirm-password-error" hidden></span></div>
             <div class="account-actions"><button class="btn btn-primary" id="password-save" type="submit">Update password</button></div>
           </fieldset>
           <div class="feedback" id="password-feedback" role="status" tabindex="-1" hidden></div>
         </form>
-        <p class="account-help">Passwords are not trimmed. A changed password replaces the original demo credential; the initial setup receipt is not updated.</p>
+        <p class="account-help">Spaces at the start or end of a password count. After a change, use the new password every time you log in.</p>
       </section>
     </div>
   </main>
-  <footer class="footer">ReFind 0.2.0 · Account security</footer>
+  <footer class="footer">ReFind 0.2.5 · Account security</footer>
   <script src="vendor/jquery.min.js"></script><script src="js/api.js"></script><script src="js/shell.js"></script><script src="js/account-ui.js"></script>
 </body>
 </html>

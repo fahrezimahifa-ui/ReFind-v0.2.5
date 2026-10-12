@@ -3,6 +3,16 @@ declare(strict_types=1);
 require_once __DIR__ . '/policies.php';
 
 const ACTIVE_ITEM_CODES = ['OPEN', 'UNDER_REVIEW', 'POTENTIAL_MATCH', 'VERIFICATION'];
+const MATCH_THRESHOLD = 55;
+function ui_status_name(string $code): string
+{
+    return ['OPEN' => 'Reported', 'UNDER_REVIEW' => 'Under review', 'POTENTIAL_MATCH' => 'Possible match', 'VERIFICATION' => 'Claim review',
+        'HANDOVER' => 'Ready for pickup', 'RESOLVED' => 'Returned', 'UNCLAIMED_CLOSED' => 'Never retrieved'][$code] ?? $code;
+}
+function campus_today(): string
+{
+    return (new DateTimeImmutable('now', new DateTimeZone('Asia/Jakarta')))->format('Y-m-d');
+}
 function utc_iso(?string $value): ?string
 {
     return $value === null ? null : (new DateTimeImmutable($value, new DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
@@ -27,16 +37,27 @@ function history_event(array $item, int $actorId, string $note): void
 {
     sql('INSERT INTO item_status_history(item_id,status_id,changed_by_user_id,note) VALUES (?,?,?,?)', [(int) $item['item_id'], (int) $item['status_id'], $actorId, mb_substr($note, 0, 500)]);
 }
-function status_change(array &$item, string $code, int $actorId, string $note): void
+function status_change(array &$item, string $code, int $actorId, string $note, bool $notify = true): void
 {
     if ($item['status_code'] === $code) return;
-    $status = row('SELECT status_id,status_name FROM item_statuses WHERE status_code=?', [$code]);
+    $status = row('SELECT status_id FROM item_statuses WHERE status_code=?', [$code]);
     if (!$status) throw new RuntimeException('Unknown status.');
     $resolved = in_array($code, ['RESOLVED', 'UNCLAIMED_CLOSED'], true) ? gmdate('Y-m-d H:i:s') : null;
     sql('UPDATE items SET status_id=?,resolved_at=? WHERE item_id=?', [(int) $status['status_id'], $resolved, (int) $item['item_id']]);
     $item['status_id'] = $status['status_id']; $item['status_code'] = $code;
     history_event($item, $actorId, $note);
-    notification((int) $item['reporter_user_id'], 'STATUS_CHANGED', $status['status_name'], 'Your report was updated to ' . $status['status_name'] . '.', (int) $item['item_id']);
+    if (!$notify) return;
+    if ($code === 'POTENTIAL_MATCH') notification((int) $item['reporter_user_id'], 'STATUS_CHANGED', 'Possible match found', 'A report that may match yours was added. Open it to compare the details; ownership is not verified yet.', (int) $item['item_id']);
+    else notification((int) $item['reporter_user_id'], 'STATUS_CHANGED', ui_status_name($code), 'Your report is now: ' . ui_status_name($code) . '.', (int) $item['item_id']);
+}
+function has_suggestion(int $id): bool
+{
+    return (bool) row("SELECT match_id FROM item_matches WHERE match_status='SUGGESTED' AND (lost_item_id=? OR found_item_id=?) LIMIT 1", [$id, $id]);
+}
+// Moves an active report back to its idle state once no claim is reviewing it.
+function settle_idle_status(array &$item, int $actorId, string $note, bool $notify = false): void
+{
+    status_change($item, has_suggestion((int) $item['item_id']) ? 'POTENTIAL_MATCH' : 'OPEN', $actorId, $note, $notify);
 }
 function matching_words(string $text): array
 {
@@ -45,31 +66,43 @@ function matching_words(string $text): array
 }
 function match_score(array $first, array $second): int
 {
-    $score = (int) $first['category_id'] === (int) $second['category_id'] ? 30 : 0;
-    if ($first['location_id'] && (int) $first['location_id'] === (int) $second['location_id']) $score += 30;
-    $score += min(25, count(array_intersect(matching_words($first['title'] . ' ' . $first['description']), matching_words($second['title'] . ' ' . $second['description']))) * 5);
-    $days = abs((new DateTimeImmutable($first['event_date']))->diff(new DateTimeImmutable($second['event_date']))->days);
+    $score = (int) $first['category_id'] === (int) $second['category_id'] ? 25 : 0;
+    if ($first['location_id'] && (int) $first['location_id'] === (int) $second['location_id']) $score += 25;
+    $score += min(35, count(array_intersect(matching_words($first['title'] . ' ' . $first['description']), matching_words($second['title'] . ' ' . $second['description']))) * 7);
+    $days = (new DateTimeImmutable($first['event_date']))->diff(new DateTimeImmutable($second['event_date']))->days;
     $score += $days <= 2 ? 15 : ($days <= 7 ? 10 : ($days <= 14 ? 5 : 0));
     return min(100, $score);
+}
+// A suggestion needs two different reporters, the same category, and a Found date no earlier than the day before the loss.
+function suggestion_score(array $lost, array $found): ?int
+{
+    if ((int) $lost['reporter_user_id'] === (int) $found['reporter_user_id'] || (int) $lost['category_id'] !== (int) $found['category_id']) return null;
+    if ((new DateTimeImmutable($found['event_date'])) < (new DateTimeImmutable($lost['event_date']))->modify('-1 day')) return null;
+    $score = match_score($lost, $found);
+    return $score >= MATCH_THRESHOLD ? $score : null;
 }
 function refresh_suggestions(array $item, array &$locked, int $actor): void
 {
     $id = (int) $item['item_id'];
     sql("DELETE FROM item_matches WHERE match_status='SUGGESTED' AND (lost_item_id=? OR found_item_id=?)", [$id, $id]);
+    $paired = [];
     if (in_array($item['status_code'], ACTIVE_ITEM_CODES, true) && !confirmed_match($id)) {
         foreach ($locked as $candidate) {
             if ((int) $candidate['item_id'] === $id || $candidate['item_type'] === $item['item_type'] || !in_array($candidate['status_code'], ACTIVE_ITEM_CODES, true) || confirmed_match((int) $candidate['item_id'])) continue;
-            $score = match_score($item, $candidate);
-            if ($score < 35) continue;
             $lost = $item['item_type'] === 'LOST' ? $item : $candidate;
             $found = $item['item_type'] === 'FOUND' ? $item : $candidate;
+            $score = suggestion_score($lost, $found);
+            if ($score === null) continue;
             sql("INSERT INTO item_matches(lost_item_id,found_item_id,match_score) VALUES (?,?,?) ON DUPLICATE KEY UPDATE match_score=IF(match_status='SUGGESTED',VALUES(match_score),match_score)", [(int) $lost['item_id'], (int) $found['item_id'], $score]);
+            $paired[(int) $candidate['item_id']] = true;
         }
     }
     foreach ($locked as &$report) {
         if (!in_array($report['status_code'], ['OPEN','POTENTIAL_MATCH'], true) || confirmed_match((int) $report['item_id'])) continue;
-        $has = row("SELECT match_id FROM item_matches WHERE match_status='SUGGESTED' AND (lost_item_id=? OR found_item_id=?) LIMIT 1", [(int) $report['item_id'], (int) $report['item_id']]);
-        status_change($report, $has ? 'POTENTIAL_MATCH' : 'OPEN', $actor, $has ? 'Rule-based possible matches are available. Ownership is not verified.' : 'No current matching suggestions.');
+        $has = has_suggestion((int) $report['item_id']);
+        // Only a new pairing involving this save is worth a notification; losing a suggestion is silent.
+        $notify = $has && ((int) $report['item_id'] === $id || isset($paired[(int) $report['item_id']]));
+        status_change($report, $has ? 'POTENTIAL_MATCH' : 'OPEN', $actor, $has ? 'Rule-based possible matches are available. Ownership is not verified.' : 'No current matching suggestions.', $notify);
     }
     unset($report);
 }
@@ -84,11 +117,15 @@ function safe_item(array $record, array $user): array
     $match = confirmed_match($id);
     $record['matched_item_id'] = $match ? (string) ((int) $match['lost_item_id'] === $id ? $match['found_item_id'] : $match['lost_item_id']) : null;
     $own = $record['reporter_user_id'] === $user['user_id'];
-    $related = row('SELECT claim_id FROM claims WHERE item_id=? OR related_lost_item_id=? LIMIT 1', [$id, $id]);
+    $related = active_claim_for_report($id);
+    $active = in_array($record['status_code'], ACTIVE_ITEM_CODES, true);
     $record['can_edit'] = $user['role'] === 'STUDENT' && $own && !$related && !$match && in_array($record['status_code'], ['OPEN','POTENTIAL_MATCH'], true);
+    if ($user['role'] === 'STUDENT' && $own && !$record['can_edit'] && in_array($record['status_code'], ['OPEN','POTENTIAL_MATCH','VERIFICATION','UNDER_REVIEW'], true))
+        $record['edit_locked_reason'] = $related ? 'Editing is paused while a claim that uses this report is being reviewed.' : 'Building Management is reviewing this report, so it cannot be edited right now.';
     $claim = $user['role'] === 'STUDENT' ? row('SELECT claim_id,claim_status,review_note FROM claims WHERE item_id=? AND claimant_user_id=?', [$id, (int) $user['user_id']]) : null;
     $record['own_claim'] = $claim;
-    $record['can_claim'] = $user['role'] === 'STUDENT' && !$own && !$match && $record['item_type'] === 'FOUND' && in_array($record['status_code'], ACTIVE_ITEM_CODES, true) && (!$claim || in_array($claim['claim_status'], ['NEED_MORE_INFO','REJECTED','WITHDRAWN'], true));
+    $record['can_claim'] = $user['role'] === 'STUDENT' && !$own && !$match && $record['item_type'] === 'FOUND' && $active && (!$claim || in_array($claim['claim_status'], RESUBMITTABLE_CLAIM_CODES, true));
+    $record['can_report_found'] = $user['role'] === 'STUDENT' && !$own && !$match && $record['item_type'] === 'LOST' && $active;
     if ($own) $record['ownership_photo_count'] = (int) row("SELECT COUNT(*) AS n FROM item_photos WHERE item_id=? AND photo_kind='OWNERSHIP'", [$id])['n'];
     if (isset($record['created_at'])) $record['created_at'] = utc_iso($record['created_at']);
     if (isset($record['resolved_at'])) $record['resolved_at'] = utc_iso($record['resolved_at']);
@@ -100,7 +137,8 @@ function public_columns(): string
 }
 function possible_matches(int $id, array $user): array
 {
-    $records = rows("SELECT " . public_columns() . ",m.match_score FROM item_matches m JOIN v_items_overview v ON v.item_id=IF(m.lost_item_id=?,m.found_item_id,m.lost_item_id) WHERE (m.lost_item_id=? OR m.found_item_id=?) AND m.match_status='SUGGESTED' AND v.status_code IN ('OPEN','UNDER_REVIEW','POTENTIAL_MATCH','VERIFICATION') AND NOT EXISTS(SELECT 1 FROM item_matches c WHERE c.match_status='CONFIRMED' AND (c.lost_item_id=v.item_id OR c.found_item_id=v.item_id)) ORDER BY m.match_score DESC,v.item_id LIMIT 6", [$id,$id,$id]);
+    // Pairs stored before v0.2.5 may still name the same reporter or another category; never show them.
+    $records = rows("SELECT " . public_columns() . ",m.match_score FROM item_matches m JOIN items self ON self.item_id=? JOIN v_items_overview v ON v.item_id=IF(m.lost_item_id=?,m.found_item_id,m.lost_item_id) WHERE (m.lost_item_id=? OR m.found_item_id=?) AND m.match_status='SUGGESTED' AND v.reporter_user_id<>self.reporter_user_id AND v.category_id=self.category_id AND v.status_code IN ('OPEN','UNDER_REVIEW','POTENTIAL_MATCH','VERIFICATION') AND NOT EXISTS(SELECT 1 FROM item_matches c WHERE c.match_status='CONFIRMED' AND (c.lost_item_id=v.item_id OR c.found_item_id=v.item_id)) ORDER BY m.match_score DESC,v.item_id LIMIT 6", [$id,$id,$id,$id]);
     return array_map(fn($r) => safe_item($r, $user), $records);
 }
 function pagination(array $query, int $default = 12): array

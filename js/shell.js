@@ -21,7 +21,8 @@ window.ReFindShell = (() => {
   }
   function setNavigation(open, focus = false) {
     $('#nav-content').prop('hidden', mobile.matches && !open);
-    $('#nav-toggle').attr({'aria-expanded': String(mobile.matches && open), 'aria-label': open ? 'Close navigation' : 'Open navigation'});
+    const unread = Number($('#menu-unread').text()) || 0;
+    $('#nav-toggle').attr({'aria-expanded': String(mobile.matches && open), 'aria-label': (open ? 'Close navigation' : 'Open navigation') + (unread ? ', ' + unread + ' unread notifications' : '')});
     if (!open) setAccount(false);
     if (focus) $('#nav-toggle').trigger('focus');
   }
@@ -37,28 +38,32 @@ window.ReFindShell = (() => {
     $('#account-toggle').prop('disabled', !user);
     $('[data-auth-nav]').prop('hidden',!user);
     $('[data-student-nav]').prop('hidden',!user||bm);
-    $('[data-bm-nav]').prop('hidden',!user||!bm);
     $('[data-shell-user-name]').text(user?.name || '');
     $('[data-shell-role]').text(bm ? 'Building Management' : 'Student');
     $('[data-account-initials]').text(user ? initials(user.name) : '');
     const page = document.body.dataset.page;
-    const bmTab=new URLSearchParams(location.search).get('tab')||'claims';
-    $('#nav-home').attr('aria-current', page === 'home' || page === 'bm'&&bmTab!=='handover' ? 'page' : null);
-    $('[data-main-nav]').each(function(){const current=$(this).attr('data-main-nav');$(this).attr('aria-current',current===page||(page==='item'||page==='claim')&&current==='browse'||page==='bm'&&bmTab==='handover'&&current==='handover'?'page':null);});
+    $('#nav-home').attr('aria-current', page === 'home' || page === 'bm' ? 'page' : null);
+    $('[data-main-nav]').each(function(){const current=$(this).attr('data-main-nav');$(this).attr('aria-current',current===page||(page==='item'||page==='claim')&&current==='browse'?'page':null);});
     $('[data-account-nav]').each(function () {
       const active = $(this).attr('data-account-nav') === page;
       $(this).attr('aria-current', active ? 'page' : null);
     });
   }
   function reportError(message) { $('#shell-feedback').removeClass('success').attr('role','alert').text(message).prop('hidden',false); }
+  // The badge sits on the Notifications link; a copy on the Menu button keeps it visible on phones.
+  function setUnread(count) {
+    const value = Number(count) || 0;
+    $('#nav-unread').text(value).attr('aria-label', value + ' unread').prop('hidden', value === 0);
+    $('#menu-unread').text(value).prop('hidden', value === 0);
+    $('#nav-toggle').attr('aria-label', ($('#nav-toggle').attr('aria-expanded') === 'true' ? 'Close navigation' : 'Open navigation') + (value ? ', ' + value + ' unread notifications' : ''));
+  }
   async function refreshUnread() {
-    if (!app.state.user) { $('#nav-unread').prop('hidden',true); return; }
+    if (!app.state.user) { setUnread(0); return; }
     try {
-      const data = await app.request('notifications.php');
-      const count = data.unread_count ?? data.notifications.filter(n => !Number(n.is_read)).length;
-      $('#nav-unread').text(count).attr('aria-label', count + ' unread updates').prop('hidden', count === 0);
+      const data = await app.request('notifications.php?count=1');
+      setUnread(data.unread_count);
     } catch (e) {
-      $('#nav-unread').prop('hidden',true);
+      setUnread(0);
       if (e.status === 401 && document.body.dataset.requiresAuth === 'true') window.location.replace(app.loginUrl());
     }
   }
@@ -103,5 +108,5 @@ window.ReFindShell = (() => {
   }));
   // Handle the rejected bootstrap even when a page has no additional controller.
   ready.catch(() => {});
-  return {ready, updateUser, refreshUnread, reportError, setAccount, setNavigation};
+  return {ready, updateUser, refreshUnread, setUnread, reportError, setAccount, setNavigation};
 })();

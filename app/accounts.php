@@ -20,8 +20,9 @@ function profile_name(array $data): string
 function account_password(array $data, string $key, bool $new = false): string
 {
     $password = $data[$key] ?? '';
-    if (!is_string($password) || !mb_check_encoding($password, 'UTF-8') || $password === '' || str_contains($password, "\0") || strlen($password) > 72) {
-        field_fail($key, 'Enter a valid password of at most 72 UTF-8 bytes.');
+    if ($password === '') field_fail($key, str_contains($key, 'current') ? 'Enter your current password.' : (str_contains($key, 'confirm') ? 'Repeat the new password.' : 'Enter a new password.'));
+    if (!is_string($password) || !mb_check_encoding($password, 'UTF-8') || str_contains($password, "\0") || strlen($password) > 72) {
+        field_fail($key, 'This password is too long. Use at most 72 bytes; emoji and accented letters count as more than one.');
     }
     if ($new && mb_strlen($password) < 10) field_fail($key, 'Use at least 10 characters for the new password.');
     return $password; // Preserve leading/trailing spaces: passwords are never trimmed.

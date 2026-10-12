@@ -16,6 +16,7 @@ try{
   'completed_handover'=>"SELECT h.handover_id FROM handovers h JOIN claims c ON c.claim_id=h.claim_id JOIN items i ON i.item_id=c.item_id WHERE h.handover_status='COMPLETED' AND (c.claim_status<>'APPROVED' OR i.status_id<>6 OR h.completed_at IS NULL OR i.resolved_at IS NULL)",
   'latest_history_status'=>'SELECT i.item_id FROM items i WHERE i.status_id<>COALESCE((SELECT h.status_id FROM item_status_history h WHERE h.item_id=i.item_id ORDER BY h.changed_at DESC,h.history_id DESC LIMIT 1),0)',
   'handover_approved_claim'=>"SELECT h.handover_id FROM handovers h JOIN claims c ON c.claim_id=h.claim_id WHERE c.claim_status<>'APPROVED'",
+  'one_active_claim_per_lost'=>"SELECT related_lost_item_id FROM claims WHERE related_lost_item_id IS NOT NULL AND claim_status IN ('PENDING','NEED_MORE_INFO') GROUP BY related_lost_item_id HAVING COUNT(*)>1",
   'scheduled_pickup_timestamp'=>"SELECT handover_id FROM handovers WHERE (handover_status='SCHEDULED' AND scheduled_at IS NULL) OR (handover_status='PENDING' AND scheduled_at IS NOT NULL)",
   'active_claim_not_assigned'=>"SELECT c.claim_id FROM claims c JOIN items i ON i.item_id=c.item_id JOIN item_statuses s ON s.status_id=i.status_id WHERE c.claim_status IN ('PENDING','NEED_MORE_INFO') AND s.status_code IN ('HANDOVER','RESOLVED','UNCLAIMED_CLOSED')",
  ];$checks=[];foreach($queries as $name=>$query)$checks[$name]=!rows($query);

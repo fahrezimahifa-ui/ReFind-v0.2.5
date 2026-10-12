@@ -59,7 +59,7 @@ function settle_potential_states(array &$locked,int $actor): void
 {
     foreach($locked as &$item) {
         if($item['status_code']!=='POTENTIAL_MATCH'||confirmed_match((int)$item['item_id']))continue;
-        if(!row("SELECT match_id FROM item_matches WHERE match_status='SUGGESTED' AND (lost_item_id=? OR found_item_id=?) LIMIT 1",[(int)$item['item_id'],(int)$item['item_id']])) status_change($item,'OPEN',$actor,'No current matching suggestions.');
+        if(!has_suggestion((int)$item['item_id'])) status_change($item,'OPEN',$actor,'No current matching suggestions.',false);
     }unset($item);
 }
 function review_claim(array $user,array $data): array
@@ -72,6 +72,10 @@ function review_claim(array $user,array $data): array
         $original=row('SELECT item_id,related_lost_item_id FROM claims WHERE claim_id=?',[$id]);
         if(!$original)fail('Claim not found.',404,'not_found');
         $ids=[(int)$original['item_id']];if($original['related_lost_item_id'])$ids[]=(int)$original['related_lost_item_id'];
+        // Older data can hold other claims that reuse this Lost report; approval closes them, so their Found reports are locked too.
+        $sharedSql="SELECT claim_id,item_id,claimant_user_id FROM claims WHERE related_lost_item_id=? AND claim_id<>? AND claim_status IN ('PENDING','NEED_MORE_INFO') ORDER BY claim_id";
+        $shared=$decision==='approved'&&$original['related_lost_item_id']?rows($sharedSql,[(int)$original['related_lost_item_id'],$id]):[];
+        foreach($shared as $other)$ids[]=(int)$other['item_id'];
         $ids=matching_related_ids($ids);db()->begin_transaction();
         try{
             $locked=lock_items($ids);$claim=row('SELECT * FROM claims WHERE claim_id=? FOR UPDATE',[$id]);
@@ -90,18 +94,32 @@ function review_claim(array $user,array $data): array
             }
             sql('UPDATE claims SET claim_status=?,reviewed_by_user_id=?,review_note=?,reviewed_at=UTC_TIMESTAMP() WHERE claim_id=?',[$status,(int)$user['user_id'],$note,$id]);
             if($decision==='approved'){
-                if($lostId){$lost=&$locked[$lostId];sql("INSERT INTO item_matches(lost_item_id,found_item_id,match_score,match_status,confirmed_by_user_id,confirmed_at) VALUES (?,?,?,'CONFIRMED',?,UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE match_score=VALUES(match_score),match_status='CONFIRMED',confirmed_by_user_id=VALUES(confirmed_by_user_id),confirmed_at=VALUES(confirmed_at)",[$lostId,$foundId,match_score($lost,$found),(int)$user['user_id']]);status_change($lost,'HANDOVER',(int)$user['user_id'],'Ownership verified; matched item is ready for pickup.');unset($lost);}
+                if($lostId){$lost=&$locked[$lostId];sql("INSERT INTO item_matches(lost_item_id,found_item_id,match_score,match_status,confirmed_by_user_id,confirmed_at) VALUES (?,?,?,'CONFIRMED',?,UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE match_score=VALUES(match_score),match_status='CONFIRMED',confirmed_by_user_id=VALUES(confirmed_by_user_id),confirmed_at=VALUES(confirmed_at)",[$lostId,$foundId,match_score($lost,$found),(int)$user['user_id']]);status_change($lost,'HANDOVER',(int)$user['user_id'],'Ownership verified; matched item is ready for pickup.',false);unset($lost);}
                 status_change($found,'HANDOVER',(int)$user['user_id'],'Ownership verified by BM. Item is ready for pickup.');
-                sql("INSERT INTO handovers(claim_id,pickup_location_id,handled_by_user_id,notes) VALUES (?,?,?,'Arrange pickup with Building Management.')",[$id,$found['location_id']?(int)$found['location_id']:null,(int)$user['user_id']]);
+                sql("INSERT INTO handovers(claim_id,pickup_location_id,handled_by_user_id,notes) VALUES (?,?,?,'Awaiting a pickup appointment.')",[$id,$found['location_id']?(int)$found['location_id']:null,(int)$user['user_id']]);
                 $handoverId=(string)db()->insert_id;
                 foreach($active as $other){if((int)$other['claim_id']===$id)continue;$reason='Another ownership claim was verified by Building Management.';sql("UPDATE claims SET claim_status='REJECTED',reviewed_by_user_id=?,review_note=?,reviewed_at=UTC_TIMESTAMP() WHERE claim_id=?",[(int)$user['user_id'],$reason,(int)$other['claim_id']]);notification((int)$other['claimant_user_id'],'CLAIM_REJECTED','Claim closed',$reason,$foundId,(int)$other['claim_id']);}
+                if($lostId){
+                    $sharedNow=rows(str_replace('ORDER BY claim_id','ORDER BY claim_id FOR UPDATE',$sharedSql),[$lostId,$id]);
+                    if(array_diff(array_column($sharedNow,'claim_id'),array_column($shared,'claim_id')))fail('Claims linked to this Lost report changed. Refresh and retry.',409,'state_conflict');
+                    $reason='Closed because your linked Lost report was matched to another approved claim.';
+                    foreach($sharedNow as $other){
+                        sql("UPDATE claims SET claim_status='REJECTED',reviewed_by_user_id=?,review_note=?,reviewed_at=UTC_TIMESTAMP() WHERE claim_id=?",[(int)$user['user_id'],$reason,(int)$other['claim_id']]);
+                        $otherFound=&$locked[(int)$other['item_id']];
+                        if(!row("SELECT claim_id FROM claims WHERE item_id=? AND claim_status IN ('PENDING','NEED_MORE_INFO') LIMIT 1",[(int)$other['item_id']])&&$otherFound['status_code']==='VERIFICATION')settle_idle_status($otherFound,(int)$user['user_id'],'Ownership claim closed after its Lost report was matched elsewhere.');
+                        unset($otherFound);
+                    }
+                    if($sharedNow)notification((int)$claim['claimant_user_id'],'CLAIM_REJECTED','Other claims closed',count($sharedNow).' other claim(s) that used the same Lost report were closed because this claim was approved.',$foundId,(int)$sharedNow[0]['claim_id']);
+                }
                 $assigned=[$foundId];if($lostId)$assigned[]=$lostId;$m=implode(',',array_fill(0,count($assigned),'?'));
                 sql("DELETE FROM item_matches WHERE match_status='SUGGESTED' AND (lost_item_id IN ($m) OR found_item_id IN ($m))",array_merge($assigned,$assigned));
                 settle_potential_states($locked,(int)$user['user_id']);
                 notification((int)$claim['claimant_user_id'],'CLAIM_APPROVED','Claim approved',$note,$foundId,$id);
             }elseif($decision==='rejected'){
-                $next=count($active)>1?'VERIFICATION':'OPEN';$previous=$found['status_code'];status_change($found,$next,(int)$user['user_id'],'Ownership claim rejected after manual review.');
-                if($previous===$next)history_event($found,(int)$user['user_id'],'Ownership claim rejected; other claims remain under review.');
+                $previous=$found['status_code'];
+                if(count($active)>1)history_event($found,(int)$user['user_id'],'Ownership claim rejected; other claims remain under review.');
+                else settle_idle_status($found,(int)$user['user_id'],'Ownership claim rejected after manual review.');
+                if($previous===$found['status_code']&&count($active)<=1)history_event($found,(int)$user['user_id'],'Ownership claim rejected after manual review.');
                 notification((int)$claim['claimant_user_id'],'CLAIM_REJECTED','Claim rejected',$note,$foundId,$id);
             }else{
                 $previous=$found['status_code'];status_change($found,'VERIFICATION',(int)$user['user_id'],'Ownership review requested additional detail.');
@@ -117,7 +135,7 @@ function allowed_manual_statuses(array $item): array
     $id=(int)$item['item_id'];
     if(in_array($item['status_code'],['RESOLVED','UNCLAIMED_CLOSED','HANDOVER'],true)||confirmed_match($id)||row("SELECT claim_id FROM claims WHERE (item_id=? OR related_lost_item_id=?) AND claim_status IN ('PENDING','NEED_MORE_INFO','APPROVED') LIMIT 1",[$id,$id]))return[];
     $choices=['OPEN','UNDER_REVIEW','UNCLAIMED_CLOSED'];
-    if(row("SELECT match_id FROM item_matches WHERE match_status='SUGGESTED' AND (lost_item_id=? OR found_item_id=?) LIMIT 1",[$id,$id]))$choices[]='POTENTIAL_MATCH';
+    if(has_suggestion($id))$choices[]='POTENTIAL_MATCH';
     if($item['item_type']==='LOST')$choices[]='RESOLVED';
     return array_values(array_diff($choices,[$item['status_code']]));
 }
@@ -127,9 +145,10 @@ function staff_status(array $user,array $data): array
     return workflow_lock(function()use($user,$data,$id,$status,$note){
         $ids=matching_related_ids([$id]);db()->begin_transaction();
         try{$locked=lock_items($ids);$item=&$locked[$id];expected_revision($data,item_revision($item));if(!in_array($status,allowed_manual_statuses($item),true))fail('Finish the active claim/handover or choose an eligible transition.',409,'state_conflict');
-            status_change($item,$status,(int)$user['user_id'],$status==='RESOLVED'?'BM recorded recovery of this Lost report.':'Operational status updated by BM.');
+            status_change($item,$status,(int)$user['user_id'],$status==='RESOLVED'?'BM recorded recovery of this Lost report.':'Operational status updated by BM.',false);
             if(in_array($status,['RESOLVED','UNCLAIMED_CLOSED'],true)){sql("DELETE FROM item_matches WHERE match_status='SUGGESTED' AND (lost_item_id=? OR found_item_id=?)",[$id,$id]);settle_potential_states($locked,(int)$user['user_id']);}
-            notification((int)$item['reporter_user_id'],'OPERATIONAL_NOTE','Report review update',$note,$id);
+            // One update per decision: the new status and Building Management's note travel together.
+            notification((int)$item['reporter_user_id'],'OPERATIONAL_NOTE','Report updated: '.ui_status_name($status),$note,$id);
             db()->commit();return['id'=>(string)$id,'status'=>$status];
         }catch(Throwable $e){db()->rollback();workflow_error($e);}
     });
@@ -145,17 +164,21 @@ function pickup_audit(array $before,array $after,string $operation,string $note,
     $summary=fn($h)=>$h['handover_status'].' / location '.($h['pickup_location_id']??'none').' / '.($h['scheduled_at']?utc_iso($h['scheduled_at']):'unscheduled');
     $message='BM #'.$user['user_id'].' '.$operation.'. Before: '.$summary($before).'. After: '.$summary($after).'.'.($note!==''?' Reason: '.$note:'');
     if(mb_strlen($message)>500)throw new RuntimeException('Pickup audit exceeds storage contract.');
-    $titles=['schedule'=>'Pickup scheduled','reschedule'=>'Pickup rescheduled','cancel_schedule'=>'Pickup schedule cancelled','complete'=>'Item returned'];
-    $recipients=array_map('intval',array_column(rows("SELECT user_id FROM users WHERE role='BUILDING_MANAGEMENT' AND is_active=1"),'user_id'));$recipients[]=$claimant;
+    $titles=['schedule'=>'Pickup scheduled','reschedule'=>'Pickup rescheduled','cancel_schedule'=>'Pickup schedule cancelled','complete'=>'Item returned','release'=>'Pickup released'];
+    // The acting BM already sees the result on screen; other BMs and the claimant are told.
+    $recipients=array_map('intval',array_column(rows("SELECT user_id FROM users WHERE role='BUILDING_MANAGEMENT' AND is_active=1 AND user_id<>?",[(int)$user['user_id']]),'user_id'));$recipients[]=$claimant;
     foreach(array_unique($recipients)as $target)notification($target,'HANDOVER_'.strtoupper($operation),$titles[$operation],$message,$itemId,(int)$after['claim_id']);
 }
 function mutate_handover(array $user,array $data): array
 {
     allowed_fields($data,['action','id','pickup_location_id','scheduled_at','note','revision','confirm','_csrf']);$id=record_id($data['id']??null);$action=text($data,'action',30);
-    if(!in_array($action,['schedule','reschedule','cancel_schedule','complete'],true))fail('Invalid pickup operation.',400);
-    confirm_operation($data);$note=review_note($data,250,in_array($action,['reschedule','cancel_schedule'],true));
+    if(!in_array($action,['schedule','reschedule','cancel_schedule','complete','release'],true))fail('Invalid pickup operation.',400);
+    confirm_operation($data);$note=review_note($data,250,in_array($action,['reschedule','cancel_schedule','release'],true));
     $location=null;$schedule=null;
-    if(in_array($action,['schedule','reschedule'],true)){$location=record_id($data['pickup_location_id']??null);if(!row("SELECT location_id FROM campus_locations WHERE location_id=? AND location_kind='AREA' AND is_active=1",[$location]))field_fail('pickup_location_id','Choose an active campus pickup area.');$schedule=valid_schedule(text($data,'scheduled_at',16));}
+    if(in_array($action,['schedule','reschedule'],true)){
+        if(trim((string)($data['pickup_location_id']??''))==='')field_fail('pickup_location_id','Choose a pickup area.');
+        if(trim((string)($data['scheduled_at']??''))==='')field_fail('scheduled_at','Choose a pickup date and time.');
+        $location=record_id($data['pickup_location_id']);if(!row("SELECT location_id FROM campus_locations WHERE location_id=? AND location_kind='AREA' AND is_active=1",[$location]))field_fail('pickup_location_id','Choose an active campus pickup area.');$schedule=valid_schedule(text($data,'scheduled_at',16));}
     return workflow_lock(function()use($user,$data,$id,$action,$note,$location,$schedule){
         $original=row('SELECT h.claim_id,c.item_id,c.related_lost_item_id FROM handovers h JOIN claims c ON c.claim_id=h.claim_id WHERE h.handover_id=?',[$id]);if(!$original)fail('Pickup record not found.',404,'not_found');
         $ids=[(int)$original['item_id']];if($original['related_lost_item_id'])$ids[]=(int)$original['related_lost_item_id'];
@@ -166,14 +189,26 @@ function mutate_handover(array $user,array $data): array
             if($h['claim_status']!=='APPROVED'||$h['handover_status']==='COMPLETED')fail('Only an active approved pickup can be changed.',409,'state_conflict');
             $found=&$locked[(int)$h['item_id']];if($found['item_type']!=='FOUND'||$found['status_code']!=='HANDOVER')fail('The item is not ready for pickup.',409,'state_conflict');
             if($h['related_lost_item_id']){$pair=confirmed_match((int)$h['item_id']);if(!$pair||(int)$pair['lost_item_id']!==(int)$h['related_lost_item_id']||$locked[(int)$h['related_lost_item_id']]['status_code']!=='HANDOVER')fail('The confirmed pair is inconsistent.',409,'state_conflict');}
-            if(($action==='schedule'&&$h['handover_status']!=='PENDING')||(in_array($action,['reschedule','cancel_schedule'],true)&&$h['handover_status']!=='SCHEDULED')||($action==='complete'&&!in_array($h['handover_status'],['PENDING','SCHEDULED'],true)))fail('That operation does not match the current pickup state.',409,'state_conflict');
+            if(($action==='schedule'&&$h['handover_status']!=='PENDING')||(in_array($action,['reschedule','cancel_schedule'],true)&&$h['handover_status']!=='SCHEDULED')||(in_array($action,['complete','release'],true)&&!in_array($h['handover_status'],['PENDING','SCHEDULED'],true)))fail('That operation does not match the current pickup state.',409,'state_conflict');
             if($schedule&&(new DateTimeImmutable($schedule,new DateTimeZone('UTC')))->getTimestamp()<=time())field_fail('scheduled_at','Choose a future pickup date/time.');
             if($action==='reschedule'&&(int)$h['pickup_location_id']===$location&&$h['scheduled_at']===$schedule)fail('Choose a different pickup time or location before rescheduling.',409,'state_conflict');
             if(in_array($action,['schedule','reschedule'],true))sql("UPDATE handovers SET handover_status='SCHEDULED',pickup_location_id=?,scheduled_at=?,handled_by_user_id=?,notes=? WHERE handover_id=?",[$location,$schedule,(int)$user['user_id'],$note?:'Pickup scheduled by BM.',$id]);
             elseif($action==='cancel_schedule')sql("UPDATE handovers SET handover_status='PENDING',scheduled_at=NULL,handled_by_user_id=?,notes=? WHERE handover_id=?",[(int)$user['user_id'],$note,$id]);
-            else sql("UPDATE handovers SET handover_status='COMPLETED',completed_at=UTC_TIMESTAMP(),handled_by_user_id=?,notes=? WHERE handover_id=?",[(int)$user['user_id'],$note?:'Physical return confirmed by BM.',$id]);
-            foreach($locked as &$item){if($action==='complete')status_change($item,'RESOLVED',(int)$user['user_id'],'Verified item returned; handover completed.');else history_event($item,(int)$user['user_id'],$action==='cancel_schedule'?'Pickup appointment cancelled; verified ownership retained.':'Pickup appointment scheduled or updated.');}unset($item);
-            $after=row('SELECT * FROM handovers WHERE handover_id=?',[$id]);pickup_audit($h,$after,$action,$note,$user,(int)$h['claimant_user_id'],(int)$h['item_id']);
+            elseif($action==='complete')sql("UPDATE handovers SET handover_status='COMPLETED',completed_at=UTC_TIMESTAMP(),handled_by_user_id=?,notes=? WHERE handover_id=?",[(int)$user['user_id'],$note?:'Physical return confirmed by BM.',$id]);
+            else{
+                // Release (no-show or revoked ownership): the claim closes, the confirmed pair is withdrawn and both reports become available again.
+                sql("UPDATE claims SET claim_status='REJECTED',reviewed_by_user_id=?,review_note=?,reviewed_at=UTC_TIMESTAMP() WHERE claim_id=?",[(int)$user['user_id'],'Pickup released: '.$note,(int)$h['claim_id']]);
+                if($h['related_lost_item_id'])sql("UPDATE item_matches SET match_status='REJECTED',confirmed_by_user_id=?,confirmed_at=UTC_TIMESTAMP() WHERE lost_item_id=? AND found_item_id=? AND match_status='CONFIRMED'",[(int)$user['user_id'],(int)$h['related_lost_item_id'],(int)$h['item_id']]);
+                sql('DELETE FROM handovers WHERE handover_id=?',[$id]);
+            }
+            foreach($locked as &$item){
+                $finder=(int)$item['reporter_user_id']!==(int)$h['claimant_user_id'];
+                if($action==='complete')status_change($item,'RESOLVED',(int)$user['user_id'],'Verified item returned; handover completed.',$finder);
+                elseif($action==='release')settle_idle_status($item,(int)$user['user_id'],'Pickup released by BM; the report is available again.',$finder);
+                else history_event($item,(int)$user['user_id'],$action==='cancel_schedule'?'Pickup appointment cancelled; verified ownership retained.':'Pickup appointment scheduled or updated.');
+            }unset($item);
+            $after=$action==='release'?['handover_status'=>'RELEASED','pickup_location_id'=>null,'scheduled_at'=>null,'claim_id'=>$h['claim_id']]:row('SELECT * FROM handovers WHERE handover_id=?',[$id]);
+            pickup_audit($h,$after,$action,$note,$user,(int)$h['claimant_user_id'],(int)$h['item_id']);
             db()->commit();return['id'=>(string)$id,'status'=>$after['handover_status']];
         }catch(Throwable $e){db()->rollback();workflow_error($e);}
     });

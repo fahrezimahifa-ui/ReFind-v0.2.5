@@ -60,7 +60,7 @@ function install_api_error_handler(): void
     set_exception_handler(function (Throwable $error): void {
         if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
         $status = $error instanceof HttpError ? $error->status : 500;
-        if ($status === 500) error_log('ReFind 0.2.0: ' . get_class($error) . ' at ' . basename($error->getFile()) . ':' . $error->getLine());
+        if ($status === 500) error_log('ReFind 0.2.5: ' . get_class($error) . ' at ' . basename($error->getFile()) . ':' . $error->getLine());
         http_response_code($status);
         $data = ['ok' => false, 'code' => $error instanceof HttpError ? $error->errorCode : 'server_error',
             'message' => $status === 500 ? 'The request could not be completed. Please try again.' : $error->getMessage()];

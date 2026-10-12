@@ -39,7 +39,7 @@ $(async function () {
   function passwordPolicy() {
     const value = $('#new-password').val() || '';
     const chars = Array.from(value).length, bytes = new TextEncoder().encode(value).length;
-    $('#password-policy').text(value ? chars + ' characters · ' + bytes + ' / 72 UTF-8 bytes' : 'At least 10 characters; maximum 72 UTF-8 bytes.').toggleClass('invalid',!!value && (chars<10||bytes>72));
+    $('#password-policy').text(value ? chars + ' characters' + (bytes>72 ? ' · too long (emoji and accented letters count as more than one)' : chars<10 ? ' · use at least 10' : ' · OK') : 'Use at least 10 characters.').toggleClass('invalid',!!value && (chars<10||bytes>72));
   }
   async function submitFailure(e, selector) {
     if (e.status === 401) { window.location.replace(app.loginUrl()); return; }
@@ -86,10 +86,12 @@ $(async function () {
     const values = {current_password:$('#current-password').val(),new_password:$('#new-password').val(),confirm_password:$('#confirm-password').val()};
     let firstError = null;
     function invalid(key,message) {fieldError(key,message);firstError ||= key;}
+    const emptyMessages = {current_password:'Enter your current password.',new_password:'Enter a new password.',confirm_password:'Repeat the new password.'};
     for (const [key,value] of Object.entries(values)) {
-      if (!value || value.includes('\0') || new TextEncoder().encode(value).length>72) invalid(key,'Enter a valid password of at most 72 UTF-8 bytes.');
+      if (!value) invalid(key,emptyMessages[key]);
+      else if (value.includes('\0') || new TextEncoder().encode(value).length>72) invalid(key,'This password is too long. Use at most 72 bytes; emoji and accented letters count as more than one.');
     }
-    if (Array.from(values.new_password).length<10) invalid('new_password','Use at least 10 characters for the new password.');
+    if (values.new_password && Array.from(values.new_password).length<10) invalid('new_password','Use at least 10 characters for the new password.');
     if (values.new_password!==values.confirm_password) invalid('confirm_password','The password confirmation does not match.');
     if (values.new_password && values.new_password===values.current_password) invalid('new_password','Choose a password different from the current password.');
     if (firstError) { $(map[firstError][0]).trigger('focus'); return; }

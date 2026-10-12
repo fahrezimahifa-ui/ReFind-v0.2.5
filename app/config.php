@@ -11,6 +11,9 @@ function app_config(): array
         'base_path' => '/ReFind_0.2.0/', 'session_name' => 'refind_020',
         'idle_seconds' => 1800, 'absolute_seconds' => 28800,
         'login_window_seconds' => 900, 'login_pair_limit' => 5, 'login_ip_limit' => 30,
+        // Shown to students after approval. Demo values; override them in config.local.php for a real desk.
+        'pickup_desk_name' => 'Building Management service desk', 'pickup_desk_location' => 'Gedung A lobby, ground floor',
+        'pickup_desk_hours' => 'Monday–Friday, 08:00–16:00 WIB', 'pickup_desk_contact' => 'bm@refind.test',
     ];
     $local = __DIR__ . '/config.local.php';
     if (is_file($local)) {
@@ -29,6 +32,9 @@ function app_config(): array
     }
     foreach (['idle_seconds', 'absolute_seconds', 'login_window_seconds', 'login_pair_limit', 'login_ip_limit'] as $key) {
         if (!is_int($config[$key]) || $config[$key] < 1) throw new RuntimeException('Invalid timeout/limit.');
+    }
+    foreach (['pickup_desk_name', 'pickup_desk_location', 'pickup_desk_hours', 'pickup_desk_contact'] as $key) {
+        if (!is_string($config[$key]) || trim($config[$key]) === '' || mb_strlen($config[$key]) > 160) throw new RuntimeException('Invalid pickup desk configuration.');
     }
     return $config;
 }

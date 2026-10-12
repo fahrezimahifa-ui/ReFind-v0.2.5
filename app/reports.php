@@ -12,10 +12,13 @@ function valid_event_date(string $value): string
 function report_values(array $data, string $type): array
 {
     $title = text($data, 'title', 120); $description = text($data, 'description', 2000); $clue = text($data, 'clue', 1000);
+    if (mb_strlen($title) < 3) field_fail('title', 'Use at least 3 characters for the item name.');
+    if (mb_strlen($clue) < 8) field_fail('clue', 'Give at least 8 characters so Building Management can verify the owner.');
     $category = record_id($data['category_id'] ?? null); $location = record_id($data['location_id'] ?? null);
     if (!row('SELECT category_id FROM categories WHERE category_id=? AND is_active=1', [$category])) field_fail('category_id', 'Choose an active category.');
     if (!row("SELECT location_id FROM campus_locations WHERE location_id=? AND location_kind='AREA' AND is_active=1", [$location])) field_fail('location_id', 'Choose an active campus area.');
     $date = valid_event_date(text($data, 'date', 10)); $time = text($data, 'time', 5, false);
+    if ($date > campus_today()) field_fail('date', 'The event date cannot be in the future.');
     if ($time !== '' && !preg_match('/^([01][0-9]|2[0-3]):[0-5][0-9]$/D', $time)) field_fail('time', 'Enter a valid time or leave it unknown.');
     return [$title,$description,$category,$location,text($data,'location_detail',500,false),$date,$time !== '' ? $time . ':00' : null,$clue];
 }
@@ -46,11 +49,13 @@ function mutate_report(array $user, array $data): array
             $locked=lock_items($ids);
             if ($id) require_editable_item($user,$locked[$id]);
             if ($action === 'delete') {
-                $removed=array_column(rows('SELECT file_path FROM item_photos WHERE item_id=?',[$id]),'file_path');
+                // Closed claims on this report cascade away with it, so their private photos are removed too.
+                $removed=array_column(rows('SELECT file_path FROM item_photos WHERE item_id=? UNION ALL SELECT p.file_path FROM claim_photos p JOIN claims c ON c.claim_id=p.claim_id WHERE c.item_id=?',[$id,$id]),'file_path');
+                $title=$locked[$id]['title'];
                 sql('DELETE FROM items WHERE item_id=?',[$id]);unset($locked[$id]);
-                notification((int)$user['user_id'],'REPORT_DELETED','Report deleted','Your report was deleted.');
+                notification((int)$user['user_id'],'REPORT_DELETED','Report deleted','Your report "'.mb_substr($title,0,120).'" was deleted.');
                 foreach ($locked as &$candidate) {
-                    if ($candidate['status_code']==='POTENTIAL_MATCH'&&!confirmed_match((int)$candidate['item_id'])&&!row("SELECT match_id FROM item_matches WHERE match_status='SUGGESTED' AND (lost_item_id=? OR found_item_id=?) LIMIT 1",[(int)$candidate['item_id'],(int)$candidate['item_id']])) status_change($candidate,'OPEN',(int)$user['user_id'],'No current matching suggestions.');
+                    if ($candidate['status_code']==='POTENTIAL_MATCH'&&!confirmed_match((int)$candidate['item_id'])&&!has_suggestion((int)$candidate['item_id'])) status_change($candidate,'OPEN',(int)$user['user_id'],'No current matching suggestions.',false);
                 } unset($candidate);
             } else {
                 [$title,$description,$category,$location,$detail,$date,$time,$clue]=$values;

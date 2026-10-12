@@ -5,7 +5,7 @@
 {{APP_NAVBAR}}
 <main class="student-main form-main">
   <header class="page-heading"><div><span class="eyebrow">YOUR REPORT</span><h1 id="report-heading">What happened?</h1><p id="report-intro">Describe the item and where you last saw it. Photos are optional; verification details stay private.</p></div></header>
-  <p class="loading-note" id="page-loading" role="status">Loading form…</p><div class="feedback" id="page-feedback" role="alert" tabindex="-1" hidden></div><button class="btn btn-outline" id="retry-page" type="button" hidden>Retry loading</button>
+  <p class="context-note" id="report-context" hidden></p><p class="loading-note" id="page-loading" role="status">Loading form…</p><div class="feedback" id="page-feedback" role="alert" tabindex="-1" hidden></div><button class="btn btn-outline" id="retry-page" type="button" hidden>Retry loading</button>
   <form id="report-form" novalidate hidden><fieldset id="report-fields">
     <section class="form-card"><h2>1 · Item details</h2>
       <div class="type-tabs" id="report-type" role="group" aria-label="Report type"><button type="button" class="type-tab" data-report-type="LOST">I lost something</button><button type="button" class="type-tab" data-report-type="FOUND">I found something</button></div>
@@ -16,7 +16,7 @@
     <section class="form-card"><h2>2 · Where &amp; when</h2><div class="form-grid">
       <div class="field"><label for="r-location" id="r-location-label">Campus area *</label><select class="form-select" id="r-location" required></select><span class="field-error" data-error="location_id" hidden></span></div>
       <div class="field"><label for="r-detail">Specific spot · optional</label><textarea class="form-control" id="r-detail" rows="2" maxlength="500" placeholder="Floor, room or nearby landmark"></textarea><span class="field-error" data-error="location_detail" hidden></span></div>
-      <div class="field"><label for="r-date">Event date *</label><input class="form-control" id="r-date" type="date" required><span class="field-error" data-error="date" hidden></span></div>
+      <div class="field"><label for="r-date" id="r-date-label">Event date *</label><input class="form-control" id="r-date" type="date" required><span class="field-error" data-error="date" hidden></span></div>
       <div class="field"><label for="r-time">Approximate time · optional</label><input class="form-control" id="r-time" type="time"><span class="hint">Leave blank if you do not know the time.</span><span class="field-error" data-error="time" hidden></span></div>
     </div></section>
     <details class="form-card optional-media" id="public-photo-section"><summary>3 · Public item photos<span class="hint">Optional · up to 4 photos to help others recognize the item</span></summary>
@@ -25,14 +25,14 @@
         <span class="hint">Up to 10 MB per input image. ReFind prepares smaller copies.</span><div class="upload-previews"></div><p class="upload-status" role="status"></p>
       </div><span class="field-error" data-error="photos" hidden></span>
     </details>
-    <section class="form-card private-card"><h2 id="private-heading">4 · Ownership details for BM</h2><p>This helps BM verify the owner and never appears on the public report. Supporting photos are visible to BM only.</p>
-      <div class="field"><label for="r-clue">A detail only the owner would know *</label><textarea class="form-control" id="r-clue" rows="3" maxlength="1000" required placeholder="For example, a small tear inside a pocket or a mark under the cover"></textarea><span class="field-error" data-error="clue" hidden></span></div>
+    <section class="form-card private-card"><h2 id="private-heading">4 · Ownership details for BM</h2><p id="private-intro">This helps BM verify the owner and never appears on the public report.</p>
+      <div class="field"><label for="r-clue" id="r-clue-label">A detail only the owner would know *</label><textarea class="form-control" id="r-clue" rows="3" maxlength="1000" required placeholder="For example, a small tear inside a pocket or a mark under the cover"></textarea><span class="field-error" data-error="clue" hidden></span></div>
       <div id="lost-evidence"><details class="optional-media"><summary>Private supporting photos<span class="hint">Optional · max 2 photos including any saved evidence</span></summary>
         <p id="saved-proof-count" hidden></p><label class="retain-choice" id="saved-proof-choice" hidden><input type="checkbox" id="keep-proof" checked> Keep saved private supporting photos</label>
         <div class="upload-control" id="proof-upload"><label class="upload-pick" for="r-proof"><span>Add private ownership photos</span><span class="upload-choose">Choose photos</span><span class="upload-file-hint">Select or drop JPEG, PNG or WebP images</span><input class="upload-input" id="r-proof" type="file" accept="image/jpeg,image/png,image/webp" multiple></label><div class="upload-previews"></div><p class="upload-status" role="status"></p></div>
       </details></div><span class="field-error" data-error="ownershipPhotos" hidden></span>
     </section>
-  </fieldset><div class="feedback" id="form-feedback" role="alert" tabindex="-1" hidden></div><div class="sticky-form-actions"><a class="btn btn-outline" href="my-reports.html">Cancel</a><button class="btn btn-primary" id="report-submit" type="submit">Submit report</button></div></form>
-</main><footer class="footer">ReFind 0.2.0 · Campus time: Asia/Jakarta</footer>
+  </fieldset><div class="feedback" id="form-feedback" role="alert" tabindex="-1" hidden></div><div class="sticky-form-actions"><a class="btn btn-outline" id="report-cancel" href="my-reports.html">Cancel</a><button class="btn btn-primary" id="report-submit" type="submit">Submit report</button></div></form>
+</main><footer class="footer">ReFind 0.2.5 · Campus time: Asia/Jakarta</footer>
 <script src="vendor/jquery.min.js"></script><script src="js/api.js"></script><script src="js/shell.js"></script><script src="js/student-common.js"></script><script src="js/uploads.js"></script><script src="js/student.js"></script>
 </body></html>

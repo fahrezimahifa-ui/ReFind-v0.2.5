@@ -31,3 +31,8 @@
 @media(max-width:679px){.sticky-form-actions>.btn-primary{flex:2}.sticky-form-actions>.btn-outline{flex:1}}
 @media(min-width:680px){.discovery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.advanced-filters,.form-grid,.detail-meta{grid-template-columns:repeat(2,minmax(0,1fr))}.page-heading{flex-direction:row;align-items:end;justify-content:space-between}.sticky-form-actions .btn{flex:none;min-width:130px}}
 @media(min-width:1100px){.student-main{padding:36px 24px 24px}.discovery-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.advanced-filters{grid-template-columns:repeat(4,minmax(0,1fr))}.detail-layout{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}.detail-card{padding:26px}.form-card{padding:26px}}
+/* v0.2.5 additions */
+.desk-card{padding:14px;border:1px solid var(--line);border-radius:12px;background:#f7f9fc;font-size:14px;display:grid;gap:2px}.desk-card p{margin:0}.desk-card .desk-contact{font-weight:600;user-select:all;overflow-wrap:anywhere}
+.claim-review-note strong,#claim-review-note strong{display:block;margin-bottom:4px}#claim-review-note p{margin:0}
+#item-notice p{margin:0 0 6px}#item-notice .navigation-action{margin-top:4px}
+.page-heading #mark-all-read{flex:0 0 auto}
