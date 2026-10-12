@@ -213,6 +213,12 @@ async function go(page,route){await page.goto(base+route);await page.waitForSele
    await p.page.click('[data-bm-action="complete"]');assert.match(await p.page.locator('#operation-intro').innerText(),/collected the item early/);await p.page.keyboard.press('Escape');
    await p.context.close();
   });
+  await test('A06 releasing a pickup in the browser lands on the closed claim with its reason',async()=>{
+   const f=await create(b,'FOUND','releaseui item',{category_id:'8',location_id:'38'}),id=await claim(c,f),h=(await review(bm,id,'approved')).handover_id,p=await browserPage(BM);
+   await go(p.page,'admin.html?tab=handover&handover='+h);await p.page.click('[data-bm-action="release"]');await p.page.fill('#operation-note','PRIVATE owner never collected the item.');await p.page.check('#operation-confirm');await p.page.click('#operation-submit');
+   await p.page.waitForSelector('[data-detail-claim-id="'+id+'"]');assert.equal(new URL(p.page.url()).searchParams.get('tab'),'claims');assert.match(await p.page.locator('#bm-feedback').innerText(),/Pickup released/);assert.match(await p.page.locator('#bm-detail-content').innerText(),/Pickup released: PRIVATE owner never collected/);
+   await p.context.close();
+  });
   await test('A08/F15 mobile BM: card opens detail as its own history step and the browser Back returns to the queue',async()=>{
    const p=await browserPage(BM,{width:390,height:844});await go(p.page,'admin.html?tab=reports');assert.equal(new URL(p.page.url()).searchParams.get('report'),null);
    await p.page.locator('.bm-queue-card').first().click();await p.page.waitForSelector('[data-detail-report-id]');assert.ok(new URL(p.page.url()).searchParams.get('report'));assert.ok(await p.page.locator('#bm-detail').isVisible());

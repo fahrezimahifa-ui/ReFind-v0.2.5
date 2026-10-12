@@ -73,8 +73,8 @@ $(async function () {
     });
   }
   // Switch tab and record in place instead of reloading the page.
-  async function openRecord(nextTab, id) {
-    if (saving) return; clearTimeout(timer); ++request; ++detailRequest;
+  async function openRecord(nextTab, id, afterSave = false) {
+    if (saving && !afterSave) return; clearTimeout(timer); ++request; ++detailRequest;
     tab = nextTab; selected = String(id); pinned = true; initialFocus = true; page = 1; current = null;
     $('#bm-search').val(''); switchState(); setView('detail'); syncUrl(); await loadQueue(1, true);
   }
@@ -273,7 +273,10 @@ $(async function () {
     try {
       const result = await app.request(endpoint,values); drafts.delete(draftKey(operation)); document.querySelector('#operation-dialog').close();
       const next = action === 'approved' && result.handover_id ? $('<button>').addClass('text-button').attr('type','button').text('Schedule pickup now').on('click',() => openRecord('handover', result.handover_id)) : null;
-      pinned = true; await loadQueue(page,true); feedback(done[action],true,next); await shell.refreshUnread();
+      // A released pickup no longer exists, so show the closed claim instead.
+      if (action === 'release') await openRecord('claims', operation.record.claim_id, true);
+      else { pinned = true; await loadQueue(page,true); }
+      feedback(done[action],true,next); await shell.refreshUnread();
     } catch (e) {
       rememberDraft(); if (e.status === 401) { location.replace(app.loginUrl()); return; }
       if (e.code === 'csrf_invalid') { const state = await app.session().catch(() => null); if (state && !state.authenticated) { location.replace(app.loginUrl()); return; } }

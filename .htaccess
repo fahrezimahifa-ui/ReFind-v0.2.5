@@ -6,3 +6,9 @@ RewriteRule ^(?:app|database|storage|tools|releases)(?:/|$) - [F,END,NC]
 RewriteRule ^api/bootstrap\.php(?:/|$) - [F,END,NC]
 RewriteRule ^$ page.php [END]
 RewriteRule ^(?:index|login|browse|item|report|claim|my-reports|admin|history|notifications|profile|settings)\.html$ page.php [END,NC]
+# Scripts and styles revalidate on every load (cheap 304 via ETag), so an upgrade reaches browsers immediately.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(?:js|css)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
