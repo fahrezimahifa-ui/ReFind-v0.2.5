@@ -14,6 +14,7 @@ RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && a2enconf refind-qa
 WORKDIR /var/www/html/ReFind_0.2.3
 COPY . .
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/refind-browsers
 RUN npm ci --ignore-scripts \
     && npx playwright install --with-deps chromium ffmpeg \
     && composer install --no-interaction --no-progress --prefer-dist \

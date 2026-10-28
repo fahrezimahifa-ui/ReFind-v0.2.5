@@ -146,6 +146,12 @@ class ReleaseTests(unittest.TestCase):
         self.assertNotEqual(rejected.returncode, 0)
         self.assertEqual(rejected.stdout, b'')
 
+    def test_backup_requires_quiescence_before_reading_configuration(self):
+        result = subprocess.run([os.sys.executable, str(ROOT / 'tools/backup-project.py')], capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('--writes-paused', result.stderr)
+        self.assertNotIn('database.sql', result.stdout)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
