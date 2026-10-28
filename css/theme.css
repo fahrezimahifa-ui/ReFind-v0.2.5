@@ -3,10 +3,11 @@
   color-scheme:light;
   --primary:#3f5fb5; --primary-hover:#344f99; --primary-active:#2c4384;
   --primary-text:#fff; --primary-soft:#edf1fb; --primary-pressed:#e2e9fa;
-  --link:#344f99; --navy:var(--link); --ink:#253047; --muted:#526178;
-  --cyan:#10b7cf; --focus:#087f95; --control:#7b8aa0; --line:#dfe5f0;
+  --link:#344f99; --navy:var(--link); --ink:#253047; --muted:#4b5970;
+  --cyan:#10b7cf; --focus:#086e83; --control:#7b8aa0; --line:#dfe5f0;
   --bg:#f7f8fc; --surface:#f8faff; --panel:#fff; --field:#fff;
-  --glass:#f8faff; --glass-control:#f8faff; --subtle:#f1f4fa;
+  --glass-panel:#f8faff; --glass-navigation:#f8faff; --glass-popup:#f8faff;
+  --glass-control:#f8faff; --glass-edge:#cdd5e4; --subtle:#f1f4fa;
   --readonly:#edf0f6; --media:#e9edf4;
   --danger:#922e3e; --danger-bg:#fff5f6; --danger-line:#c8798b; --danger-active:#fae8ed;
   --danger-solid:#943b4b; --danger-hover:#7a2d3b; --danger-pressed:#672331; --danger-label:#fff;
@@ -16,7 +17,8 @@
   --private-bg:#fffaf0; --private-line:#d8c79e; --private-text:#716047;
   --possible:#594580; --possible-bg:#f2ecff;
   --pink-rgb:252 218 255; --sky-rgb:121 204 254; --lilac-rgb:216 165 255;
-  --wash-alpha:.18; --radius-control:11px; --radius-panel:18px;
+  --wash-alpha:.28; --radius-control:11px; --radius-panel:18px;
+  --content-frame:1160px; --page-gutter:18px; --page-top:24px;
   --space-1:8px; --space-2:12px; --space-3:18px; --space-4:24px;
   --panel-shadow:0 8px 28px rgb(48 65 110 / .06);
   --glass-shadow:0 8px 24px rgb(48 65 110 / .09),inset 0 1px 0 rgb(255 255 255 / .7);
@@ -31,7 +33,8 @@
   --ink:#eaf0ff; --muted:#b8c5dd; --cyan:#6cdce7; --focus:#7de4ed;
   --control:#7d90af; --line:#34425b;
   --bg:#0b1220; --surface:#131f35; --panel:#131f35; --field:#101c31;
-  --glass:#131f35; --glass-control:#1c2c46; --subtle:#1a2942;
+  --glass-panel:#131f35; --glass-navigation:#131f35; --glass-popup:#131f35;
+  --glass-control:#1c2c46; --glass-edge:#46556f; --subtle:#1a2942;
   --readonly:#1e2b40; --media:#0e192b;
   --danger:#ffb2c0; --danger-bg:#3a2435; --danger-line:#ad7187; --danger-active:#503044;
   --danger-solid:#ffb2c0; --danger-hover:#ffc9d2; --danger-pressed:#ffdde3; --danger-label:#301322;
@@ -45,14 +48,15 @@
   --glass-shadow:0 8px 24px rgb(0 0 0 / .18),inset 0 1px 0 rgb(211 225 255 / .08);
   --scrim:rgb(3 8 18 / .75);
 }
+@media(min-width:768px) { :root { --page-gutter:24px; --page-top:32px; } }
 @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
-  :root { --panel:rgb(255 255 255 / .96); --glass:rgb(248 250 255 / .92); --glass-control:rgb(248 250 255 / .8); --field:rgb(255 255 255 / .98); }
-  :root[data-theme="dark"] { --panel:rgb(19 31 53 / .96); --glass:rgb(19 31 53 / .92); --glass-control:rgb(28 44 70 / .8); --field:rgb(16 28 49 / .98); }
-  .app-header,.account-menu,.photo-dialog,.confirm-dialog,.operation-dialog,.sticky-form-actions { -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); }
+  :root { --panel:rgb(255 255 255 / .96); --glass-panel:rgb(255 255 255 / .64); --glass-navigation:rgb(248 250 255 / .78); --glass-popup:rgb(248 250 255 / .86); --glass-control:rgb(248 250 255 / .8); --glass-edge:rgb(255 255 255 / .72); --field:rgb(255 255 255 / .98); }
+  :root[data-theme="dark"] { --panel:rgb(19 31 53 / .96); --glass-panel:rgb(19 31 53 / .64); --glass-navigation:rgb(19 31 53 / .78); --glass-popup:rgb(19 31 53 / .86); --glass-control:rgb(28 44 70 / .8); --glass-edge:rgb(205 222 255 / .22); --field:rgb(16 28 49 / .98); }
+  .auth-card,.landing-card,.filter-panel,.notification-list,.app-header,.account-menu,.photo-dialog,.confirm-dialog,.operation-dialog,.sticky-form-actions { -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px); }
 }
 @media (prefers-reduced-transparency:reduce), (forced-colors:active) {
-  :root { --panel:#fff; --glass:#f8faff; --glass-control:#f8faff; --field:#fff; }
-  :root[data-theme="dark"] { --panel:#131f35; --glass:#131f35; --glass-control:#1c2c46; --field:#101c31; }
-  .app-header,.account-menu,.photo-dialog,.confirm-dialog,.operation-dialog,.sticky-form-actions { -webkit-backdrop-filter:none; backdrop-filter:none; }
+  :root { --panel:#fff; --glass-panel:#f8faff; --glass-navigation:#f8faff; --glass-popup:#f8faff; --glass-control:#f8faff; --glass-edge:#cdd5e4; --field:#fff; }
+  :root[data-theme="dark"] { --panel:#131f35; --glass-panel:#131f35; --glass-navigation:#131f35; --glass-popup:#131f35; --glass-control:#1c2c46; --glass-edge:#46556f; --field:#101c31; }
+  .auth-card,.landing-card,.filter-panel,.notification-list,.app-header,.account-menu,.photo-dialog,.confirm-dialog,.operation-dialog,.sticky-form-actions { -webkit-backdrop-filter:none; backdrop-filter:none; }
   body::before { display:none; }
 }

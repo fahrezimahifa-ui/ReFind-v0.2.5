@@ -4,12 +4,13 @@ const {execFileSync}=require('node:child_process');
 const {chromium}=require(process.env.REFIND_PLAYWRIGHT_MODULE||path.join(os.tmpdir(),'opencode','refind-multipage-check','node_modules','playwright-core'));
 const sharp=require(process.env.REFIND_SHARP_MODULE||'sharp');
 const AxeBuilder=require(process.env.REFIND_AXE_MODULE||'@axe-core/playwright').default;
+const {auditHeaderFocus}=require('./qa-focus.cjs');
 const root=path.resolve(__dirname,'..'),main=process.argv.includes('--main'),target=main?root:path.resolve(root,'../ReFind_0.2.0_Test'),base=main?'http://localhost/ReFind_0.2.3/':'http://localhost/ReFind_0.2.0_Test/';
 if(!main)assert.equal(JSON.parse(fs.readFileSync(path.join(target,'.refind-b02-test.json'))).source,root);
-const out=path.resolve(process.env.REFIND_EVIDENCE_DIR||path.join(root,'output/playwright/glass-dark/theme'));
+const out=path.resolve(process.env.REFIND_EVIDENCE_DIR||path.join(root,'output/playwright/layout-glass/theme'));
 fs.mkdirSync(out,{recursive:true});
 const accounts=JSON.parse(fs.readFileSync(path.join(target,'storage/setup/demo-accounts.json'))).accounts;
-const results={checks:[],screens:[],contrast:[],a11y:[],performance:[],errors:[],failedRequests:[]};
+const results={checks:[],screens:[],contrast:[],focusContrast:[],a11y:[],performance:[],errors:[],failedRequests:[]};
 function save(){fs.writeFileSync(path.join(out,'theme-results.json'),JSON.stringify(results,null,2)+'\n');}
 function fingerprint(){return execFileSync('C:/xampp/php/php.exe',['-r',"require 'app/db.php'; $all=[]; foreach(['users','items','claims','handovers','notifications','item_photos','claim_photos','item_matches','item_status_history'] as $table) $all[$table]=rows('SELECT * FROM '.$table); echo hash('sha256',json_encode($all));"],{cwd:target,encoding:'utf8'}).trim();}
 async function check(name,fn){await fn();results.checks.push(name);save();console.log('PASS '+name);}
@@ -17,11 +18,16 @@ async function go(page,route){await page.goto(base+route);await page.waitForSele
 async function login(page,role){await go(page,'login.html');const a=Object.values(accounts).find(a=>a.role===role);await page.fill('#email',a.email);await page.fill('#password',a.password);await page.click('#login-submit');await page.waitForURL(role==='STUDENT'?'**/index.html':'**/admin.html');await page.waitForSelector('body[data-ready="true"]');}
 function observe(page){page.on('pageerror',e=>results.errors.push(String(e)));page.on('requestfailed',r=>{if(r.failure()?.errorText!=='net::ERR_ABORTED')results.failedRequests.push({url:r.url(),error:r.failure()?.errorText});});}
 async function capture(page,name){
+  if(!name.includes('bottom'))await page.evaluate(()=>scrollTo(0,0));
   await page.evaluate(async()=>{document.querySelectorAll('img').forEach(i=>i.loading='eager');await Promise.all([...document.images].map(i=>i.decode().catch(()=>{})));});
   const metrics=await page.evaluate(()=>({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,broken:[...document.images].filter(i=>i.getClientRects().length&&!i.naturalWidth).length,theme:document.documentElement.dataset.theme,logo:document.querySelector('.brand picture:not([style]) img')?.naturalWidth}));
   assert.ok(metrics.scrollWidth<=metrics.width,name+' overflow');assert.equal(metrics.broken,0,name+' broken image');
   const toggle=await page.locator('#theme-toggle').boundingBox();assert.ok(toggle.width>=44&&toggle.height>=44&&toggle.x>=0&&toggle.x+toggle.width<=metrics.width,name+' toggle target');
-  await page.screenshot({path:path.join(out,name+'.png'),fullPage:true});results.screens.push({name,...metrics});
+  if(await page.getAttribute('body','data-page')!=='login'){
+    const frame=await page.locator('main,.app-nav,.footer,.shell-feedback-wrap').evaluateAll(nodes=>nodes.map(e=>{const r=e.getBoundingClientRect();return{left:r.left,width:r.width,gutter:parseFloat(getComputedStyle(e).paddingLeft)};}));
+    frame.forEach(f=>{assert.ok(Math.abs(f.width-Math.min(metrics.width,1160))<1,name+' frame');assert.equal(f.gutter,metrics.width<768?18:24,name+' gutter');assert.ok(Math.abs(f.left-frame[0].left)<1,name+' aligned edges');});
+  }
+  await page.screenshot({path:path.join(out,name+'.png'),fullPage:!name.includes('bottom')});results.screens.push({name,...metrics});
   if(name.endsWith('-390')||name.endsWith('-1440')){const audit=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();results.a11y.push({name,violations:audit.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))})),incomplete:audit.incomplete.length});}
   save();
 }
@@ -29,7 +35,7 @@ const luminance=rgb=>rgb.map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)
 const ratio=(a,b)=>(Math.max(luminance(a),luminance(b))+.05)/(Math.min(luminance(a),luminance(b))+.05);
 async function contrast(page,name){
   // Hide glyphs only, then sample the actual composited pixels behind each label.
-  const elements=await page.locator('h1,h2,.eyebrow,.intro>p,.hint,.card-meta,.page-heading p,.field label,.btn,.nav-link,.account-link,.item-chip,.private-card .hint,.bm-block.private p').evaluateAll(nodes=>nodes.filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&r.top>=0&&r.bottom<=innerHeight&&!e.disabled;}).slice(0,35).map(e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return{text:e.textContent.trim().slice(0,50),color:s.color.match(/[\d.]+/g).slice(0,3).map(Number),large:parseFloat(s.fontSize)>=24||(parseFloat(s.fontSize)>=18.66&&parseInt(s.fontWeight)>=700),x:r.x,y:r.y,w:r.width,h:r.height};}));
+  const elements=await page.locator('h1,h2,.eyebrow,.intro>p,.hint,.card-meta,.page-heading p,.field label,.btn,.nav-link,.account-link,.item-chip,.private-card .hint,.bm-block.private p,.notification-title,.notification-message,.notification-item,.notification-time,.notification-demo,.notification-unread,.notification-destination,.mark-read').evaluateAll(nodes=>nodes.filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&r.top>=0&&r.bottom<=innerHeight&&!e.disabled;}).slice(0,45).map(e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return{text:e.textContent.trim().slice(0,50),color:s.color.match(/[\d.]+/g).slice(0,3).map(Number),large:parseFloat(s.fontSize)>=24||(parseFloat(s.fontSize)>=18.66&&parseInt(s.fontWeight)>=700),x:r.x,y:r.y,w:r.width,h:r.height};}));
   // Inline <style> injection is blocked by the app CSP; use reversible CSSOM edits.
   await page.evaluate(()=>{window.qaColors=[...document.querySelectorAll('*')].map(e=>({e,color:e.style.getPropertyValue('color'),priority:e.style.getPropertyPriority('color')}));window.qaColors.forEach(({e})=>e.style.setProperty('color','transparent','important'));});
   let buffer;
@@ -53,6 +59,7 @@ async function contrast(page,name){
   await check('Unavailable storage and invalid saved values still render and toggle',async()=>{
    for(const blocked of [false,true]){const c=await browser.newContext({colorScheme:'dark'}),p=await c.newPage();observe(p);await p.addInitScript(blocked=>{if(blocked){for(const method of ['getItem','setItem','removeItem'])Storage.prototype[method]=()=>{throw new DOMException('Blocked','SecurityError');};}else localStorage.setItem('refind-theme','invalid');},blocked);await go(p,'login.html');assert.equal(await p.getAttribute('html','data-theme'),'dark');await p.click('#theme-toggle');assert.equal(await p.getAttribute('html','data-theme'),'light');await c.close();}
   });
+  await check('Header focus meets 3:1 over black and white backdrops at five widths',async()=>{results.focusContrast=await auditHeaderFocus(browser,base,sharp);});
   for(const theme of ['light','dark']){
    for(const [width,height] of [[360,800],[390,844],[768,1024],[1280,800],[1440,900]]){
     const c=await browser.newContext({colorScheme:theme,viewport:{width,height},timezoneId:'Asia/Jakarta'}),p=await c.newPage();observe(p);

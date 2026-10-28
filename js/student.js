@@ -167,25 +167,41 @@ $(async function(){
       try{const data=await get('notifications.php',{page:currentPage,limit:24}),box=$('#notification-results').empty();let lastGroup='';
         if(data.total&&currentPage>data.pages)return load(data.pages);
         $('#mark-all-read').prop('hidden',!data.unread_count);
+        let groupSection=null,groupIndex=0;
         for(const note of data.notifications){
           const group=U.campusDay(note.created_at)===U.campusDay()?'Today':'Earlier';
-          if(group!==lastGroup){box.append($('<h2>').addClass('notification-group-title').text(group));lastGroup=group;}
-          const card=$('<article>').addClass('notification-card').toggleClass('unread',!Number(note.is_read)).attr('data-notification-id',note.notification_id).append($('<h2>').text(note.title));if(note.item_title)card.append($('<p>').addClass('notification-item').text(U.titleParts(note.item_title).display),U.demoChip(note.item_title));card.append($('<p>').text(note.pickup_event?U.pickupMessage(note.pickup_event,note.created_at):note.message),$('<time>').text(U.date(note.created_at,true)));
-          const actions=$('<div>').addClass('account-actions');
-          const mark=async()=>{const result=await app.request('notifications.php',{id:note.notification_id});shell.setUnread(result.unread_count);note.is_read=1;card.removeClass('unread');card.find('.mark-read').remove();};
-          if(!Number(note.is_read))actions.append($('<button>').addClass('btn btn-outline mark-read').attr('type','button').text('Mark as read').on('click',async function(){const button=$(this).prop('disabled',true);try{await mark();card.find('a.btn').first().trigger('focus');}catch(e){U.showError(e);button.prop('disabled',false);}}));
+          if(group!==lastGroup){
+            const groupId='notification-group-'+(++groupIndex);
+            groupSection=$('<section>').addClass('notification-group').attr('aria-labelledby',groupId).append($('<h2>').addClass('notification-group-title').attr('id',groupId).text(group));
+            box.append(groupSection);lastGroup=group;
+          }
+          const heading=$('<h3>').addClass('notification-title').attr({id:'notification-title-'+note.notification_id,tabindex:'-1'}).text(note.title);
+          const titleLine=$('<div>').addClass('notification-title-line').append(heading);
+          if(!Number(note.is_read))titleLine.append($('<span>').addClass('notification-unread').text('Unread'));
+          const content=$('<div>').addClass('notification-content').append(titleLine);
+          if(note.item_title){
+            const context=$('<div>').addClass('notification-context').append($('<p>').addClass('notification-item').text(U.titleParts(note.item_title).display));
+            const demo=U.titleParts(note.item_title).demo;if(demo)context.append($('<span>').addClass('notification-demo').text(demo));
+            content.append(context);
+          }
+          content.append($('<p>').addClass('notification-message').text(note.pickup_event?U.pickupMessage(note.pickup_event,note.created_at):note.message));
+          const card=$('<article>').addClass('notification-card').toggleClass('unread',!Number(note.is_read)).attr({'data-notification-id':note.notification_id,'aria-labelledby':heading.attr('id')}).append(content,$('<time>').addClass('notification-time').text(U.date(note.created_at,true)));
+          const actions=$('<div>').addClass('notification-actions');
+          const mark=async()=>{const result=await app.request('notifications.php',{id:note.notification_id});shell.setUnread(result.unread_count);note.is_read=1;card.removeClass('unread');card.find('.mark-read,.notification-unread').remove();$('#mark-all-read').prop('hidden',!result.unread_count);};
+          if(!Number(note.is_read))actions.append($('<button>').addClass('text-button mark-read').attr('type','button').text('Mark as read').on('click',async function(){const button=$(this).prop('disabled',true);try{await mark();const destination=card.find('a.notification-destination').first();(destination.length?destination:heading).trigger('focus');}catch(e){U.showError(e);button.prop('disabled',false);}}));
           let target=null,label='View item';
           if(note.claim_id){if(app.state.user.role==='STUDENT'){target=app.base+'my-reports.html?tab=claims&claim='+note.claim_id;label=note.pickup_event?'View my pickup':'View my claim';}else if(note.notification_type?.startsWith('HANDOVER_')&&note.handover_id){target=app.base+'admin.html?tab=handover&handover='+note.handover_id;label='View handover';}else{target=app.base+'admin.html?tab=claims&claim='+note.claim_id;label='Review claim';}}
           else if(note.item_id)target=U.itemUrl(note.item_id);
           // Following an unread link marks it read first; modified clicks (new tab) stay native.
-          if(target)actions.append($('<a>').addClass('btn btn-outline').attr('href',target).text(label).on('click',async function(e){if(Number(note.is_read))return;if(e.ctrlKey||e.metaKey||e.shiftKey||e.button===1){mark().catch(()=>{});return;}e.preventDefault();try{await mark();}catch{}location.assign(target);}));
-          card.append(actions);box.append(card);
+          if(target)actions.prepend($('<a>').addClass('text-link notification-destination').attr('href',target).text(label).on('click',async function(e){if(Number(note.is_read))return;if(e.ctrlKey||e.metaKey||e.shiftKey||e.button===1){mark().catch(()=>{});return;}e.preventDefault();try{await mark();}catch{}location.assign(target);}).on('auxclick',function(e){if(e.button===1&&!Number(note.is_read))mark().catch(()=>{});}));
+          if(actions.children().length)card.append(actions);
+          groupSection.append(card);
         }
         if(!data.notifications.length)box.append(U.empty('You are all caught up','Report and claim updates will appear here.'));
         U.pager(data,next=>load(next),'#notification-results');loading(false);document.body.dataset.ready='true';
       }catch(e){failed(e);}
     }
-    $('#mark-all-read').on('click',async function(){const button=$(this).prop('disabled',true);try{const result=await app.request('notifications.php',{action:'read_all'});shell.setUnread(result.unread_count);await load(currentPage);U.notify('All notifications are marked as read.');}catch(e){U.showError(e);}finally{button.prop('disabled',false);}});
+    $('#mark-all-read').on('click',async function(){const button=$(this).prop('disabled',true);try{const result=await app.request('notifications.php',{action:'read_all'});shell.setUnread(result.unread_count);await load(currentPage);U.notify('All notifications are marked as read.');$('#shell-feedback').trigger('focus');}catch(e){U.showError(e);}finally{button.prop('disabled',false);}});
     bindRetry(load);await load();
   }
   async function historyPage(){

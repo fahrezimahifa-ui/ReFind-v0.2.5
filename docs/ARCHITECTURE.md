@@ -41,7 +41,7 @@ Paths below are relative to the project root.
 | `css/` | Shared, auth, Student and BM styling |
 | `js/api.js` | In-memory session/CSRF state, same-origin fetch and API error handling |
 | `js/shell.js`, `js/student-common.js` | Shared navigation, feedback, formatting and Student helpers |
-| `js/theme.js`, `css/theme.css` | Early client-side theme selection and shared light/dark semantic colors; no server preference or schema change |
+| `js/theme.js`, `css/theme.css` | Early client-side theme selection, shared light/dark surface roles and page-frame/gutter tokens; no server preference or schema change |
 | `js/student.js`, `js/bm.js` | Student and BM interactions |
 | `js/auth-ui.js`, `js/account-ui.js`, `js/uploads.js` | Login/account UI and client image preparation |
 | `assets/`, `vendor/` | Branding, local browser libraries and licenses |
@@ -200,6 +200,8 @@ Choose additional suites for the affected surface: `tools/test-auth.cjs`, `test-
 Historical engineering results are in [ACCEPTANCE_TESTS.md](ACCEPTANCE_TESTS.md), [V025_REPORT.md](V025_REPORT.md) and `docs/verification/v025/`. Historical data counts and PASS results should be attributed to those runs, not stated as a fresh live audit.
 
 All six regression suites accept `REFIND_THEME=light` or `dark` and `REFIND_EVIDENCE_DIR` for a separate receipt directory. Run mutation suites sequentially. `tools/test-theme.cjs` performs read-only responsive/theme/accessibility review on the owned QA app; `--main` explicitly selects this local main installation and checks business-table fingerprints before/after. It needs Playwright, Sharp, and `@axe-core/playwright` (module paths can be supplied with `REFIND_PLAYWRIGHT_MODULE`, `REFIND_SHARP_MODULE`, and `REFIND_AXE_MODULE`). Keep review dependencies and screenshots under ignored `output/playwright/`. See [GLASS_DARK_MODE_REPORT.md](GLASS_DARK_MODE_REPORT.md) for the current run and its limits.
+
+The subsequent [layout/glass refinement](LAYOUT_GLASS_REPORT.md) records the current shared widths, notification feed, and surface roles. `tools/test-layout.cjs` adds focused feed/spacing/read-state/reflow checks with fresh actors in the owned QA installation; do not run it alongside other mutation suites. The theme suite also checks rendered focus-ring contrast over black/white header backdrops. Use a new `REFIND_EVIDENCE_DIR` to preserve previous results. This installation's ignored `output/playwright/.htaccess` denies captures through HTTP; open them as local files and retain that guard when generating review evidence.
 
 ## 8. Existing documentation and known drift
 

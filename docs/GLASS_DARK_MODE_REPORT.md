@@ -1,6 +1,8 @@
 # ReFind glass surfaces and dark mode — 28 October 2026
 
-Implemented locally on `codex/glass-dark-mode`. The first visual refresh was saved as local checkpoint `945d1dc` on `codex/ui-polish`, following baseline `bc8c6c1`. This update remains reviewable working changes. No push, pull request, or merge was performed; `main` remains at `857acea`.
+This report records checkpoint `2536fcb`. The subsequent [layout/glass refinement report](LAYOUT_GLASS_REPORT.md) supersedes its page-width, notification-card, and surface-opacity choices. The verification below remains historical evidence for that checkpoint.
+
+Implemented locally on `codex/glass-dark-mode` and saved at checkpoint `2536fcb`. The first visual refresh was saved as local checkpoint `945d1dc` on `codex/ui-polish`, following baseline `bc8c6c1`. No push, pull request, or merge was performed; `main` remains at `857acea`.
 
 ## Changes
 
