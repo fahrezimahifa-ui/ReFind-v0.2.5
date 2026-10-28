@@ -15,7 +15,7 @@ fs.mkdirSync(out,{recursive:true});
 const accounts=JSON.parse(fs.readFileSync(path.join(target,'storage/setup/demo-accounts.json'))).accounts;
 const results={checks:[],screens:[],contrast:[],focusContrast:[],a11y:[],performance:[],errors:[],failedRequests:[]};
 function save(){fs.writeFileSync(path.join(out,'theme-results.json'),JSON.stringify(results,null,2)+'\n');}
-function fingerprint(){return execFileSync(qaRuntime.php,['-r',"require 'app/db.php'; $all=[]; foreach(['users','items','claims','handovers','notifications','item_photos','claim_photos','item_matches','item_status_history'] as $table) $all[$table]=rows('SELECT * FROM '.$table); echo hash('sha256',json_encode($all));"],{cwd:target,encoding:'utf8'}).trim();}
+function fingerprint(){return execFileSync(qaRuntime.php,[path.join(target,'tools/fingerprint.php')],{encoding:'utf8'}).trim();}
 async function check(name,fn){await fn();results.checks.push(name);save();console.log('PASS '+name);}
 async function go(page,route){await page.goto(base+route);await page.waitForSelector('body[data-ready="true"]');await page.waitForLoadState('networkidle');await page.evaluate(async()=>{await document.fonts.ready;ReFindTheme.setMotion(false);});}
 async function chooseTheme(page,value){if(!(await page.locator('#appearance-panel').evaluate(e=>e.open)))await page.click('#appearance-toggle');await page.locator('[name="appearance-theme"][value="'+value+'"]').check();await page.keyboard.press('Escape');}

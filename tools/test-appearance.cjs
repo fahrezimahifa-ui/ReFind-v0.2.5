@@ -13,7 +13,7 @@ const accounts=JSON.parse(fs.readFileSync(path.join(target,'storage/setup/demo-a
 const results={checks:[],contrast:[],performance:[],errors:[],font:{},recordings:[]};
 function save(){fs.writeFileSync(path.join(out,'appearance-results.json'),JSON.stringify(results,null,2)+'\n');}
 async function check(name,fn){await fn();results.checks.push(name);save();console.log('PASS '+name);}
-function fingerprint(){return execFileSync(qaRuntime.php,['-r',"require 'app/db.php'; $all=[]; foreach(['users','items','claims','handovers','notifications','item_photos','claim_photos','item_matches','item_status_history'] as $table) $all[$table]=rows('SELECT * FROM '.$table); echo hash('sha256',json_encode($all));"],{cwd:target,encoding:'utf8'}).trim();}
+function fingerprint(){return execFileSync(qaRuntime.php,[path.join(target,'tools/fingerprint.php')],{encoding:'utf8'}).trim();}
 async function go(p,route='login.html'){await p.goto(base+route);await p.waitForSelector('body[data-ready="true"]');await p.evaluate(()=>document.fonts.ready);}
 function observe(p){p.on('pageerror',e=>results.errors.push(String(e)));}
 async function open(p){if(!(await p.locator('#appearance-panel').evaluate(e=>e.open)))await p.click('#appearance-toggle');await p.waitForTimeout(170);}

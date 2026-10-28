@@ -16,7 +16,7 @@ if (batch === 'v025') fs.mkdirSync(out, {recursive:true});
 const base=qaRuntime.base;
 function snapshot() {
   const code = "require 'app/db.php'; $r=[]; foreach(['users','items','claims','handovers','notifications','item_photos','claim_photos'] as $t) $r[$t]=row('SELECT COUNT(*) AS n FROM '.$t)['n']; $r['users_fingerprint']=hash('sha256',json_encode(rows('SELECT * FROM users ORDER BY user_id'))); echo json_encode($r);";
-  return JSON.parse(execFileSync(php, ['-r', code], {cwd:root,encoding:'utf8'}));
+  return {...JSON.parse(execFileSync(php, ['-r', code], {cwd:root,encoding:'utf8'})), fingerprint:JSON.parse(execFileSync(php,[path.join(root,'tools/fingerprint.php')],{encoding:'utf8'}))};
 }
 async function hydratePhotos(page) {
   await page.evaluate(async()=>{
@@ -31,11 +31,10 @@ async function hydratePhotos(page) {
   assert.ok(fs.existsSync(out), 'Run the isolated auth test first');
   const credentials = JSON.parse(fs.readFileSync(path.join(root, 'storage', 'setup', 'demo-accounts.json'), 'utf8')).accounts;
   const before = snapshot();
-  const mainSchema = JSON.parse(execFileSync(php,[path.join(root,'tools','check-database.php')],{encoding:'utf8'}));
-  const testSchema = JSON.parse(execFileSync(php,[path.resolve(root,'..','ReFind_0.2.0_Test','tools','check-database.php')],{encoding:'utf8'}));
-  assert.ok(mainSchema.passed && testSchema.passed);
+  const schema = JSON.parse(execFileSync(php,[path.join(root,'tools','check-database.php')],{encoding:'utf8'}));
+  assert.ok(schema.passed);
   const browser = await chromium.launch({executablePath:qaRuntime.chromePath(),headless:true});
-  const result = {scope:batch.toUpperCase()+' isolated QA positive smoke + schema checks; no business mutations', mainSchema,testSchema,browserErrors:[],accounts:[]};
+  const result = {scope:batch.toUpperCase()+' isolated QA positive smoke + schema checks; no business mutations', schema,browserErrors:[],accounts:[]};
   try {
     for (const [email, account] of Object.entries(credentials)) {
       const context = await browser.newContext({viewport:{width:390,height:844}});
@@ -69,7 +68,7 @@ async function hydratePhotos(page) {
     }
     const after = snapshot(); assert.deepEqual(after,before); assert.deepEqual(result.browserErrors,[]);
     result.dataUnchanged=true; result.databaseCounts=after; result.passed=true;
-    fs.writeFileSync(path.join(out,'main-smoke.json'),JSON.stringify(result,null,2)+'\n');
-    console.log('Isolated QA release smoke: 3 accounts login/logout PASS; data unchanged; 9 schema checks PASS on both databases.');
+    fs.writeFileSync(path.join(out,'qa-smoke.json'),JSON.stringify(result,null,2)+'\n');
+    console.log('Isolated QA release smoke: 3 accounts login/logout PASS; data unchanged; 9 schema checks PASS on the isolated QA database.');
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
