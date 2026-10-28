@@ -3,6 +3,7 @@ const {chromium}=require(process.env.REFIND_PLAYWRIGHT_MODULE||path.join(os.tmpd
 const assets=path.resolve(__dirname,'../assets');
 const exportsToRender=[
  ['refind-logo-horizontal.svg','refind-logo-horizontal.png',688,216],
+ ['refind-logo-horizontal-dark.svg','refind-logo-horizontal-dark.png',688,216],
  ['refind-logo-mark.svg','refind-logo-mark.png',256,256],
  ['refind-logo-mark.svg','refind-favicon-16.png',16,16],
  ['refind-logo-mark.svg','refind-favicon-32.png',32,32],

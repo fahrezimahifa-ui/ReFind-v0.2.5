@@ -1,3 +1,4 @@
+const {themedContext}=require('./qa-browser.cjs');
 // B03 integration tests: actual HTTP/SQL/browser; mutations only in the owned _test copy.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -10,7 +11,7 @@ const testRoot = path.resolve(root,'..','ReFind_0.2.0_Test');
 const base = 'http://localhost/ReFind_0.2.0_Test/';
 const php = 'C:\\xampp\\php\\php.exe';
 const {chromium} = require(process.env.REFIND_PLAYWRIGHT_MODULE || path.join(os.tmpdir(),'opencode','refind-multipage-check','node_modules','playwright-core'));
-const out = process.env.REFIND_EVIDENCE_BATCH ? path.join(root,'docs','verification',process.env.REFIND_EVIDENCE_BATCH,'account') : path.join(root,'docs','verification','b03');
+const out = process.env.REFIND_EVIDENCE_DIR ? path.resolve(process.env.REFIND_EVIDENCE_DIR) : process.env.REFIND_EVIDENCE_BATCH ? path.join(root,'docs','verification',process.env.REFIND_EVIDENCE_BATCH,'account') : path.join(root,'docs','verification','b03');
 assert.ok(fs.existsSync(path.join(testRoot,'.refind-b02-test.json')));
 fs.mkdirSync(out,{recursive:true});
 const run = 'B03-' + Date.now().toString(36);
@@ -50,7 +51,7 @@ async function openAccountMenu(page) {
   if(await page.locator('#account-toggle').getAttribute('aria-expanded')!=='true') await page.click('#account-toggle');
 }
 async function loggedPage(a,viewport={width:390,height:844}) {
-  const s=await new Session().login(a),context=await browser.newContext({viewport});
+  const s=await new Session().login(a),context=await themedContext(browser,{viewport});
   await context.addCookies([{name:'refind_020_test',value:s.id(),domain:'localhost',path:'/ReFind_0.2.0_Test/',httpOnly:true,sameSite:'Lax'}]);
   const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));
   return {s,page,context};
@@ -177,7 +178,7 @@ async function go(page,route) {const r=await page.goto(base+route);await page.wa
     });
     await test('Password client mismatch/byte errors are inline and secrets stay out of localStorage',async()=>{
       const {page,context}=await loggedPage(A);await go(page,'settings.html');await page.fill('#current-password',A.password);await page.fill('#new-password','A valid different password');await page.fill('#confirm-password','does-not-match');await page.click('#password-save');assert.equal(await page.locator('#confirm-password').getAttribute('aria-invalid'),'true');
-      await page.fill('#new-password','😀'.repeat(20));await page.fill('#confirm-password','😀'.repeat(20));await page.click('#password-save');assert.equal(await page.locator('#new-password').getAttribute('aria-invalid'),'true');assert.equal(await page.evaluate(()=>localStorage.length),0);await context.close();
+      await page.fill('#new-password','😀'.repeat(20));await page.fill('#confirm-password','😀'.repeat(20));await page.click('#password-save');assert.equal(await page.locator('#new-password').getAttribute('aria-invalid'),'true');assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage).filter(key=>key!=='refind-theme')),[]);assert.ok(await page.evaluate(()=>localStorage.getItem('refind-theme')===null||['light','dark'].includes(localStorage.getItem('refind-theme'))));await context.close();
     });
     await test('Expired browser form redirects to login with a safe return instead of replaying POST',async()=>{
       const {page,context,s}=await loggedPage(A);await go(page,'profile.html');await page.fill('#display-name','Unsaved expired name');driver({action:'expire',id:s.id(),type:'idle'});await page.click('#profile-save');await page.waitForURL('**/login.html?return=*');assert.ok((await page.url()).includes('profile.html'));await context.close();

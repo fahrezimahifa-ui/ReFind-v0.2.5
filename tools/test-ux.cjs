@@ -1,3 +1,4 @@
+const {themedContext}=require('./qa-browser.cjs');
 // UX01 real browser/HTTP acceptance. Fresh fixture actors and cleanup stay in owned _test.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto');
 const {execFileSync}=require('node:child_process');
@@ -22,7 +23,7 @@ async function claim(s,id,lost=''){return(await s.ok('api/claims.php',{itemId:id
 async function review(s,id,decision){const d=(await s.ok('api/staff.php?resource=claims&id='+id)).claim;return s.ok('api/staff.php',{action:'review',id,decision,revision:d.revision,confirm:'1',note:'Private '+run+' '+decision+' review reason.'});}
 async function pickup(s,id,action,extra={}){const d=(await s.ok('api/handovers.php?id='+id)).handovers[0];return s.ok('api/handovers.php',{action,id,revision:d.revision,confirm:'1',note:'Private '+run+' '+action+' reason.',...extra});}
 function future(){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(Date.now()+3*86400000)),v=k=>parts.find(p=>p.type===k).value;return v('year')+'-'+v('month')+'-'+v('day')+'T'+v('hour')+':'+v('minute');}
-async function logged(a,viewport={width:390,height:844}){const s=await new Session().login(a),context=await browser.newContext({viewport,timezoneId:'America/Los_Angeles'});await context.addCookies([{name:'refind_020_test',value:s.cookies.get('refind_020_test'),domain:'localhost',path:'/ReFind_0.2.0_Test/'}]);const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));return{page,context};}
+async function logged(a,viewport={width:390,height:844}){const s=await new Session().login(a),context=await themedContext(browser,{viewport,timezoneId:'America/Los_Angeles'});await context.addCookies([{name:'refind_020_test',value:s.cookies.get('refind_020_test'),domain:'localhost',path:'/ReFind_0.2.0_Test/'}]);const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));return{page,context};}
 async function go(page,route){await page.goto(base+route);await page.waitForSelector('body[data-ready="true"]');}
 async function exact(page,id){await page.waitForSelector('[data-detail-claim-id="'+id+'"]',{state:'attached'});}
 async function group(name,fn){await fn();results.push(name);console.log('PASS UX '+results.length+': '+name);}

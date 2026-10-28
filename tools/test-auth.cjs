@@ -1,3 +1,4 @@
+const {themedContext}=require('./qa-browser.cjs');
 // Real Apache/PHP/MariaDB + browser tests. All mutations are isolated in _test.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -9,7 +10,7 @@ const testRoot = path.resolve(root, '..', 'ReFind_0.2.0_Test');
 const base = 'http://localhost/ReFind_0.2.0_Test/';
 const php = 'C:\\xampp\\php\\php.exe';
 const {chromium} = require(process.env.REFIND_PLAYWRIGHT_MODULE || path.join(os.tmpdir(), 'opencode', 'refind-multipage-check', 'node_modules', 'playwright-core'));
-const out = process.env.REFIND_EVIDENCE_BATCH ? path.join(root, 'docs', 'verification', process.env.REFIND_EVIDENCE_BATCH, 'auth') : path.join(root, 'docs', 'verification', 'b02');
+const out = process.env.REFIND_EVIDENCE_DIR ? path.resolve(process.env.REFIND_EVIDENCE_DIR) : process.env.REFIND_EVIDENCE_BATCH ? path.join(root, 'docs', 'verification', process.env.REFIND_EVIDENCE_BATCH, 'auth') : path.join(root, 'docs', 'verification', 'b02');
 assert.ok(fs.existsSync(testRoot) && fs.existsSync(path.join(testRoot, '.refind-b02-test.json')));
 assert.equal(new URL(base).pathname, '/ReFind_0.2.0_Test/');
 fs.mkdirSync(out, {recursive: true});
@@ -266,7 +267,7 @@ function seedFixtures() {
     });
     browser = await chromium.launch({executablePath: process.env.REFIND_CHROME || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', headless: true});
     await test('Real browser Student/BM login, wrong-password recovery, logout and server page guards', async () => {
-      clearThrottle(); const context = await browser.newContext({viewport: {width: 390, height: 844}}); const page = await context.newPage(); page.on('pageerror', e => browserErrors.push(String(e)));
+      clearThrottle(); const context = await themedContext(browser,{viewport: {width: 390, height: 844}}); const page = await context.newPage(); page.on('pageerror', e => browserErrors.push(String(e)));
       await page.goto(base + 'login.html'); await page.waitForSelector('body[data-ready="true"]');
       await page.fill('#email', A.email); await page.fill('#password', 'WrongPassword!'); await page.click('#login-submit'); await page.waitForFunction(() => !document.querySelector('#login-feedback').hidden && !document.querySelector('#login-submit').disabled);
       assert.match(await page.locator('#login-feedback').innerText(), /could not be verified/);
@@ -279,7 +280,7 @@ function seedFixtures() {
     });
     await test('Authentication UI works at five required viewports with keyboard controls', async () => {
       for (const [width, height] of [[360,800],[390,844],[768,1024],[1280,800],[1440,900]]) {
-        const context = await browser.newContext({viewport: {width, height}}); const page = await context.newPage(); page.on('pageerror', e => browserErrors.push(String(e)));
+        const context = await themedContext(browser,{viewport: {width, height}}); const page = await context.newPage(); page.on('pageerror', e => browserErrors.push(String(e)));
         await page.goto(base + 'login.html'); await page.waitForSelector('body[data-ready="true"]');
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'overflow ' + width);
         await page.locator('#email').focus(); await page.keyboard.type(A.email); await page.keyboard.press('Tab'); await page.keyboard.type(A.password); await page.keyboard.press('Enter'); await page.waitForURL('**/index.html'); await page.waitForSelector('body[data-ready="true"]');
@@ -289,7 +290,7 @@ function seedFixtures() {
     });
     await test('Displayed DB names are escaped and produce no browser exceptions', async () => {
       query('UPDATE users SET full_name=? WHERE user_id=?', ['<img src=x onerror=alert(1)>', Number(A.user_id)]);
-      const s = new Session(); await s.login(A); const context = await browser.newContext();
+      const s = new Session(); await s.login(A); const context = await themedContext(browser);
       await context.addCookies([{name:'refind_020_test',value:s.id(),domain:'localhost',path:'/ReFind_0.2.0_Test/'}]); const page = await context.newPage(); page.on('pageerror', e => browserErrors.push(String(e)));
       await page.goto(base + 'index.html'); await page.waitForSelector('body[data-ready="true"]'); assert.equal(await page.locator('[data-user-name]').innerText(), '<img src=x onerror=alert(1)>'); assert.equal(await page.locator('[data-user-name] img').count(), 0);
       query('UPDATE users SET full_name=? WHERE user_id=?', [originalA.full_name, Number(A.user_id)]); await context.close(); assert.deepEqual(browserErrors, []);

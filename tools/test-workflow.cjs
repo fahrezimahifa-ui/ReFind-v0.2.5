@@ -1,9 +1,10 @@
+const {themedContext}=require('./qa-browser.cjs');
 // B05 actual HTTP/SQL/browser lifecycle tests; fresh actors and mutations only in _test.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto');
 const {execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),testRoot=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php='C:\\xampp\\php\\php.exe';
 const {chromium}=require(process.env.REFIND_PLAYWRIGHT_MODULE||path.join(os.tmpdir(),'opencode','refind-multipage-check','node_modules','playwright-core'));
-const out=process.env.REFIND_EVIDENCE_BATCH?path.join(root,'docs','verification',process.env.REFIND_EVIDENCE_BATCH,'workflow'):path.join(root,'docs','verification','b05');assert.ok(fs.existsSync(path.join(testRoot,'.refind-b02-test.json')));fs.mkdirSync(out,{recursive:true});
+const out=process.env.REFIND_EVIDENCE_DIR?path.resolve(process.env.REFIND_EVIDENCE_DIR):process.env.REFIND_EVIDENCE_BATCH?path.join(root,'docs','verification',process.env.REFIND_EVIDENCE_BATCH,'workflow'):path.join(root,'docs','verification','b05');assert.ok(fs.existsSync(path.join(testRoot,'.refind-b02-test.json')));fs.mkdirSync(out,{recursive:true});
 const run='B05-'+Date.now().toString(36),results=[],browserErrors=[],viewportChecks=[],actors=[];let browser;
 function driver(input){return JSON.parse(execFileSync(php,[path.join(testRoot,'tools','b02-fixture.php')],{input:JSON.stringify(input),encoding:'utf8'}));}
 function q(query,values=[]){return driver({action:'query',query,values});}
@@ -27,7 +28,7 @@ async function pickup(s,id){return(await s.ok('api/handovers.php?id='+id)).hando
 function futureInput(days=2){const d=new Date(Date.now()+days*86400000),p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d),v=k=>p.find(x=>x.type===k).value;return v('year')+'-'+v('month')+'-'+v('day')+'T'+v('hour')+':'+v('minute');}
 async function changePickup(s,id,action,extra={}){const d=await pickup(s,id);return s.ok('api/handovers.php',{id,action,revision:d.revision,confirm:'1',note:'PRIVATE pickup operation reason.',...extra});}
 function snapshot(){return Object.fromEntries(['items','claims','handovers','item_matches','item_status_history','notifications'].map(t=>[t,JSON.stringify(q('SELECT * FROM '+t+' ORDER BY '+({items:'item_id',claims:'claim_id',handovers:'handover_id',item_matches:'match_id',item_status_history:'history_id',notifications:'notification_id'})[t]).rows)]));}
-async function browserPage(a,viewport={width:390,height:844}){const s=await new Session().login(a),context=await browser.newContext({viewport,timezoneId:'America/Los_Angeles'});await context.addCookies([{name:'refind_020_test',value:s.cookies.get('refind_020_test'),domain:'localhost',path:'/ReFind_0.2.0_Test/'}]);const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));return{page,context,s};}
+async function browserPage(a,viewport={width:390,height:844}){const s=await new Session().login(a),context=await themedContext(browser,{viewport,timezoneId:'America/Los_Angeles'});await context.addCookies([{name:'refind_020_test',value:s.cookies.get('refind_020_test'),domain:'localhost',path:'/ReFind_0.2.0_Test/'}]);const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));return{page,context,s};}
 async function go(page,route){await page.goto(base+route);await page.waitForSelector('body[data-ready="true"]');}
 async function decideUI(page,id,decision,note){await go(page,'admin.html?tab=claims&claim='+id);await page.click('[data-bm-action="'+decision+'"]');await page.fill('#operation-note',note);if(await page.locator('#operation-confirm').isVisible())await page.check('#operation-confirm');await page.click('#operation-submit');await page.waitForFunction(()=>!document.querySelector('#operation-dialog').open);await page.waitForSelector('[data-detail-claim-id="'+id+'"]');}
 

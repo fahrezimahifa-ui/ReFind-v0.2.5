@@ -1,0 +1,58 @@
+/* Semantic colors shared by every route. Opaque surfaces are the default fallback. */
+:root {
+  color-scheme:light;
+  --primary:#3f5fb5; --primary-hover:#344f99; --primary-active:#2c4384;
+  --primary-text:#fff; --primary-soft:#edf1fb; --primary-pressed:#e2e9fa;
+  --link:#344f99; --navy:var(--link); --ink:#253047; --muted:#526178;
+  --cyan:#10b7cf; --focus:#087f95; --control:#7b8aa0; --line:#dfe5f0;
+  --bg:#f7f8fc; --surface:#f8faff; --panel:#fff; --field:#fff;
+  --glass:#f8faff; --glass-control:#f8faff; --subtle:#f1f4fa;
+  --readonly:#edf0f6; --media:#e9edf4;
+  --danger:#922e3e; --danger-bg:#fff5f6; --danger-line:#c8798b; --danger-active:#fae8ed;
+  --danger-solid:#943b4b; --danger-hover:#7a2d3b; --danger-pressed:#672331; --danger-label:#fff;
+  --warning:#785a22; --warning-bg:#fff4dc; --warning-line:#d3b168; --warning-active:#ffedc5;
+  --success:#226a55; --success-bg:#edf9f3; --success-line:#9bc9b6;
+  --info:#175e6b; --info-bg:#edf9fc; --info-line:#a9d3dc;
+  --private-bg:#fffaf0; --private-line:#d8c79e; --private-text:#716047;
+  --possible:#594580; --possible-bg:#f2ecff;
+  --pink-rgb:252 218 255; --sky-rgb:121 204 254; --lilac-rgb:216 165 255;
+  --wash-alpha:.18; --radius-control:11px; --radius-panel:18px;
+  --space-1:8px; --space-2:12px; --space-3:18px; --space-4:24px;
+  --panel-shadow:0 8px 28px rgb(48 65 110 / .06);
+  --glass-shadow:0 8px 24px rgb(48 65 110 / .09),inset 0 1px 0 rgb(255 255 255 / .7);
+  --scrim:rgb(11 18 32 / .55);
+  --bs-body-color:var(--ink); --bs-body-bg:var(--bg); --bs-secondary-color:var(--muted);
+  --bs-border-color:var(--line); --bs-link-color:var(--primary); --bs-link-hover-color:var(--primary-hover);
+}
+:root[data-theme="dark"] {
+  color-scheme:dark;
+  --primary:#9bb3ff; --primary-hover:#b5c7ff; --primary-active:#cedaff;
+  --primary-text:#0b1220; --primary-soft:#223452; --primary-pressed:#2d4264; --link:#9bb3ff;
+  --ink:#eaf0ff; --muted:#b8c5dd; --cyan:#6cdce7; --focus:#7de4ed;
+  --control:#7d90af; --line:#34425b;
+  --bg:#0b1220; --surface:#131f35; --panel:#131f35; --field:#101c31;
+  --glass:#131f35; --glass-control:#1c2c46; --subtle:#1a2942;
+  --readonly:#1e2b40; --media:#0e192b;
+  --danger:#ffb2c0; --danger-bg:#3a2435; --danger-line:#ad7187; --danger-active:#503044;
+  --danger-solid:#ffb2c0; --danger-hover:#ffc9d2; --danger-pressed:#ffdde3; --danger-label:#301322;
+  --warning:#f5d494; --warning-bg:#352d21; --warning-line:#a58b59; --warning-active:#493d28;
+  --success:#9de2bf; --success-bg:#19382f; --success-line:#4d8c75;
+  --info:#9ae2ec; --info-bg:#18343f; --info-line:#518692;
+  --private-bg:#302b25; --private-line:#8b7858; --private-text:#e6d2b2;
+  --possible:#d4bbff; --possible-bg:#302743;
+  --pink-rgb:110 61 120; --sky-rgb:36 77 133; --lilac-rgb:87 66 139;
+  --panel-shadow:0 8px 28px rgb(0 0 0 / .14);
+  --glass-shadow:0 8px 24px rgb(0 0 0 / .18),inset 0 1px 0 rgb(211 225 255 / .08);
+  --scrim:rgb(3 8 18 / .75);
+}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  :root { --panel:rgb(255 255 255 / .96); --glass:rgb(248 250 255 / .92); --glass-control:rgb(248 250 255 / .8); --field:rgb(255 255 255 / .98); }
+  :root[data-theme="dark"] { --panel:rgb(19 31 53 / .96); --glass:rgb(19 31 53 / .92); --glass-control:rgb(28 44 70 / .8); --field:rgb(16 28 49 / .98); }
+  .app-header,.account-menu,.photo-dialog,.confirm-dialog,.operation-dialog,.sticky-form-actions { -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); }
+}
+@media (prefers-reduced-transparency:reduce), (forced-colors:active) {
+  :root { --panel:#fff; --glass:#f8faff; --glass-control:#f8faff; --field:#fff; }
+  :root[data-theme="dark"] { --panel:#131f35; --glass:#131f35; --glass-control:#1c2c46; --field:#101c31; }
+  .app-header,.account-menu,.photo-dialog,.confirm-dialog,.operation-dialog,.sticky-form-actions { -webkit-backdrop-filter:none; backdrop-filter:none; }
+  body::before { display:none; }
+}

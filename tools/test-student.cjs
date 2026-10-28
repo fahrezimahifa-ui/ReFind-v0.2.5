@@ -1,9 +1,10 @@
+const {themedContext}=require('./qa-browser.cjs');
 // B04 real HTTP/browser/SQL/file tests; all mutations belong to fresh accounts in _test.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto');
 const {execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),testRoot=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php='C:\\xampp\\php\\php.exe';
 const {chromium}=require(process.env.REFIND_PLAYWRIGHT_MODULE||path.join(os.tmpdir(),'opencode','refind-multipage-check','node_modules','playwright-core'));
-const out=process.env.REFIND_EVIDENCE_BATCH?path.join(root,'docs','verification',process.env.REFIND_EVIDENCE_BATCH,'student'):path.join(root,'docs','verification','b04');assert.ok(fs.existsSync(path.join(testRoot,'.refind-b02-test.json')));fs.mkdirSync(out,{recursive:true});
+const out=process.env.REFIND_EVIDENCE_DIR?path.resolve(process.env.REFIND_EVIDENCE_DIR):process.env.REFIND_EVIDENCE_BATCH?path.join(root,'docs','verification',process.env.REFIND_EVIDENCE_BATCH,'student'):path.join(root,'docs','verification','b04');assert.ok(fs.existsSync(path.join(testRoot,'.refind-b02-test.json')));fs.mkdirSync(out,{recursive:true});
 const run='B04-'+Date.now().toString(36),results=[],browserErrors=[],viewportChecks=[],users=[];let browser;
 function driver(input){return JSON.parse(execFileSync(php,[path.join(testRoot,'tools','b02-fixture.php')],{input:JSON.stringify(input),encoding:'utf8'}));}
 function q(query,values=[]){return driver({action:'query',query,values});}
@@ -24,7 +25,7 @@ function photoFiles(){return ['items','evidence','claims'].flatMap(folder=>fs.re
 function counts(){return Object.fromEntries(['items','item_photos','claims','claim_photos','item_matches','item_status_history','notifications'].map(t=>[t,Number(q('SELECT COUNT(*) AS n FROM '+t).rows[0].n)]));}
 async function item(s,id){return(await s.ok('api/items.php?id='+id)).item;}
 async function create(s,type,title,extra={},files={}){return(await s.ok('api/items.php',report(type,title,extra),files)).id;}
-async function loggedPage(a,viewport={width:390,height:844}){const s=await new Session().login(a),context=await browser.newContext({viewport,timezoneId:'America/Los_Angeles'});await context.addCookies([{name:'refind_020_test',value:s.cookies.get('refind_020_test'),domain:'localhost',path:'/ReFind_0.2.0_Test/'}]);const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));return{s,page,context};}
+async function loggedPage(a,viewport={width:390,height:844}){const s=await new Session().login(a),context=await themedContext(browser,{viewport,timezoneId:'America/Los_Angeles'});await context.addCookies([{name:'refind_020_test',value:s.cookies.get('refind_020_test'),domain:'localhost',path:'/ReFind_0.2.0_Test/'}]);const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));return{s,page,context};}
 async function go(page,route){await page.goto(base+route);await page.waitForSelector('body[data-ready="true"]');}
 async function fillReport(page,title,type='LOST'){await page.fill('#r-title',run+' '+title);await page.selectOption('#r-category','1');await page.fill('#r-description','Black campus bottle with a cyan strap and lid.');await page.selectOption('#r-location','37');await page.fill('#r-detail','Lantai 3, dekat lift');await page.fill('#r-date','2026-10-10');await page.fill('#r-clue','PRIVATE browser identifying mark under the lid.');if(type==='FOUND')assert.equal(await page.locator('#lost-evidence').isHidden(),true);}
 async function readyPhotos(page,selector,count){await page.waitForFunction(({selector,count})=>document.querySelector(selector).getAttribute('aria-busy')!=='true'&&document.querySelectorAll(selector+' .upload-preview').length===count,{selector,count});}

@@ -14,7 +14,7 @@ Recommended reading order:
 
 For this existing installation, start Apache/MySQL in XAMPP and use the local URL above. Later sections retain historical B01–B06/UX01 installation examples and older folder names; use the architecture guide for current local configuration and interpret test results by checkpoint.
 
-The 28 October visual refresh on `codex/ui-polish` adds the supplied blue/cyan branding, coordinated pastel page backgrounds, and refined Student/BM layouts. See the [UI polish report](docs/UI_POLISH_REPORT.md) for current verification and the [branding guide](assets/README.md) for reusable assets. App version remains 0.2.5; the database schema is unchanged.
+The 28 October refresh adds the supplied blue/cyan branding and refined Student/BM layouts. The subsequent `codex/glass-dark-mode` update adds balanced glass surfaces, continuous pastel backgrounds, midnight-blue dark mode, a header toggle, and System/Light/Dark settings. See the [glass/dark-mode report](docs/GLASS_DARK_MODE_REPORT.md) for current verification, the [first UI polish report](docs/UI_POLISH_REPORT.md) for its historical checkpoint, and the [branding guide](assets/README.md) for reusable assets. App version remains 0.2.5; the database schema is unchanged.
 
 ## Current release v0.2.5 / folder ReFind_0.2.3
 

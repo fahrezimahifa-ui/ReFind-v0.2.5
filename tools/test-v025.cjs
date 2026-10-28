@@ -1,3 +1,4 @@
+const {themedContext}=require('./qa-browser.cjs');
 // v0.2.5 acceptance: one group per QA finding fixed in this release. Fresh actors and exact-ID cleanup in the owned _test copy.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto');
 const {execFileSync}=require('node:child_process');
@@ -31,7 +32,7 @@ function futureInput(days=2){const d=new Date(Date.now()+days*86400000),p=new In
 async function changePickup(s,id,action,extra={}){const d=await pickup(s,id);return s.call('api/handovers.php',{id,action,revision:d.revision,confirm:'1',note:'PRIVATE pickup operation reason.',...extra});}
 const notes=(userId,where='',values=[])=>q('SELECT notification_type,title,message,claim_id,item_id FROM notifications WHERE user_id=? '+where+' ORDER BY notification_id',[Number(userId),...values]).rows;
 const pairs=(lost,found)=>q('SELECT match_status,match_score FROM item_matches WHERE lost_item_id=? AND found_item_id=?',[Number(lost),Number(found)]).rows;
-async function browserPage(a,viewport={width:1280,height:900}){const s=await new Session().login(a),context=await browser.newContext({viewport,timezoneId:'Asia/Jakarta'});await context.addCookies([{name:'refind_020_test',value:s.cookies.get('refind_020_test'),domain:'localhost',path:'/ReFind_0.2.0_Test/'}]);const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));return{page,context,s};}
+async function browserPage(a,viewport={width:1280,height:900}){const s=await new Session().login(a),context=await themedContext(browser,{viewport,timezoneId:'Asia/Jakarta'});await context.addCookies([{name:'refind_020_test',value:s.cookies.get('refind_020_test'),domain:'localhost',path:'/ReFind_0.2.0_Test/'}]);const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));return{page,context,s};}
 async function go(page,route){await page.goto(base+route);await page.waitForSelector('body[data-ready="true"]');}
 
 (async()=>{

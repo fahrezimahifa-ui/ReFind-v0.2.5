@@ -1,5 +1,7 @@
 # ReFind visual refresh — 28 October 2026
 
+This report records the first refresh, saved at `945d1dc`. The subsequent glass surfaces, continuous backgrounds, and dark mode are documented in [GLASS_DARK_MODE_REPORT.md](GLASS_DARK_MODE_REPORT.md); they supersede this checkpoint's opaque-surface and 900px-background choices. The verification results below remain historical evidence for that checkpoint.
+
 Implemented as working changes on `codex/ui-polish`, created from the saved baseline `bc8c6c1`. The application remains v0.2.5. The baseline audit is [UI_AESTHETICS_REVIEW_2026-10-28.md](UI_AESTHETICS_REVIEW_2026-10-28.md).
 
 ## Visual changes

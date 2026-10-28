@@ -41,6 +41,7 @@ Paths below are relative to the project root.
 | `css/` | Shared, auth, Student and BM styling |
 | `js/api.js` | In-memory session/CSRF state, same-origin fetch and API error handling |
 | `js/shell.js`, `js/student-common.js` | Shared navigation, feedback, formatting and Student helpers |
+| `js/theme.js`, `css/theme.css` | Early client-side theme selection and shared light/dark semantic colors; no server preference or schema change |
 | `js/student.js`, `js/bm.js` | Student and BM interactions |
 | `js/auth-ui.js`, `js/account-ui.js`, `js/uploads.js` | Login/account UI and client image preparation |
 | `assets/`, `vendor/` | Branding, local browser libraries and licenses |
@@ -197,6 +198,8 @@ node "tools/test-v025.cjs"
 Choose additional suites for the affected surface: `tools/test-auth.cjs`, `test-account.cjs`, `test-student.cjs`, `test-workflow.cjs`, or `test-ux.cjs --v025`. The regression evidence batch can be set with `$env:REFIND_EVIDENCE_BATCH = "v025"`. `smoke-auth.cjs --v025` targets the main app and writes session/auth state, although it is intended to preserve business records.
 
 Historical engineering results are in [ACCEPTANCE_TESTS.md](ACCEPTANCE_TESTS.md), [V025_REPORT.md](V025_REPORT.md) and `docs/verification/v025/`. Historical data counts and PASS results should be attributed to those runs, not stated as a fresh live audit.
+
+All six regression suites accept `REFIND_THEME=light` or `dark` and `REFIND_EVIDENCE_DIR` for a separate receipt directory. Run mutation suites sequentially. `tools/test-theme.cjs` performs read-only responsive/theme/accessibility review on the owned QA app; `--main` explicitly selects this local main installation and checks business-table fingerprints before/after. It needs Playwright, Sharp, and `@axe-core/playwright` (module paths can be supplied with `REFIND_PLAYWRIGHT_MODULE`, `REFIND_SHARP_MODULE`, and `REFIND_AXE_MODULE`). Keep review dependencies and screenshots under ignored `output/playwright/`. See [GLASS_DARK_MODE_REPORT.md](GLASS_DARK_MODE_REPORT.md) for the current run and its limits.
 
 ## 8. Existing documentation and known drift
 
