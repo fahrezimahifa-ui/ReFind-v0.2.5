@@ -18,5 +18,6 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/refind-browsers
 RUN npm ci --ignore-scripts \
     && npx playwright install --with-deps chromium ffmpeg \
     && composer install --no-interaction --no-progress --prefer-dist \
-    && mkdir -p output/playwright/release-readiness/results
-ENV REFIND_PHP=php REFIND_CI_DISPOSABLE=1
+    && mkdir -p output/playwright/release-readiness/results /var/www/.config /var/www/.cache \
+    && chown www-data:www-data /var/www/.config /var/www/.cache
+ENV REFIND_PHP=php REFIND_CI_DISPOSABLE=1 HOME=/var/www XDG_CONFIG_HOME=/var/www/.config XDG_CACHE_HOME=/var/www/.cache

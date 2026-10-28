@@ -20,6 +20,7 @@ let visualItem;
 try{
  command('schema-before',qa.php,[path.join(qa.target,'tools/check-database.php')]);
  command('invariants-before',qa.php,[path.join(qa.target,'tools/check-workflow.php')]);
+ command('projection',qa.php,[path.join(qa.root,'tools/test-projection.php')]);
  command('security',process.execPath,['tools/test-release-security.cjs']);
  for(const theme of ['light','dark'])for(const suite of ['auth','account','student','workflow','v025','ux']){
   command(theme+'-'+suite,process.execPath,['tools/test-'+suite+'.cjs',...(suite==='ux'?['--v025']:[])],{REFIND_THEME:theme});

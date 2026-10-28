@@ -27,7 +27,7 @@ $clause=$where?' WHERE '.implode(' AND ',$where):'';
 $total=(int)row('SELECT COUNT(*) AS n FROM v_items_overview v'.$clause,$values)['n'];
 $items=rows('SELECT '.public_columns().' FROM v_items_overview v'.$clause.' ORDER BY v.created_at DESC,v.item_id DESC LIMIT ? OFFSET ?',array_merge($values,[$limit,$offset]));
 if (isset($_GET['id']) && !$items) fail('Report not found.', 404, 'not_found');
-$items=array_map(fn($item)=>safe_item($item,$user),$items);
+$items=safe_items($items,$user);
 if (isset($_GET['editable'])) {
     if ($_GET['editable'] !== '1' || !isset($_GET['id'])) fail('Invalid edit request.', 400);
     $raw = find_item(record_id($_GET['id'])); require_editable_item($user, $raw);
