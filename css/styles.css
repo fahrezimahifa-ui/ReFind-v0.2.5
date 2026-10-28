@@ -1,7 +1,7 @@
 /* Shared mobile-first shell and real account workflows. Loaded after auth.css. */
 .app-header { position:sticky; top:0; z-index:1030; }
 .app-nav { max-width:1160px; min-height:70px; margin:auto; padding:12px 18px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
-.app-nav .brand img { width:116px; }
+.app-nav .brand img { width:124px; }
 .menu-toggle,.account-toggle { display:inline-flex; min-height:44px; align-items:center; justify-content:center; gap:9px; border:1px solid var(--line); background:white; color:var(--navy); border-radius:11px; padding:8px 12px; font-size:14px; font-weight:650; }
 .menu-toggle:hover,.account-toggle:hover { background:#f1f5fb; }
 .nav-content { width:100%; padding:10px 0 4px; border-top:1px solid var(--line); }
@@ -54,7 +54,7 @@
 .policy-count.invalid { color:#a13243; }
 @media(min-width:1100px) {
   .app-nav { flex-wrap:nowrap; padding:12px 24px; gap:30px; }
-  .app-nav .brand img { width:136px; }
+  .app-nav .brand img { width:144px; }
   .menu-toggle { display:none; }
   .nav-content { display:flex; align-items:center; justify-content:space-between; flex:1; width:auto; padding:0; border:0; gap:20px; }
   .primary-links { flex-direction:row; }
@@ -86,3 +86,16 @@
 /* v0.2.5: unread badge on the Notifications link, with a copy on the mobile Menu button */
 .nav-link-notifications { display:inline-flex; align-items:center; gap:7px; }
 .menu-toggle .menu-unread { min-width:20px; height:20px; font-size:11px; }
+
+.menu-toggle,.account-toggle{border-radius:var(--radius-control)}
+.menu-toggle:hover,.account-toggle:hover{background:var(--primary-soft);border-color:var(--primary)}
+.menu-toggle:active,.account-toggle:active{background:#e2e9fa}
+.app-nav .nav-link:hover,.account-link:hover{background:var(--primary-soft);color:var(--primary-hover)}
+.app-nav .nav-link[aria-current="page"],.account-link[aria-current="page"],.account-initials,.profile-avatar{background:var(--primary-soft)}
+.account-menu{box-shadow:var(--panel-shadow)}
+.account-card .hint,.account-help,.privacy-note{font-size:14px}
+#member-home .home-actions{gap:var(--space-2)}
+#member-home .home-actions>.btn{flex:1;min-width:0}
+#member-home .home-follow{padding:4px 0;min-height:44px;margin-top:var(--space-2)}
+.home-follow:hover{text-decoration:underline}
+@media(max-width:419px){#member-home .home-actions{flex-direction:column}#member-home .home-actions>.btn{flex:auto;width:100%}}

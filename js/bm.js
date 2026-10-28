@@ -81,11 +81,15 @@ $(async function () {
   const heading = title => $('<h2>').attr('title', title).text(U.titleParts(title).display);
   function claimDetail(claim) {
     const box = $('<article>').attr('data-detail-claim-id', claim.claim_id);
-    box.append(U.stateChip(claim.claim_status, U.claimNames[claim.claim_status]), U.demoChip(claim.item.title), heading(claim.item.title), meta([['Claimant',claim.claimant_name],['Claimant email',claim.claimant_email],['Student ID',claim.claimant_student_id],['Submitted',U.date(claim.created_at,true)],...(claim.resubmitted_at ? [['Resubmitted',U.date(claim.resubmitted_at,true)]] : []),['Location',U.locationText(claim.item)],['Related Lost',claim.lost ? U.titleParts(claim.lost.title).display : 'No linked Lost report']]));
-    if (claim.item.photos.length) box.append($('<img>').addClass('bm-public-image').attr({src:claim.item.photos[0],alt:U.titleParts(claim.item.title).display}));
-    box.append($('<p>').addClass('item-description').text(claim.item.description));
+    box.append(U.stateChip(claim.claim_status, U.claimNames[claim.claim_status]), U.demoChip(claim.item.title), heading(claim.item.title));
+    const summary = $('<div>').addClass('bm-claim-summary').append(meta([['Claimant',claim.claimant_name],['Claimant email',claim.claimant_email],['Student ID',claim.claimant_student_id],['Submitted',U.date(claim.created_at,true)],...(claim.resubmitted_at ? [['Resubmitted',U.date(claim.resubmitted_at,true)]] : []),['Location',U.locationText(claim.item)],['Related Lost',claim.lost ? U.titleParts(claim.lost.title).display : 'No linked Lost report']]));
+    if (claim.item.photos.length) summary.append($('<button>').addClass('bm-report-photo').attr({type:'button','aria-label':'Enlarge public item photo'}).append($('<img>').attr({src:claim.item.photos[0],alt:U.titleParts(claim.item.title).display})).on('click', function () {
+      trigger = this; $('#bm-evidence-title').text('Public item photo'); $('#bm-evidence-image').attr({src:claim.item.photos[0],alt:U.titleParts(claim.item.title).display}); document.querySelector('#bm-evidence-dialog').showModal();
+    }));
+    box.append(summary);
     if (claim.previous_request) box.append($('<div>').addClass('bm-outcome').text('Your previous request (' + U.date(claim.previous_request.at,true) + '):\n' + claim.previous_request.note));
     box.append($('<div>').addClass('bm-compare').append(block('Claimant answer',claim.ownership_answer), block("Finder's private clue",claim.item.verification_clue,true)), evidence(claim.ownership_photos,'Private claim evidence'));
+    box.append($('<p>').addClass('item-description bm-claim-description').text(claim.item.description));
     if (claim.lost) box.append($('<section>').addClass('bm-audit').append(block('Linked Lost identifying detail',claim.lost.verification_clue,true), evidence(claim.lost.ownership_photos,'Private Lost evidence'), U.navAction('Open linked report',U.itemUrl(claim.lost.item_id))));
     if (claim.review_note) box.append($('<div>').addClass('bm-outcome').text(claim.review_note + (claim.reviewed_at ? '\nReviewed ' + U.date(claim.reviewed_at,true) : '')));
     if (claim.approval_blocked) box.append($('<p>').addClass('bm-locked-note').text(claim.approval_blocked));
@@ -269,10 +273,11 @@ $(async function () {
     if (operation.kind === 'claim') { values.action = 'review'; values.decision = action; }
     else if (operation.kind === 'report') { values.action = 'status'; values.status = $('#operation-status').val(); }
     else { endpoint = 'handovers.php'; values.action = action; if (['schedule','reschedule'].includes(action)) { values.pickup_location_id = $('#operation-location').val(); values.scheduled_at = $('#operation-date').val(); } }
+    let next = null;
     saving = true; $('#operation-fields').prop('disabled',true); $('#operation-submit,[data-close-operation],[data-logout]').prop('disabled',true); $('#operation-submit').text('Saving…');
     try {
       const result = await app.request(endpoint,values); drafts.delete(draftKey(operation)); document.querySelector('#operation-dialog').close();
-      const next = action === 'approved' && result.handover_id ? $('<button>').addClass('text-button').attr('type','button').text('Schedule pickup now').on('click',() => openRecord('handover', result.handover_id)) : null;
+      next = action === 'approved' && result.handover_id ? $('<button>').addClass('text-button').attr('type','button').prop('disabled',true).text('Schedule pickup now').on('click',() => openRecord('handover', result.handover_id)) : null;
       // A released pickup no longer exists, so show the closed claim instead.
       if (action === 'release') await openRecord('claims', operation.record.claim_id, true);
       else { pinned = true; await loadQueue(page,true); }
@@ -286,7 +291,7 @@ $(async function () {
       $('#operation-confirm').prop('checked',false);
       $('#operation-refresh').prop('hidden',!(e.status === 409 && e.code === 'state_conflict')); $('#operation-feedback').trigger('focus');
     } finally {
-      saving = false; $('#operation-fields').prop('disabled',false); $('#operation-submit').prop('disabled',needsConfirm(action) && !$('#operation-confirm').prop('checked')).text(labels[action]); $('[data-close-operation],[data-logout]').prop('disabled',false);
+      saving = false; if (next) next.prop('disabled',false); $('#operation-fields').prop('disabled',false); $('#operation-submit').prop('disabled',needsConfirm(action) && !$('#operation-confirm').prop('checked')).text(labels[action]); $('[data-close-operation],[data-logout]').prop('disabled',false);
     }
   });
   try {

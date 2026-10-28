@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),testRoot=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php='C:\\xampp\\php\\php.exe';
 const {chromium}=require(process.env.REFIND_PLAYWRIGHT_MODULE||path.join(os.tmpdir(),'opencode','refind-multipage-check','node_modules','playwright-core'));
-const out=path.join(root,'docs','verification','v025','fixes');assert.equal(JSON.parse(fs.readFileSync(path.join(testRoot,'.refind-b02-test.json'))).source,root);fs.mkdirSync(out,{recursive:true});
+const out=process.env.REFIND_EVIDENCE_DIR?path.resolve(process.env.REFIND_EVIDENCE_DIR):path.join(root,'docs','verification','v025','fixes');assert.equal(JSON.parse(fs.readFileSync(path.join(testRoot,'.refind-b02-test.json'))).source,root);fs.mkdirSync(out,{recursive:true});
 const run='V025-'+Date.now().toString(36),results=[],browserErrors=[],actors=[];let browser;
 function driver(input){return JSON.parse(execFileSync(php,[path.join(testRoot,'tools','b02-fixture.php')],{input:JSON.stringify(input),encoding:'utf8'}));}
 function q(query,values=[]){return driver({action:'query',query,values});}
@@ -207,7 +207,10 @@ async function go(page,route){await page.goto(base+route);await page.waitForSele
   });
   await test('R03/A06 approve offers "Schedule pickup now" in place and Confirm returned warns about a future appointment',async()=>{
    const f=await create(b,'FOUND','approveflow item',{category_id:'8',location_id:'36'}),id=await claim(c,f),p=await browserPage(BM);await go(p.page,'admin.html?tab=claims&claim='+id);
+   let releaseUnread,unreadStarted;const unreadGate=new Promise(resolve=>{releaseUnread=resolve;}),unreadHeld=new Promise(resolve=>{unreadStarted=resolve;});
+   await p.page.route('**/api/notifications.php?count=1',async route=>{unreadStarted();await unreadGate;await route.continue();});
    await p.page.click('[data-bm-action="approved"]');await p.page.check('#operation-confirm');await p.page.click('#operation-submit');await p.page.waitForFunction(()=>!document.querySelector('#operation-dialog').open);
+   await unreadHeld;assert.equal(await p.page.getByRole('button',{name:'Schedule pickup now'}).isDisabled(),true);releaseUnread();
    await p.page.getByRole('button',{name:'Schedule pickup now'}).click();await p.page.waitForSelector('[data-detail-handover-id]');assert.equal(new URL(p.page.url()).searchParams.get('tab'),'handover');
    await p.page.click('[data-bm-action="schedule"]');assert.match(await p.page.inputValue('#operation-date'),/T10:00$/);await p.page.selectOption('#operation-location','36');await p.page.click('#operation-submit');await p.page.waitForFunction(()=>!document.querySelector('#operation-dialog').open);await p.page.waitForSelector('[data-bm-action="complete"]');
    await p.page.click('[data-bm-action="complete"]');assert.match(await p.page.locator('#operation-intro').innerText(),/collected the item early/);await p.page.keyboard.press('Escape');

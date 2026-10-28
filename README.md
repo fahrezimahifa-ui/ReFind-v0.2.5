@@ -14,6 +14,8 @@ Recommended reading order:
 
 For this existing installation, start Apache/MySQL in XAMPP and use the local URL above. Later sections retain historical B01–B06/UX01 installation examples and older folder names; use the architecture guide for current local configuration and interpret test results by checkpoint.
 
+The 28 October visual refresh on `codex/ui-polish` adds the supplied blue/cyan branding, coordinated pastel page backgrounds, and refined Student/BM layouts. See the [UI polish report](docs/UI_POLISH_REPORT.md) for current verification and the [branding guide](assets/README.md) for reusable assets. App version remains 0.2.5; the database schema is unchanged.
+
 ## Current release v0.2.5 / folder ReFind_0.2.3
 
 v0.2.5 fixes all 49 findings of the full QA pass (15 bugs, 10 flows, 9 redundancies, 15 copy issues) in four tiers. Highlights: no self-matches and a stricter match score; one active claim per Lost report; withdraw a claim; rejection is final; only active claims lock reports; a configurable Building Management pickup desk plus claimant contact for BM; "I found this item"; a `release` pickup operation for no-shows; History as the closed-report archive; quieter notifications with mark-all-read; confirmation only for final BM decisions; plain-language copy and the 0.2.5 label. No database change. Details, tests and gaps: [v0.2.5 report](docs/V025_REPORT.md). Repository: `https://github.com/fahrezimahifa-ui/ReFind-v0.2.5`.

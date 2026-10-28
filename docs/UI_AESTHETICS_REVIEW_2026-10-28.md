@@ -2,6 +2,8 @@
 
 Reviewed on 28 October 2026 against the live PHP/MariaDB installation at `http://localhost/ReFind_0.2.3/`.
 
+This records the pre-refresh baseline saved at `bc8c6c1`. The implemented follow-up and its new verification results are in [UI_POLISH_REPORT.md](UI_POLISH_REPORT.md).
+
 **Assessment:** a focused visual polish pass is worthwhile. The navy/cyan identity, restrained backgrounds, readable headings, private-information panels, and generous control sizes are a useful foundation. The largest opportunities concern action hierarchy, card composition, secondary text, and the amount of scrolling needed to review a claim.
 
 These are review findings and proposed changes. Application UI and business rules were not changed.

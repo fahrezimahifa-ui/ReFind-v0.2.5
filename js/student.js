@@ -136,7 +136,7 @@ $(async function(){
     let tab=['reports','claims','closed'].includes(params.get('tab'))?params.get('tab'):'reports',currentPage=1;
     // The deep-linked claim is shown once; later tab or page changes do not bring it back.
     let highlight=tab==='claims'&&validId(params.get('claim'))?params.get('claim'):null;
-    async function load(next=currentPage){currentPage=next;clearPage();loading(true);tabState('[data-activity]','data-activity',tab);const box=$('#activity-results').empty();try{
+    async function load(next=currentPage){currentPage=next;clearPage();loading(true);tabState('[data-activity]','data-activity',tab);const box=$('#activity-results').empty().toggleClass('activity-claims',tab==='claims');try{
       let focusTarget=null;const claimTarget=tab==='claims'?highlight:null;
       if(tab==='claims'){const data=await get('claims.php',{page:currentPage,limit:24}),handover=[];let pickupPage=1,pickups;do{pickups=await get('handovers.php',{page:pickupPage,limit:48});handover.push(...pickups.handovers);pickupPage++;}while(pickupPage<=pickups.pages);if(claimTarget&&!data.claims.some(c=>c.claim_id===claimTarget)){try{const specific=await get('claims.php',{id:claimTarget});data.claims.unshift(...specific.claims);}catch{}}
         if(data.total&&currentPage>data.pages)return load(data.pages);
@@ -147,8 +147,10 @@ $(async function(){
           else if(pickup){card.append($('<p>').addClass('context-note pickup-summary').text(pickup.handover_status==='SCHEDULED'?'Pickup scheduled · '+U.date(pickup.scheduled_at,true)+(pickup.pickup_location?' · '+pickup.pickup_location:''):'Approved. Building Management will schedule your pickup'+(pickup.pickup_location?' at '+pickup.pickup_location:'')+'. You can also contact the desk below.'),U.deskCard(refs.pickup_desk));}
           if(claim.claim_status==='REJECTED')card.append($('<p>').addClass('context-note').text('A rejected claim is final for this item.'));
           if(claim.review_note)card.append($('<details>').addClass('review-history').append($('<summary>').text('Review note'),$('<p>').text(claim.review_note)).prop('open',!returned));
-          card.append($('<p>').text(claim.ownership_photo_count+' private supporting photo(s) saved for BM.'),$('<a>').addClass('btn '+(claim.can_resubmit?'btn-primary':'btn-outline')).attr('href',claim.can_resubmit?U.claimUrl(claim.item_id):U.itemUrl(claim.item_id)).text(claim.can_resubmit?(claim.claim_status==='WITHDRAWN'?'Claim again':'Update / resubmit claim'):returned?'View returned item':'View item'));
-          if(claim.can_withdraw)card.append($('<button>').addClass('btn btn-danger-outline').attr('type','button').text('Withdraw claim').on('click',function(){requestWithdraw(claim.item_id,()=>load(currentPage),this);}));
+          card.append($('<p>').text(claim.ownership_photo_count+' private supporting photo(s) saved for BM.'));
+          const actions=$('<div>').addClass('claim-actions').append($('<a>').addClass('btn '+(claim.can_resubmit?'btn-primary':'btn-outline')).attr('href',claim.can_resubmit?U.claimUrl(claim.item_id):U.itemUrl(claim.item_id)).text(claim.can_resubmit?(claim.claim_status==='WITHDRAWN'?'Claim again':'Update / resubmit claim'):returned?'View returned item':'View item'));
+          if(claim.can_withdraw)actions.append($('<button>').addClass('btn btn-danger-outline').attr('type','button').text('Withdraw claim').on('click',function(){requestWithdraw(claim.item_id,()=>load(currentPage),this);}));
+          card.append(actions);
           box.append(card);
         });if(!data.claims.length)box.append(U.empty('No claims yet','Open an eligible Found report to submit ownership details.',app.base+'browse.html?type=FOUND','Explore Found reports'));$('#activity-count').text(data.total+' own claim(s)');U.pager(data,next=>{highlight=null;return load(next);},'#activity-count');
       }else{const data=await get('items.php',{mine:1,page:currentPage,limit:24,...(tab==='closed'?{closed:1}:{active:1})});

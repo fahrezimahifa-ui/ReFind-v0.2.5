@@ -36,3 +36,25 @@
 .claim-review-note strong,#claim-review-note strong{display:block;margin-bottom:4px}#claim-review-note p{margin:0}
 #item-notice p{margin:0 0 6px}#item-notice .navigation-action{margin-top:4px}
 .page-heading #mark-all-read{flex:0 0 auto}
+
+.page-heading h1{font-size:clamp(30px,3.5vw,40px);font-weight:700}
+.discovery-card,.activity-card,.notification-card,.detail-card{border-radius:var(--radius-panel)}
+.card-meta,.results-line,.text-button,.detail-meta dt,.status-timeline p,.notification-card time{font-size:14px}
+.discovery-body{gap:var(--space-1)}
+.discovery-body h2,.discovery-body h3{font-size:20px}
+.discovery-body .card-details{align-self:flex-start;min-height:44px;margin-top:auto;padding:4px 0}
+.card-media{background:#f1f4fa}
+.type-tab:hover{background:var(--primary-soft);border-color:var(--primary)}
+.type-tab.active{background:var(--primary-soft);border-color:var(--primary)}
+.text-button:disabled{color:var(--muted);cursor:wait;opacity:.7}
+.text-button:hover:not(:disabled){color:var(--primary-hover);text-decoration:underline}
+.text-button:active:not(:disabled){color:var(--primary-active)}
+.btn-danger{--bs-btn-active-bg:#672331;--bs-btn-active-border-color:#672331;--bs-btn-disabled-bg:#943b4b;--bs-btn-disabled-border-color:#943b4b}
+.activity-claims{align-items:start}
+.activity-card>.item-chip{align-self:flex-start;max-width:100%}
+.claim-actions{display:flex;flex-direction:column;gap:var(--space-1);margin-top:var(--space-2)}
+.activity-card .claim-actions .btn{margin-top:0;min-width:0;width:100%}
+.sticky-form-actions{background:var(--surface);box-shadow:0 4px 18px rgb(48 65 110 / .06);border-radius:var(--radius-control)}
+.private-card{background:#fffdf8;border-color:#e8dfc8}
+.form-card,.detail-card{padding:var(--space-4)}
+@media(max-width:679px){.card-media{aspect-ratio:16/10}.card-media img{object-fit:contain}.form-card,.detail-card{padding:20px}.form-card h2{font-size:21px}}
