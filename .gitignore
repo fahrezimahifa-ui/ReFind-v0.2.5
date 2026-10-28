@@ -16,5 +16,9 @@ __pycache__/
 test-results/
 playwright-report/
 
+# Local academic references and browser-review evidence are excluded from GitHub.
+/docs/references/*.pdf
+/output/playwright/
+
 # Generated release archives stay local; source and checksum receipts are versioned.
 releases/*.zip

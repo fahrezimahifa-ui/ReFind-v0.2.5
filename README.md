@@ -1,5 +1,19 @@
 # ReFind 0.2.5 — QA fixes
 
+## Start here — Codex / WDD + UX context
+
+This workspace is the **PHP/MariaDB ReFind v0.2.5 application**, developed as one product across IS556 Web Design and Development and IS301 User Experience. The local folder is `C:\xampp\htdocs\ReFind_0.2.3`; login is [http://localhost/ReFind_0.2.3/login.html](http://localhost/ReFind_0.2.3/login.html), with database `refind_db_0_2_0`. The WDD serverless submission template is a separate artifact with the same version label.
+
+Recommended reading order:
+
+1. [AGENTS.md](AGENTS.md) — concise development context and conventions.
+2. [Product context and research](docs/PROJECT_CONTEXT.md) — combined WDD/UX story, research evidence and [three reference reports](docs/PROJECT_CONTEXT.md#source-register).
+3. [Current architecture and local operation](docs/ARCHITECTURE.md) — frontend, PHP/API, database, uploads, routing and verification commands.
+4. [Requirements and proposed roadmap](docs/REQUIREMENTS_AND_ROADMAP.md) — implemented behavior, academic-template scope, research proposals and open decisions.
+5. [Latest v0.2.5 changes](docs/V025_REPORT.md) and [workflow contract](docs/WORKFLOW_CONTRACT.md).
+
+For this existing installation, start Apache/MySQL in XAMPP and use the local URL above. Later sections retain historical B01–B06/UX01 installation examples and older folder names; use the architecture guide for current local configuration and interpret test results by checkpoint.
+
 ## Current release v0.2.5 / folder ReFind_0.2.3
 
 v0.2.5 fixes all 49 findings of the full QA pass (15 bugs, 10 flows, 9 redundancies, 15 copy issues) in four tiers. Highlights: no self-matches and a stricter match score; one active claim per Lost report; withdraw a claim; rejection is final; only active claims lock reports; a configurable Building Management pickup desk plus claimant contact for BM; "I found this item"; a `release` pickup operation for no-shows; History as the closed-report archive; quieter notifications with mark-all-read; confirmation only for final BM decisions; plain-language copy and the 0.2.5 label. No database change. Details, tests and gaps: [v0.2.5 report](docs/V025_REPORT.md). Repository: `https://github.com/fahrezimahifa-ui/ReFind-v0.2.5`.
