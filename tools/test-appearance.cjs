@@ -1,13 +1,12 @@
 const qaRuntime = require('./qa-runtime.cjs');
 qaRuntime.assertQa();
-// Read-only appearance/font/motion acceptance. --main explicitly selects the local main app.
+// Read-only appearance/font/motion acceptance on the owned QA installation.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const{execFileSync}=require('node:child_process');
 const {chromium} = qaRuntime.playwright();
 const sharp=require(process.env.REFIND_SHARP_MODULE||'sharp');
 if(process.argv.includes('--main'))throw new Error('Release QA cannot target the main installation');
-const root=path.resolve(__dirname,'..'),main=false,target=main?root:path.resolve(root,'../ReFind_0.2.0_Test'),base=main?'http://localhost/ReFind_0.2.3/':'http://localhost/ReFind_0.2.0_Test/';
-if(!main)assert.equal(JSON.parse(fs.readFileSync(path.join(target,'.refind-b02-test.json'))).source,root);
+const root=qaRuntime.root,target=qaRuntime.target,base=qaRuntime.base;
 const out=path.resolve(process.env.REFIND_EVIDENCE_DIR||path.join(root,'output/playwright/mvp-finish/appearance'));fs.mkdirSync(out,{recursive:true});
 const accounts=JSON.parse(fs.readFileSync(path.join(target,'storage/setup/demo-accounts.json'))).accounts;
 const results={checks:[],contrast:[],performance:[],errors:[],font:{},recordings:[]};
@@ -64,7 +63,7 @@ async function sampleContrast(p,name){
    await c.close();
    const videoContext=await browser.newContext({colorScheme:theme,viewport:{width:1280,height:800},recordVideo:{dir:path.join(out,'recordings'),size:{width:1280,height:800}}}),videoPage=await videoContext.newPage();await go(videoPage);await videoPage.waitForTimeout(12000);const video=videoPage.video();await videoContext.close();const destination=path.join(out,'recordings',theme+'-ambient.webm');await video.saveAs(destination);results.recordings.push(destination);save();
   }
-  if(!main)results.notes=['BM confirmation-state preservation is exercised by --main against the populated local demo; mutation suites create their own isolated QA review fixtures.'];
+  results.notes=[process.env.REFIND_APPEARANCE_CLAIM_ID?'BM confirmation-state preservation exercised using the release runner QA fixture.':'BM confirmation fixture absent: run tools/run-qa.cjs for that coverage.'];
   results.businessDataUnchanged=before===fingerprint();assert.equal(results.businessDataUnchanged,true);assert.deepEqual(results.errors,[]);results.complete=true;save();console.log('Appearance review complete: '+results.checks.length+' groups; '+results.contrast.length+' phase samples.');
  }catch(e){results.complete=false;results.failure=String(e);save();throw e;}finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
