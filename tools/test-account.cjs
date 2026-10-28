@@ -1,3 +1,5 @@
+const qaRuntime = require('./qa-runtime.cjs');
+qaRuntime.assertQa();
 const {themedContext}=require('./qa-browser.cjs');
 // B03 integration tests: actual HTTP/SQL/browser; mutations only in the owned _test copy.
 const assert = require('node:assert/strict');
@@ -9,8 +11,8 @@ const {execFileSync} = require('node:child_process');
 const root = path.resolve(__dirname,'..');
 const testRoot = path.resolve(root,'..','ReFind_0.2.0_Test');
 const base = 'http://localhost/ReFind_0.2.0_Test/';
-const php = 'C:\\xampp\\php\\php.exe';
-const {chromium} = require(process.env.REFIND_PLAYWRIGHT_MODULE || path.join(os.tmpdir(),'opencode','refind-multipage-check','node_modules','playwright-core'));
+const php = qaRuntime.php;
+const {chromium} = qaRuntime.playwright();
 const out = process.env.REFIND_EVIDENCE_DIR ? path.resolve(process.env.REFIND_EVIDENCE_DIR) : process.env.REFIND_EVIDENCE_BATCH ? path.join(root,'docs','verification',process.env.REFIND_EVIDENCE_BATCH,'account') : path.join(root,'docs','verification','b03');
 assert.ok(fs.existsSync(path.join(testRoot,'.refind-b02-test.json')));
 fs.mkdirSync(out,{recursive:true});
@@ -145,7 +147,7 @@ async function go(page,route) {const r=await page.goto(base+route);await page.wa
       assert.deepEqual(query('SELECT full_name,password_hash FROM users WHERE user_id=?',[Number(A.id)]).rows,before);
     });
     if(process.argv.includes('--api-only')) {persist({complete:true,apiOnly:true});return;}
-    browser=await chromium.launch({executablePath:process.env.REFIND_CHROME||'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true});
+    browser=await chromium.launch({executablePath:qaRuntime.chromePath(),headless:true});
     await test('Profile UI readonly fields and private Student identifier differ correctly by role',async()=>{
       for(const user of [A,BM]) {const {page,context}=await loggedPage(user);await go(page,'profile.html');assert.equal(await page.inputValue('#display-name'),user.name);assert.equal(await page.inputValue('#profile-email'),user.email);assert.equal(await page.locator('#profile-email').getAttribute('readonly'),'');assert.equal(await page.locator('#student-id-field').isVisible(),user.role==='STUDENT');await context.close();}
     });

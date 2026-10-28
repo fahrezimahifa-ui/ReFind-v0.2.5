@@ -21,7 +21,7 @@ function uploaded_images(string $key, int $limit): array
         $extensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
         $dimensions = @getimagesize($path);
         if (!isset($extensions[$mime]) || !$dimensions || min($dimensions[0], $dimensions[1]) < 1 ||
-            max($dimensions[0], $dimensions[1]) > 1200 || ($dimensions['mime'] ?? '') !== $mime) field_fail($key, 'Use a valid JPEG, PNG or WebP image with a maximum side of 1200px.');
+            max($dimensions[0], $dimensions[1]) > 1200 || $dimensions['mime'] !== $mime) field_fail($key, 'Use a valid JPEG, PNG or WebP image with a maximum side of 1200px.');
         $result[] = ['temporary' => $path, 'extension' => $extensions[$mime]];
     }
     return $result;

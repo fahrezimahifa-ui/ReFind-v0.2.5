@@ -1,3 +1,5 @@
+const qaRuntime = require('./qa-runtime.cjs');
+qaRuntime.assertQa();
 const {themedContext}=require('./qa-browser.cjs');
 // Real Apache/PHP/MariaDB + browser tests. All mutations are isolated in _test.
 const assert = require('node:assert/strict');
@@ -8,8 +10,8 @@ const {execFileSync, spawnSync} = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 const testRoot = path.resolve(root, '..', 'ReFind_0.2.0_Test');
 const base = 'http://localhost/ReFind_0.2.0_Test/';
-const php = 'C:\\xampp\\php\\php.exe';
-const {chromium} = require(process.env.REFIND_PLAYWRIGHT_MODULE || path.join(os.tmpdir(), 'opencode', 'refind-multipage-check', 'node_modules', 'playwright-core'));
+const php = qaRuntime.php;
+const {chromium} = qaRuntime.playwright();
 const out = process.env.REFIND_EVIDENCE_DIR ? path.resolve(process.env.REFIND_EVIDENCE_DIR) : process.env.REFIND_EVIDENCE_BATCH ? path.join(root, 'docs', 'verification', process.env.REFIND_EVIDENCE_BATCH, 'auth') : path.join(root, 'docs', 'verification', 'b02');
 assert.ok(fs.existsSync(testRoot) && fs.existsSync(path.join(testRoot, '.refind-b02-test.json')));
 assert.equal(new URL(base).pathname, '/ReFind_0.2.0_Test/');
@@ -265,7 +267,7 @@ function seedFixtures() {
       const denied = spawnSync(php, [path.join(root, 'tools', 'b02-fixture.php')], {input: JSON.stringify({action: 'query', query: 'SELECT 1'}), encoding: 'utf8'});
       assert.notEqual(denied.status, 0); assert.match(denied.stderr, /isolated _test/);
     });
-    browser = await chromium.launch({executablePath: process.env.REFIND_CHROME || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', headless: true});
+    browser = await chromium.launch({executablePath: qaRuntime.chromePath(), headless: true});
     await test('Real browser Student/BM login, wrong-password recovery, logout and server page guards', async () => {
       clearThrottle(); const context = await themedContext(browser,{viewport: {width: 390, height: 844}}); const page = await context.newPage(); page.on('pageerror', e => browserErrors.push(String(e)));
       await page.goto(base + 'login.html'); await page.waitForSelector('body[data-ready="true"]');

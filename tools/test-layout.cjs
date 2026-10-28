@@ -1,8 +1,10 @@
+const qaRuntime = require('./qa-runtime.cjs');
+qaRuntime.assertQa();
 // Focused layout/feed acceptance; fresh actors and mutations stay in the owned QA app.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),os=require('node:os');
 const {execFileSync}=require('node:child_process');
-const {chromium}=require(process.env.REFIND_PLAYWRIGHT_MODULE||path.join(os.tmpdir(),'opencode/refind-multipage-check/node_modules/playwright-core'));
-const root=path.resolve(__dirname,'..'),target=path.resolve(root,'../ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php='C:/xampp/php/php.exe';
+const {chromium} = qaRuntime.playwright();
+const root=path.resolve(__dirname,'..'),target=path.resolve(root,'../ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php=qaRuntime.php;
 assert.equal(JSON.parse(fs.readFileSync(path.join(target,'.refind-b02-test.json'))).source,root);
 const out=path.resolve(process.env.REFIND_EVIDENCE_DIR||path.join(root,'output/playwright/layout-glass/focused'));
 fs.mkdirSync(out,{recursive:true});
@@ -24,7 +26,7 @@ async function metrics(p,label){
  assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));results.metrics.push({...label,rows:data.length});
 }
 (async()=>{
- browser=await chromium.launch({executablePath:process.env.REFIND_CHROME||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+ browser=await chromium.launch({executablePath:qaRuntime.chromePath(),headless:true});
  try{
   const a=actor();item=q("INSERT INTO items(reporter_user_id,category_id,location_id,item_type,title,description,event_date) VALUES (?,1,35,'LOST','Demo B06 · C17 Brown leather wallet (lost)','QA report description','2026-10-10')",[Number(a.id)]).id;q("INSERT INTO item_status_history(item_id,status_id,changed_by_user_id,note) VALUES (?,1,?,'Layout QA')",[Number(item),Number(a.id)]);
   const ids=[];

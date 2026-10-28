@@ -1,0 +1,21 @@
+# Disposable QA only. No host runtime/configuration or database is mounted.
+FROM node:24-bookworm-slim@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c AS node
+FROM composer:2@sha256:b6dcd72ca98fa19d0e5b8476de179859704891fad06dd9e0b96833d4c430a5fc AS composer
+FROM php:8.2-apache-bookworm@sha256:365b7475fde2424a7c0e053aafd2453d11fb8b60e14f6f83b150e97cf624af89
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=composer /usr/bin/composer /usr/local/bin/composer
+RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
+    && apt-get update && apt-get install -y --no-install-recommends python3 git unzip libonig-dev libzip-dev mariadb-client \
+    && docker-php-ext-install mysqli mbstring zip \
+    && a2enmod rewrite headers \
+    && printf '<Directory /var/www/html>\nAllowOverride All\nRequire all granted\n</Directory>\n' > /etc/apache2/conf-available/refind-qa.conf \
+    && a2enconf refind-qa
+WORKDIR /var/www/html/ReFind_0.2.3
+COPY . .
+RUN npm ci --ignore-scripts \
+    && npx playwright install --with-deps chromium ffmpeg \
+    && composer install --no-interaction --no-progress --prefer-dist \
+    && mkdir -p output/playwright/release-readiness/results
+ENV REFIND_PHP=php REFIND_CI_DISPOSABLE=1

@@ -1,16 +1,19 @@
+const qaRuntime = require('./qa-runtime.cjs');
+qaRuntime.assertQa();
 // Read-only appearance/font/motion acceptance. --main explicitly selects the local main app.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const{execFileSync}=require('node:child_process');
-const{chromium}=require(process.env.REFIND_PLAYWRIGHT_MODULE||path.join(os.tmpdir(),'opencode/refind-multipage-check/node_modules/playwright-core'));
+const {chromium} = qaRuntime.playwright();
 const sharp=require(process.env.REFIND_SHARP_MODULE||'sharp');
-const root=path.resolve(__dirname,'..'),main=process.argv.includes('--main'),target=main?root:path.resolve(root,'../ReFind_0.2.0_Test'),base=main?'http://localhost/ReFind_0.2.3/':'http://localhost/ReFind_0.2.0_Test/';
+if(process.argv.includes('--main'))throw new Error('Release QA cannot target the main installation');
+const root=path.resolve(__dirname,'..'),main=false,target=main?root:path.resolve(root,'../ReFind_0.2.0_Test'),base=main?'http://localhost/ReFind_0.2.3/':'http://localhost/ReFind_0.2.0_Test/';
 if(!main)assert.equal(JSON.parse(fs.readFileSync(path.join(target,'.refind-b02-test.json'))).source,root);
 const out=path.resolve(process.env.REFIND_EVIDENCE_DIR||path.join(root,'output/playwright/mvp-finish/appearance'));fs.mkdirSync(out,{recursive:true});
 const accounts=JSON.parse(fs.readFileSync(path.join(target,'storage/setup/demo-accounts.json'))).accounts;
 const results={checks:[],contrast:[],performance:[],errors:[],font:{},recordings:[]};
 function save(){fs.writeFileSync(path.join(out,'appearance-results.json'),JSON.stringify(results,null,2)+'\n');}
 async function check(name,fn){await fn();results.checks.push(name);save();console.log('PASS '+name);}
-function fingerprint(){return execFileSync('C:/xampp/php/php.exe',['-r',"require 'app/db.php'; $all=[]; foreach(['users','items','claims','handovers','notifications','item_photos','claim_photos','item_matches','item_status_history'] as $table) $all[$table]=rows('SELECT * FROM '.$table); echo hash('sha256',json_encode($all));"],{cwd:target,encoding:'utf8'}).trim();}
+function fingerprint(){return execFileSync(qaRuntime.php,['-r',"require 'app/db.php'; $all=[]; foreach(['users','items','claims','handovers','notifications','item_photos','claim_photos','item_matches','item_status_history'] as $table) $all[$table]=rows('SELECT * FROM '.$table); echo hash('sha256',json_encode($all));"],{cwd:target,encoding:'utf8'}).trim();}
 async function go(p,route='login.html'){await p.goto(base+route);await p.waitForSelector('body[data-ready="true"]');await p.evaluate(()=>document.fonts.ready);}
 function observe(p){p.on('pageerror',e=>results.errors.push(String(e)));}
 async function open(p){if(!(await p.locator('#appearance-panel').evaluate(e=>e.open)))await p.click('#appearance-toggle');await p.waitForTimeout(170);}
@@ -21,7 +24,7 @@ async function sampleContrast(p,name){
 }
 
 (async()=>{
- const before=fingerprint(),browser=await chromium.launch({executablePath:process.env.REFIND_CHROME||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+ const before=fingerprint(),browser=await chromium.launch({executablePath:qaRuntime.chromePath(),headless:true});
  try{
   await check('Appearance keyboard, dismissals and bounded panel work at five widths and short heights',async()=>{
    const c=await browser.newContext({viewport:{width:360,height:800}}),p=await c.newPage();observe(p);
@@ -55,8 +58,8 @@ async function sampleContrast(p,name){
    await check(theme+' scroll, typing and popup performance are compared with motion on and off',async()=>{
     await p.setViewportSize({width:1440,height:900});for(const motion of [true,false]){await go(p,'notifications.html');await p.evaluate(value=>ReFindTheme.setMotion(value),motion);const stats=await p.evaluate(async()=>{const frames=[];let last=performance.now();for(let i=0;i<60;i++){await new Promise(requestAnimationFrame);const now=performance.now();frames.push(now-last);last=now;scrollTo(0,(i%15)*120);}frames.sort((a,b)=>a-b);return{meanMs:frames.reduce((a,b)=>a+b,0)/frames.length,p95Ms:frames[Math.floor(frames.length*.95)],maxMs:Math.max(...frames)};});await go(p,'report.html?type=lost');await p.evaluate(value=>ReFindTheme.setMotion(value),motion);const started=performance.now();await p.locator('#r-title').pressSequentially('A responsive report draft',{delay:8});const typingMs=performance.now()-started;assert.equal(await p.inputValue('#r-title'),'A responsive report draft');const popupMs=await p.evaluate(async()=>{const times=[];for(let i=0;i<5;i++){const start=performance.now();document.getElementById('appearance-toggle').click();await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);if(!document.getElementById('appearance-panel').open)throw Error('Popup failed to open');times.push(performance.now()-start);document.querySelector('[data-close-appearance]').click();}return{mean:times.reduce((a,b)=>a+b,0)/times.length,max:Math.max(...times)};});results.performance.push({theme,motion,...stats,typingMs,popupMs});}
    });
-   if(main)await check(theme+' cross-tab appearance changes retain BM record, decision note and explicit confirmation',async()=>{
-    const staff=await browser.newContext({colorScheme:theme}),bm=await staff.newPage();observe(bm);await login(bm,'BUILDING_MANAGEMENT');await go(bm,'admin.html?tab=claims');await bm.locator('.bm-queue-card').first().click();await bm.waitForSelector('#bm-detail-content [data-detail-claim-id]');const record=await bm.locator('[data-detail-claim-id]').getAttribute('data-detail-claim-id');await bm.click('[data-bm-action="approved"]');await bm.fill('#operation-note','Retain this unsaved decision');await bm.check('#operation-confirm');const peer=await staff.newPage();await go(peer,'settings.html');await peer.evaluate(()=>{ReFindTheme.setPreference(ReFindTheme.effective()==='dark'?'light':'dark');ReFindTheme.setMotion(false);});await bm.waitForFunction(()=>ReFindTheme.getMotion()===false);assert.equal(await bm.locator('#operation-dialog').evaluate(e=>e.open),true);assert.equal(await bm.inputValue('#operation-note'),'Retain this unsaved decision');assert.equal(await bm.locator('#operation-confirm').isChecked(),true);assert.equal(await bm.locator('#operation-submit').isEnabled(),true);assert.equal(await bm.locator('[data-detail-claim-id]').getAttribute('data-detail-claim-id'),record);await staff.close();
+   if(process.env.REFIND_APPEARANCE_CLAIM_ID)await check(theme+' cross-tab appearance changes retain BM record, decision note and explicit confirmation',async()=>{
+    const staff=await browser.newContext({colorScheme:theme}),bm=await staff.newPage();observe(bm);await login(bm,'BUILDING_MANAGEMENT');await go(bm,'admin.html?tab=claims&claim='+process.env.REFIND_APPEARANCE_CLAIM_ID);await bm.waitForSelector('#bm-detail-content [data-detail-claim-id]');const record=await bm.locator('[data-detail-claim-id]').getAttribute('data-detail-claim-id');await bm.click('[data-bm-action="approved"]');await bm.fill('#operation-note','Retain this unsaved decision');await bm.check('#operation-confirm');const peer=await staff.newPage();await go(peer,'settings.html');await peer.evaluate(()=>{ReFindTheme.setPreference(ReFindTheme.effective()==='dark'?'light':'dark');ReFindTheme.setMotion(false);});await bm.waitForFunction(()=>ReFindTheme.getMotion()===false);assert.equal(await bm.locator('#operation-dialog').evaluate(e=>e.open),true);assert.equal(await bm.inputValue('#operation-note'),'Retain this unsaved decision');assert.equal(await bm.locator('#operation-confirm').isChecked(),true);assert.equal(await bm.locator('#operation-submit').isEnabled(),true);assert.equal(await bm.locator('[data-detail-claim-id]').getAttribute('data-detail-claim-id'),record);await staff.close();
    });
    await c.close();
    const videoContext=await browser.newContext({colorScheme:theme,viewport:{width:1280,height:800},recordVideo:{dir:path.join(out,'recordings'),size:{width:1280,height:800}}}),videoPage=await videoContext.newPage();await go(videoPage);await videoPage.waitForTimeout(12000);const video=videoPage.video();await videoContext.close();const destination=path.join(out,'recordings',theme+'-ambient.webm');await video.saveAs(destination);results.recordings.push(destination);save();

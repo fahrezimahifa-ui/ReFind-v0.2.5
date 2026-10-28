@@ -1,0 +1,49 @@
+name: refind-release-qa
+services:
+  database:
+    image: mariadb:10.11@sha256:d769e37960821dfdcf096954f6e7ac89f747e116c1bba98e48edd265dfc7deae
+    environment:
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+      MARIADB_DATABASE: refind_db_0_2_0_test
+      MARIADB_USER: refind_qa
+      MARIADB_PASSWORD: disposable-qa-only
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  qa:
+    build:
+      context: .
+      dockerfile: Dockerfile.qa
+    depends_on:
+      database:
+        condition: service_healthy
+      restore-database:
+        condition: service_healthy
+    environment:
+      REFIND_QA_DB_HOST: database
+      REFIND_QA_DB_USER: refind_qa
+      REFIND_QA_DB_PASSWORD: disposable-qa-only
+      REFIND_TESTED_SHA: ${REFIND_TESTED_SHA:-working-tree}
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, http://localhost/ReFind_0.2.3/css/theme.css]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  restore-database:
+    image: mariadb:10.11@sha256:d769e37960821dfdcf096954f6e7ac89f747e116c1bba98e48edd265dfc7deae
+    environment:
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+      MARIADB_DATABASE: refind_db_0_2_0_test
+      MARIADB_USER: refind_qa
+      MARIADB_PASSWORD: disposable-qa-only
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 5s
+      timeout: 5s
+      retries: 30

@@ -1,11 +1,13 @@
+const qaRuntime = require('./qa-runtime.cjs');
+qaRuntime.assertQa();
 const {themedContext}=require('./qa-browser.cjs');
 // UX01 real browser/HTTP acceptance. Fresh fixture actors and cleanup stay in owned _test.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto');
 const {execFileSync}=require('node:child_process');
 const edition=process.argv.includes('--v025')?'v025':process.argv.includes('--ux02')?'ux02':'ux01';
-const root=path.resolve(__dirname,'..'),target=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php='C:\\xampp\\php\\php.exe',out=process.env.REFIND_EVIDENCE_DIR?path.resolve(process.env.REFIND_EVIDENCE_DIR):edition==='v025'?path.join(root,'docs','verification','v025','ux'):path.join(root,'docs','verification',edition);
+const root=path.resolve(__dirname,'..'),target=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php=qaRuntime.php,out=process.env.REFIND_EVIDENCE_DIR?path.resolve(process.env.REFIND_EVIDENCE_DIR):edition==='v025'?path.join(root,'docs','verification','v025','ux'):path.join(root,'docs','verification',edition);
 assert.equal(JSON.parse(fs.readFileSync(path.join(target,'.refind-b02-test.json'))).source,root);
-const {chromium}=require(process.env.REFIND_PLAYWRIGHT_MODULE||path.join(os.tmpdir(),'opencode','refind-multipage-check','node_modules','playwright-core'));
+const {chromium} = qaRuntime.playwright();
 fs.mkdirSync(out,{recursive:true});
 const run=edition.toUpperCase()+'-'+Date.now().toString(36),actors=[],results=[],browserErrors=[],viewportChecks=[],contrastChecks=[];let browser;
 function driver(input){return JSON.parse(execFileSync(php,[path.join(target,'tools','b02-fixture.php')],{input:JSON.stringify(input),encoding:'utf8'}));}
@@ -39,7 +41,7 @@ async function group(name,fn){await fn();results.push(name);console.log('PASS UX
     const rejectedItem=await found(b,'Rejected record'),rejectedClaim=await claim(a,rejectedItem);await review(bm,rejectedClaim,'rejected');
     for(let index=0;index<25;index++)await claim(a,await found(b,'Other queued '+index));
     await pickup(bm,scheduled,'schedule',{pickup_location_id:'37',scheduled_at:future()});
-    browser=await chromium.launch({executablePath:process.env.REFIND_CHROME||'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true});
+    browser=await chromium.launch({executablePath:qaRuntime.chromePath(),headless:true});
     const p=await logged(BM),owner=await logged(A),peerPage=await logged(BM2);
     await group('Search/filter clears stale action targets immediately and empty results have no decisions',async()=>{
       await go(p.page,'admin.html?tab=claims&claim='+idA);await p.page.fill('#bm-search',run+' Pending B');await exact(p.page,idB);assert.equal(await p.page.locator('[data-detail-claim-id="'+idA+'"]').count(),0);

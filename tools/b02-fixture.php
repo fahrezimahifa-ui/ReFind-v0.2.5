@@ -2,6 +2,8 @@
 declare(strict_types=1);
 if (PHP_SAPI !== 'cli') { http_response_code(403); exit; }
 require __DIR__ . '/../app/auth.php';
+require_once __DIR__ . '/qa-guard.php';
+assert_qa_installation(app_root());
 if (app_config()['db_name'] !== 'refind_db_0_2_0_test') { fwrite(STDERR, 'Fixture mutations require the isolated _test database.' . PHP_EOL); exit(1); }
 try {
     $input = json_decode(file_get_contents('php://stdin'), true, 64, JSON_THROW_ON_ERROR);

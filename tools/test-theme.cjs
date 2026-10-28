@@ -1,18 +1,21 @@
+const qaRuntime = require('./qa-runtime.cjs');
+qaRuntime.assertQa();
 // Read-only browser review of the owned QA installation. No business POSTs.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const {execFileSync}=require('node:child_process');
-const {chromium}=require(process.env.REFIND_PLAYWRIGHT_MODULE||path.join(os.tmpdir(),'opencode','refind-multipage-check','node_modules','playwright-core'));
+const {chromium} = qaRuntime.playwright();
 const sharp=require(process.env.REFIND_SHARP_MODULE||'sharp');
 const AxeBuilder=require(process.env.REFIND_AXE_MODULE||'@axe-core/playwright').default;
 const {auditHeaderFocus}=require('./qa-focus.cjs');
-const root=path.resolve(__dirname,'..'),main=process.argv.includes('--main'),target=main?root:path.resolve(root,'../ReFind_0.2.0_Test'),base=main?'http://localhost/ReFind_0.2.3/':'http://localhost/ReFind_0.2.0_Test/';
+if(process.argv.includes('--main'))throw new Error('Release QA cannot target the main installation');
+const root=path.resolve(__dirname,'..'),main=false,target=main?root:path.resolve(root,'../ReFind_0.2.0_Test'),base=main?'http://localhost/ReFind_0.2.3/':'http://localhost/ReFind_0.2.0_Test/';
 if(!main)assert.equal(JSON.parse(fs.readFileSync(path.join(target,'.refind-b02-test.json'))).source,root);
 const out=path.resolve(process.env.REFIND_EVIDENCE_DIR||path.join(root,'output/playwright/mvp-finish/theme'));
 fs.mkdirSync(out,{recursive:true});
 const accounts=JSON.parse(fs.readFileSync(path.join(target,'storage/setup/demo-accounts.json'))).accounts;
 const results={checks:[],screens:[],contrast:[],focusContrast:[],a11y:[],performance:[],errors:[],failedRequests:[]};
 function save(){fs.writeFileSync(path.join(out,'theme-results.json'),JSON.stringify(results,null,2)+'\n');}
-function fingerprint(){return execFileSync('C:/xampp/php/php.exe',['-r',"require 'app/db.php'; $all=[]; foreach(['users','items','claims','handovers','notifications','item_photos','claim_photos','item_matches','item_status_history'] as $table) $all[$table]=rows('SELECT * FROM '.$table); echo hash('sha256',json_encode($all));"],{cwd:target,encoding:'utf8'}).trim();}
+function fingerprint(){return execFileSync(qaRuntime.php,['-r',"require 'app/db.php'; $all=[]; foreach(['users','items','claims','handovers','notifications','item_photos','claim_photos','item_matches','item_status_history'] as $table) $all[$table]=rows('SELECT * FROM '.$table); echo hash('sha256',json_encode($all));"],{cwd:target,encoding:'utf8'}).trim();}
 async function check(name,fn){await fn();results.checks.push(name);save();console.log('PASS '+name);}
 async function go(page,route){await page.goto(base+route);await page.waitForSelector('body[data-ready="true"]');await page.waitForLoadState('networkidle');await page.evaluate(async()=>{await document.fonts.ready;ReFindTheme.setMotion(false);});}
 async function chooseTheme(page,value){if(!(await page.locator('#appearance-panel').evaluate(e=>e.open)))await page.click('#appearance-toggle');await page.locator('[name="appearance-theme"][value="'+value+'"]').check();await page.keyboard.press('Escape');}
@@ -40,7 +43,7 @@ async function contrast(page,name){
 
 (async()=>{
  const before=fingerprint();
- const browser=await chromium.launch({executablePath:process.env.REFIND_CHROME||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+ const browser=await chromium.launch({executablePath:qaRuntime.chromePath(),headless:true});
  try{
   await check('System, manual override, reload, cross-tab, reset and device changes',async()=>{
    const c=await browser.newContext({colorScheme:'dark',viewport:{width:390,height:844}}),p=await c.newPage();observe(p);

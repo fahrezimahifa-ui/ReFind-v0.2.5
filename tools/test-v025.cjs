@@ -1,9 +1,11 @@
+const qaRuntime = require('./qa-runtime.cjs');
+qaRuntime.assertQa();
 const {themedContext}=require('./qa-browser.cjs');
 // v0.2.5 acceptance: one group per QA finding fixed in this release. Fresh actors and exact-ID cleanup in the owned _test copy.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto');
 const {execFileSync}=require('node:child_process');
-const root=path.resolve(__dirname,'..'),testRoot=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php='C:\\xampp\\php\\php.exe';
-const {chromium}=require(process.env.REFIND_PLAYWRIGHT_MODULE||path.join(os.tmpdir(),'opencode','refind-multipage-check','node_modules','playwright-core'));
+const root=path.resolve(__dirname,'..'),testRoot=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php=qaRuntime.php;
+const {chromium} = qaRuntime.playwright();
 const out=process.env.REFIND_EVIDENCE_DIR?path.resolve(process.env.REFIND_EVIDENCE_DIR):path.join(root,'docs','verification','v025','fixes');assert.equal(JSON.parse(fs.readFileSync(path.join(testRoot,'.refind-b02-test.json'))).source,root);fs.mkdirSync(out,{recursive:true});
 const run='V025-'+Date.now().toString(36),results=[],browserErrors=[],actors=[];let browser;
 function driver(input){return JSON.parse(execFileSync(php,[path.join(testRoot,'tools','b02-fixture.php')],{input:JSON.stringify(input),encoding:'utf8'}));}
@@ -153,7 +155,7 @@ async function go(page,route){await page.goto(base+route);await page.waitForSele
    assert.equal(q("SELECT COUNT(*) AS n FROM item_matches WHERE match_status='SUGGESTED'").rows[0].n,before);
   });
   if(process.argv.includes('--api-only')){persist({complete:true,apiOnly:true});return;}
-  browser=await chromium.launch({executablePath:process.env.REFIND_CHROME||'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true});
+  browser=await chromium.launch({executablePath:qaRuntime.chromePath(),headless:true});
   await test('F06/C14 missing or invalid ids show a not-found state with a way out and no Retry',async()=>{
    const p=await browserPage(A);for(const route of ['item.html','item.html?id=abc','item.html?id=99999999','claim.html','report.html?edit=abc']){await go(p.page,route);assert.ok(await p.page.locator('#page-missing').isVisible(),route);assert.equal(await p.page.locator('#retry-page').isVisible(),false,route);assert.ok(!(await p.page.locator('main').innerText()).includes('Cannot read'),route);}
    await p.context.close();
