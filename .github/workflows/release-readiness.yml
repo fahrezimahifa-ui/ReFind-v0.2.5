@@ -12,15 +12,15 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
           cache: npm
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.13'
       - uses: shivammathur/setup-php@d52fc211a0436f8839a587b3b5b8efddab4744ea # v2
@@ -58,7 +58,7 @@ jobs:
     env:
       REFIND_TESTED_SHA: ${{ github.sha }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
       - name: Start disposable QA services
@@ -66,15 +66,21 @@ jobs:
       - name: Prepare isolated app and verify fresh setup / recovery
         run: |
           docker compose -f compose.qa.yml exec -T qa python3 tools/prepare-test.py
-          docker compose -f compose.qa.yml exec -T qa python3 tools/test-disposable-recovery.py
+          docker compose -f compose.qa.yml exec -T qa chown -R www-data:www-data /var/www/html/ReFind_0.2.0_Test /var/www/html/ReFind_0.2.3/output
+          docker compose -f compose.qa.yml exec -T --user www-data qa python3 tools/test-disposable-recovery.py
       - name: Student, BM, security and visual regression suites
-        run: docker compose -f compose.qa.yml exec -T qa node tools/run-qa.cjs
+        run: |
+          docker compose -f compose.qa.yml exec -T --user www-data qa php tools/profile-queries.php
+          docker compose -f compose.qa.yml exec -T --user www-data qa node tools/run-qa.cjs
+      - name: Disposable Apache diagnostics
+        if: failure()
+        run: docker compose -f compose.qa.yml logs --no-log-prefix qa
       - name: Collect synthetic receipts and captures
         if: always()
         run: |
           mkdir -p output/playwright/release-readiness/results
           docker compose -f compose.qa.yml cp qa:/var/www/html/ReFind_0.2.3/output/playwright/release-readiness/results/. output/playwright/release-readiness/results/ || true
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: always()
         with:
           name: synthetic-qa-evidence
