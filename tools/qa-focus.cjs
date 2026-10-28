@@ -10,7 +10,7 @@ async function auditHeaderFocus(browser,base,sharp){
     try{
       const page=await context.newPage();
       await page.goto(base+'login.html');
-      await page.waitForSelector('body[data-ready="true"]');
+      await page.waitForSelector('body[data-ready="true"]');await page.evaluate(async()=>{await document.fonts.ready;ReFindTheme.setMotion(false);});
       for(const color of ['#000','#fff']){
         await page.evaluate(color=>{
           let strip=document.getElementById('qa-focus-backdrop');
@@ -18,12 +18,12 @@ async function auditHeaderFocus(browser,base,sharp){
           strip.style.background=color;
         },color);
         await page.keyboard.press('Tab');
-        await page.locator('#theme-toggle').focus();
+        await page.locator('#appearance-toggle').focus();
         await page.waitForTimeout(200);
-        const box=await page.locator('#theme-toggle').boundingBox();
+        const box=await page.locator('#appearance-toggle').boundingBox();
         const {data,info}=await sharp(await page.screenshot()).removeAlpha().raw().toBuffer({resolveWithObject:true});
-        const pixel=x=>{const i=(Math.floor(box.y+box.height/2)*info.width+Math.floor(x))*info.channels;return [...data.subarray(i,i+3)];};
-        const foreground=pixel(box.x-5),background=pixel(box.x-9),ratio=contrast(foreground,background);
+        const pixel=y=>{const i=(Math.floor(y)*info.width+Math.floor(box.x+box.width/2))*info.channels;return [...data.subarray(i,i+3)];};
+        const foreground=pixel(box.y+box.height+5),background=pixel(box.y+box.height+7),ratio=contrast(foreground,background);
         checks.push({theme,width,color,foreground,background,ratio});
         assert.ok(ratio>=3,theme+' '+width+' keyboard focus over '+color+': '+ratio.toFixed(2)+' < 3');
       }

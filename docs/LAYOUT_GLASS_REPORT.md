@@ -1,5 +1,7 @@
 # ReFind layout and notification refinement — 28 October 2026
 
+Historical checkpoint: the later [MVP visual finish](MVP_VISUAL_FINISH_REPORT.md) adds Manrope, richer moving backgrounds, broader glass and shared Appearance controls. Results below describe the published layout checkpoint; its evidence is preserved separately.
+
 Checkpoint branch: `codex/layout-glass-refinement`, based on the completed dark-mode refresh at `2536fcb`. This branch preserves the reviewed layout, notification feed, glass surfaces, and verification report. GitHub `main` remains `857acea`; no pull request or merge is included.
 
 ## Delivered changes

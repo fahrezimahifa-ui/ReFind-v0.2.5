@@ -14,7 +14,7 @@ Recommended reading order:
 
 For this existing installation, start Apache/MySQL in XAMPP and use the local URL above. Later sections retain historical B01–B06/UX01 installation examples and older folder names; use the architecture guide for current local configuration and interpret test results by checkpoint.
 
-The 28 October refresh adds the supplied blue/cyan branding, continuous pastel backgrounds, dark mode, and System/Light/Dark settings. The latest `codex/layout-glass-refinement` pass unifies page widths, gives Notifications a compact feed with deliberate spacing, and makes selected glass panels clearer. See the [current layout/glass report](docs/LAYOUT_GLASS_REPORT.md), the historical [dark-mode](docs/GLASS_DARK_MODE_REPORT.md) and [first UI polish](docs/UI_POLISH_REPORT.md) reports, and the [branding guide](assets/README.md). App version remains 0.2.5; the database schema is unchanged.
+The latest `codex/mvp-visual-finish` checkpoint builds on published checkpoint `4f295aa`: richer warm/cool backgrounds with optional slow movement, broader glass surfaces, self-hosted Manrope, and a shared Appearance panel synchronized with Settings and other tabs. The 1160px layout, compact notification feed and supplied logos are preserved. See the [current visual finish report](docs/MVP_VISUAL_FINISH_REPORT.md), historical [layout/glass](docs/LAYOUT_GLASS_REPORT.md), [dark-mode](docs/GLASS_DARK_MODE_REPORT.md), and [first UI polish](docs/UI_POLISH_REPORT.md) reports, plus the [branding guide](assets/README.md). App version remains 0.2.5; the database schema is unchanged. This checkpoint is saved on its own branch in ReFind-v0.2.5; no pull request or merge is included.
 
 ## Current release v0.2.5 / folder ReFind_0.2.3
 

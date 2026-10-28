@@ -203,6 +203,10 @@ All six regression suites accept `REFIND_THEME=light` or `dark` and `REFIND_EVID
 
 The subsequent [layout/glass refinement](LAYOUT_GLASS_REPORT.md) records the current shared widths, notification feed, and surface roles. `tools/test-layout.cjs` adds focused feed/spacing/read-state/reflow checks with fresh actors in the owned QA installation; do not run it alongside other mutation suites. The theme suite also checks rendered focus-ring contrast over black/white header backdrops. Use a new `REFIND_EVIDENCE_DIR` to preserve previous results. This installation's ignored `output/playwright/.htaccess` denies captures through HTTP; open them as local files and retain that guard when generating review evidence.
 
+The latest [MVP visual finish report](MVP_VISUAL_FINISH_REPORT.md) describes the local Manrope font, ambient layers, and browser-only Appearance preferences. `js/theme.js` applies `refind-theme` before paint and stores motion separately as `refind-motion`; neither setting changes account records. The shared header and Settings stay synchronized through the same controller and storage events. Font provenance/license live in `assets/fonts/`.
+
+`tools/test-appearance.cjs` adds read-only controls, independent background-phase contrast, font fallback/layout-shift, draft/upload/BM-confirmation preservation, and motion-on/off performance checks. Like the theme suite it defaults to owned QA; `--main` explicitly selects this local main app and compares business-table fingerprints. It needs Playwright and Sharp. Recording also needs Playwright's FFmpeg; keep its download in ignored review artifacts and set `PLAYWRIGHT_BROWSERS_PATH` to that directory. `tools/qa-contrast.cjs` samples composited backgrounds under visible text ranges, excluding adjacent icons/inputs and content occluded by dialogs or sticky actions. Choose a fresh `REFIND_EVIDENCE_DIR` to retain earlier runs. Run the six mutation suites sequentially in each theme.
+
 ## 8. Existing documentation and known drift
 
 - [B01_BLUEPRINT.md](B01_BLUEPRINT.md): initial architecture and traceability, reconciled through B06; read later v0.2.5 changes with it.
