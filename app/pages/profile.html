@@ -1,13 +1,15 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <script src="js/theme.js"></script>
+  <link rel="preload" href="assets/fonts/Manrope-variable.woff2" as="font" type="font/woff2" crossorigin="anonymous">
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="app-base" content="{{BASE_PATH}}">
-  <title>My profile — ReFind</title><link rel="icon" href="assets/refind-logo-mark.png"><link rel="stylesheet" href="vendor/bootstrap.min.css"><link rel="stylesheet" href="css/auth.css"><link rel="stylesheet" href="css/styles.css">
+  <title>My profile — ReFind</title><link rel="icon" type="image/svg+xml" href="assets/refind-logo-mark.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/refind-favicon-32.png"><link rel="apple-touch-icon" sizes="180x180" href="assets/refind-shortcut-180.png"><link rel="stylesheet" href="vendor/bootstrap.min.css"><link rel="stylesheet" href="css/theme.css"><link rel="stylesheet" href="css/auth.css"><link rel="stylesheet" href="css/styles.css">
 </head>
 <body data-page="profile" data-requires-auth="true">
   {{APP_NAVBAR}}
   <main class="account-main">
-    <div class="account-heading"><span class="eyebrow">YOUR ACCOUNT</span><h1>Your profile</h1><p>Update how your name appears in ReFind. Your account identifiers stay private.</p></div>
+    <div class="account-heading"><h1>Your profile</h1><p>Update how your name appears in ReFind. Your account identifiers stay private.</p></div>
     <p class="loading-note" id="account-loading" role="status">Loading your profile…</p>
     <div class="feedback" id="account-load-error" role="alert" tabindex="-1" hidden></div><button class="btn btn-outline retry-load" id="retry-account" type="button" hidden>Retry loading profile</button>
     <div class="account-layout" id="account-content" hidden>

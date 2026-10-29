@@ -1,20 +1,22 @@
+const qaRuntime = require('./qa-runtime.cjs');
+qaRuntime.assertQa();
 // Positive/read-only release checks; report/claim data is not mutated.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const {execFileSync} = require('node:child_process');
-const root = path.resolve(__dirname, '..');
-const php = 'C:\\xampp\\php\\php.exe';
-const {chromium} = require(process.env.REFIND_PLAYWRIGHT_MODULE || path.join(os.tmpdir(), 'opencode', 'refind-multipage-check', 'node_modules', 'playwright-core'));
+const root = qaRuntime.target;
+const php = qaRuntime.php;
+const {chromium} = qaRuntime.playwright();
 const batch = process.argv.includes('--v025') ? 'v025' : process.argv.includes('--ux02') ? 'ux02' : process.argv.includes('--ux01') ? 'ux01' : process.argv.includes('--b06') ? 'b06' : process.argv.includes('--b05') ? 'b05' : process.argv.includes('--b04') ? 'b04' : process.argv.includes('--b03') ? 'b03' : 'b02';
-const out = batch === 'v025' ? path.join(root, 'docs', 'verification', 'v025', 'smoke') : path.join(root, 'docs', 'verification', batch);
+const out = path.resolve(process.env.REFIND_EVIDENCE_DIR || path.join(qaRuntime.root,'output/playwright/release-readiness/smoke')); fs.mkdirSync(out,{recursive:true});
 if (batch === 'v025') fs.mkdirSync(out, {recursive:true});
-const config=JSON.parse(execFileSync(php,['-r',"require 'app/config.php'; echo json_encode(app_config());"],{cwd:root,encoding:'utf8'}));
-const base='http://localhost'+config.base_path;
+
+const base=qaRuntime.base;
 function snapshot() {
   const code = "require 'app/db.php'; $r=[]; foreach(['users','items','claims','handovers','notifications','item_photos','claim_photos'] as $t) $r[$t]=row('SELECT COUNT(*) AS n FROM '.$t)['n']; $r['users_fingerprint']=hash('sha256',json_encode(rows('SELECT * FROM users ORDER BY user_id'))); echo json_encode($r);";
-  return JSON.parse(execFileSync(php, ['-r', code], {cwd:root,encoding:'utf8'}));
+  return {...JSON.parse(execFileSync(php, ['-r', code], {cwd:root,encoding:'utf8'})), fingerprint:JSON.parse(execFileSync(php,[path.join(root,'tools/fingerprint.php')],{encoding:'utf8'}))};
 }
 async function hydratePhotos(page) {
   await page.evaluate(async()=>{
@@ -29,11 +31,10 @@ async function hydratePhotos(page) {
   assert.ok(fs.existsSync(out), 'Run the isolated auth test first');
   const credentials = JSON.parse(fs.readFileSync(path.join(root, 'storage', 'setup', 'demo-accounts.json'), 'utf8')).accounts;
   const before = snapshot();
-  const mainSchema = JSON.parse(execFileSync(php,[path.join(root,'tools','check-database.php')],{encoding:'utf8'}));
-  const testSchema = JSON.parse(execFileSync(php,[path.resolve(root,'..','ReFind_0.2.0_Test','tools','check-database.php')],{encoding:'utf8'}));
-  assert.ok(mainSchema.passed && testSchema.passed);
-  const browser = await chromium.launch({executablePath:process.env.REFIND_CHROME || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true});
-  const result = {scope:batch.toUpperCase()+' main app positive smoke + schema checks; no business mutations', mainSchema,testSchema,browserErrors:[],accounts:[]};
+  const schema = JSON.parse(execFileSync(php,[path.join(root,'tools','check-database.php')],{encoding:'utf8'}));
+  assert.ok(schema.passed);
+  const browser = await chromium.launch({executablePath:qaRuntime.chromePath(),headless:true});
+  const result = {scope:batch.toUpperCase()+' isolated QA positive smoke + schema checks; no business mutations', schema,browserErrors:[],accounts:[]};
   try {
     for (const [email, account] of Object.entries(credentials)) {
       const context = await browser.newContext({viewport:{width:390,height:844}});
@@ -55,9 +56,9 @@ async function hydratePhotos(page) {
       }
       if(['b06','ux01','ux02','v025'].includes(batch)) {
         const projection=await page.evaluate(async()=>{const r=await fetch('api/items.php?limit=48');return r.json();});
-        assert.equal(projection.total,before.items);assert.equal(projection.items.length,before.items);
+        assert.equal(projection.total,before.items);assert.equal(projection.items.length,Math.min(48,before.items));
         assert.ok(projection.items.every(i=>!('private_clue' in i)&&!('verification_clue' in i)&&!('ownership_photos' in i)));
-        assert.ok(before.items>=40&&before.claims>=12&&before.handovers>=6);
+        // Counts are observed from this QA installation, not assumed from a historical seed.
       }
       await page.screenshot({path:path.join(out,account.role==='STUDENT'?'main-'+email.split('@')[0]+'.png':'main-bm.png'),fullPage:true});
       if (await page.locator('#nav-toggle').isVisible() && await page.locator('#nav-toggle').getAttribute('aria-expanded')!=='true') await page.click('#nav-toggle');
@@ -67,7 +68,7 @@ async function hydratePhotos(page) {
     }
     const after = snapshot(); assert.deepEqual(after,before); assert.deepEqual(result.browserErrors,[]);
     result.dataUnchanged=true; result.databaseCounts=after; result.passed=true;
-    fs.writeFileSync(path.join(out,'main-smoke.json'),JSON.stringify(result,null,2)+'\n');
-    console.log('Main release smoke: 3 accounts login/logout PASS; data unchanged; 9 schema checks PASS on both databases.');
+    fs.writeFileSync(path.join(out,'qa-smoke.json'),JSON.stringify(result,null,2)+'\n');
+    console.log('Isolated QA release smoke: 3 accounts login/logout PASS; data unchanged; 9 schema checks PASS on the isolated QA database.');
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

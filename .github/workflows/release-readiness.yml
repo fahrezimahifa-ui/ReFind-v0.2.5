@@ -1,0 +1,93 @@
+name: Release readiness
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, codex/release-readiness, codex/maintainability-refactor]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  static:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - uses: shivammathur/setup-php@d52fc211a0436f8839a587b3b5b8efddab4744ea # v2
+        with:
+          php-version: '8.2'
+          extensions: mysqli, mbstring, fileinfo, zip
+          coverage: none
+          tools: composer:v2
+      - run: npm ci --ignore-scripts
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - name: PHP syntax
+        run: find app api tools -name '*.php' -print0 | xargs -0 -n1 php -l && php -l page.php
+      - run: npm run check:js
+      - run: npm run lint
+      - run: composer analyse
+      - run: python tools/test-release.py
+      - name: Whitespace
+        run: git diff-tree --check HEAD^ HEAD
+      - name: Redacted history secret scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=8.30.1
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${version}"
+          curl --fail --location "$base/gitleaks_${version}_linux_x64.tar.gz" -o "$RUNNER_TEMP/gitleaks.tar.gz"
+          expected=551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+          echo "$expected  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum --check -
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" git --log-opts='--all --no-textconv --no-ext-diff' --config .gitleaks.toml --redact=100 --no-banner .
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      REFIND_TESTED_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Start disposable QA services
+        run: docker compose -f compose.qa.yml up --build --detach --wait
+      - name: Prepare isolated app and verify fresh setup / recovery
+        run: |
+          docker compose -f compose.qa.yml exec -T qa python3 tools/prepare-test.py
+          docker compose -f compose.qa.yml exec -T qa chown -R www-data:www-data /var/www/html/ReFind_0.2.0_Test /var/www/html/ReFind_0.2.3/output
+          docker compose -f compose.qa.yml exec -T --user www-data qa python3 tools/test-disposable-recovery.py
+      - name: Student, BM, security and visual regression suites
+        run: |
+          docker compose -f compose.qa.yml exec -T --user www-data qa php tools/profile-queries.php
+          docker compose -f compose.qa.yml exec -T --user www-data qa node tools/run-qa.cjs
+      - name: Disposable Apache diagnostics
+        if: failure()
+        run: docker compose -f compose.qa.yml logs --no-log-prefix qa
+      - name: Collect synthetic receipts and captures
+        if: always()
+        run: |
+          mkdir -p output/playwright/release-readiness/results
+          docker compose -f compose.qa.yml cp qa:/var/www/html/ReFind_0.2.3/output/playwright/release-readiness/results/. output/playwright/release-readiness/results/ || true
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
+        with:
+          name: synthetic-qa-evidence
+          path: output/playwright/release-readiness/results/
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Stop disposable services
+        if: always()
+        run: docker compose -f compose.qa.yml down --volumes --remove-orphans

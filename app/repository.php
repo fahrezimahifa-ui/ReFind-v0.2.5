@@ -106,27 +106,63 @@ function refresh_suggestions(array $item, array &$locked, int $actor): void
     }
     unset($report);
 }
-function safe_item(array $record, array $user): array
+// Request-local batch context: private clues/evidence bytes never enter this projection.
+function item_projection_context(array $records, array $user): array
+{
+    $context = [];
+    foreach ($records as $record) $context[(int) $record['item_id']] = ['photos' => [], 'match' => null, 'active_claim' => false, 'own_claim' => null, 'ownership_count' => 0];
+    if (!$context) return [];
+    $ids = array_keys($context); $marks = implode(',', array_fill(0, count($ids), '?'));
+    foreach (rows("SELECT item_id,photo_id,photo_kind FROM item_photos WHERE item_id IN ($marks) ORDER BY is_primary DESC,photo_id", $ids) as $photo) {
+        if ($photo['photo_kind'] === 'ITEM') $context[(int) $photo['item_id']]['photos'][] = ['photo_id' => $photo['photo_id']];
+        else $context[(int) $photo['item_id']]['ownership_count']++;
+    }
+    foreach (rows("SELECT lost_item_id,found_item_id FROM item_matches WHERE match_status='CONFIRMED' AND (lost_item_id IN ($marks) OR found_item_id IN ($marks)) ORDER BY match_id", array_merge($ids, $ids)) as $match) {
+        foreach (['lost_item_id', 'found_item_id'] as $key) {
+            $id = (int) $match[$key];
+            if (isset($context[$id]) && $context[$id]['match'] === null) $context[$id]['match'] = $match;
+        }
+    }
+    foreach (rows("SELECT item_id,related_lost_item_id FROM claims WHERE claim_status IN ('PENDING','NEED_MORE_INFO','APPROVED') AND (item_id IN ($marks) OR related_lost_item_id IN ($marks))", array_merge($ids, $ids)) as $claim) {
+        foreach (['item_id', 'related_lost_item_id'] as $key) {
+            $id = (int) $claim[$key];
+            if (isset($context[$id])) $context[$id]['active_claim'] = true;
+        }
+    }
+    if ($user['role'] === 'STUDENT') {
+        foreach (rows("SELECT claim_id,item_id,claim_status,review_note FROM claims WHERE claimant_user_id=? AND item_id IN ($marks)", array_merge([(int) $user['user_id']], $ids)) as $claim) {
+            $id = (int) $claim['item_id']; unset($claim['item_id']);
+            $context[$id]['own_claim'] = $claim;
+        }
+    }
+    return $context;
+}
+function safe_items(array $records, array $user): array
+{
+    $context = item_projection_context($records, $user);
+    return array_map(fn($record) => safe_item($record, $user, $context), $records);
+}
+function safe_item(array $record, array $user, ?array $context = null): array
 {
     $id = (int) $record['item_id'];
     $record['item_id'] = (string) $id;
     $record['reporter_user_id'] = (string) $record['reporter_user_id'];
-    $photos = rows("SELECT photo_id FROM item_photos WHERE item_id=? AND photo_kind='ITEM' ORDER BY is_primary DESC,photo_id", [$id]);
+    $photos = $context !== null ? $context[$id]['photos'] : rows("SELECT photo_id FROM item_photos WHERE item_id=? AND photo_kind='ITEM' ORDER BY is_primary DESC,photo_id", [$id]);
     $record['photos'] = array_map(fn($p) => app_config()['base_path'] . 'api/photos.php?kind=item&id=' . $p['photo_id'], $photos);
     $record['photo_ids'] = array_column($photos, 'photo_id');
-    $match = confirmed_match($id);
+    $match = $context !== null ? $context[$id]['match'] : confirmed_match($id);
     $record['matched_item_id'] = $match ? (string) ((int) $match['lost_item_id'] === $id ? $match['found_item_id'] : $match['lost_item_id']) : null;
     $own = $record['reporter_user_id'] === $user['user_id'];
-    $related = active_claim_for_report($id);
+    $related = $context !== null ? $context[$id]['active_claim'] : active_claim_for_report($id);
     $active = in_array($record['status_code'], ACTIVE_ITEM_CODES, true);
     $record['can_edit'] = $user['role'] === 'STUDENT' && $own && !$related && !$match && in_array($record['status_code'], ['OPEN','POTENTIAL_MATCH'], true);
     if ($user['role'] === 'STUDENT' && $own && !$record['can_edit'] && in_array($record['status_code'], ['OPEN','POTENTIAL_MATCH','VERIFICATION','UNDER_REVIEW'], true))
         $record['edit_locked_reason'] = $related ? 'Editing is paused while a claim that uses this report is being reviewed.' : 'Building Management is reviewing this report, so it cannot be edited right now.';
-    $claim = $user['role'] === 'STUDENT' ? row('SELECT claim_id,claim_status,review_note FROM claims WHERE item_id=? AND claimant_user_id=?', [$id, (int) $user['user_id']]) : null;
+    $claim = $context !== null ? $context[$id]['own_claim'] : ($user['role'] === 'STUDENT' ? row('SELECT claim_id,claim_status,review_note FROM claims WHERE item_id=? AND claimant_user_id=?', [$id, (int) $user['user_id']]) : null);
     $record['own_claim'] = $claim;
     $record['can_claim'] = $user['role'] === 'STUDENT' && !$own && !$match && $record['item_type'] === 'FOUND' && $active && (!$claim || in_array($claim['claim_status'], RESUBMITTABLE_CLAIM_CODES, true));
     $record['can_report_found'] = $user['role'] === 'STUDENT' && !$own && !$match && $record['item_type'] === 'LOST' && $active;
-    if ($own) $record['ownership_photo_count'] = (int) row("SELECT COUNT(*) AS n FROM item_photos WHERE item_id=? AND photo_kind='OWNERSHIP'", [$id])['n'];
+    if ($own) $record['ownership_photo_count'] = $context !== null ? $context[$id]['ownership_count'] : (int) row("SELECT COUNT(*) AS n FROM item_photos WHERE item_id=? AND photo_kind='OWNERSHIP'", [$id])['n'];
     if (isset($record['created_at'])) $record['created_at'] = utc_iso($record['created_at']);
     if (isset($record['resolved_at'])) $record['resolved_at'] = utc_iso($record['resolved_at']);
     return $record;
@@ -139,7 +175,7 @@ function possible_matches(int $id, array $user): array
 {
     // Pairs stored before v0.2.5 may still name the same reporter or another category; never show them.
     $records = rows("SELECT " . public_columns() . ",m.match_score FROM item_matches m JOIN items self ON self.item_id=? JOIN v_items_overview v ON v.item_id=IF(m.lost_item_id=?,m.found_item_id,m.lost_item_id) WHERE (m.lost_item_id=? OR m.found_item_id=?) AND m.match_status='SUGGESTED' AND v.reporter_user_id<>self.reporter_user_id AND v.category_id=self.category_id AND v.status_code IN ('OPEN','UNDER_REVIEW','POTENTIAL_MATCH','VERIFICATION') AND NOT EXISTS(SELECT 1 FROM item_matches c WHERE c.match_status='CONFIRMED' AND (c.lost_item_id=v.item_id OR c.found_item_id=v.item_id)) ORDER BY m.match_score DESC,v.item_id LIMIT 6", [$id,$id,$id,$id]);
-    return array_map(fn($r) => safe_item($r, $user), $records);
+    return safe_items($records, $user);
 }
 function pagination(array $query, int $default = 12): array
 {

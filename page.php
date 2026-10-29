@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
-require __DIR__ . '/app/routes.php';
 ini_set('display_errors', '0');
+require_once __DIR__ . '/app/http.php';
 security_headers();
 header('Content-Type: text/html; charset=utf-8');
 
@@ -16,7 +16,9 @@ function render_page(string $file, array $values = [], int $status = 200): never
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'HEAD') echo $html;
     exit;
 }
+$base = null;
 try {
+    require __DIR__ . '/app/routes.php';
     method('GET', 'HEAD');
     $base = app_config()['base_path'];
     $path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
@@ -42,5 +44,12 @@ try {
 } catch (Throwable $error) {
     $status = $error instanceof HttpError ? $error->status : 500;
     if ($status === 500) error_log('ReFind page error: ' . get_class($error) . ' at ' . basename($error->getFile()) . ':' . $error->getLine());
-    render_page('message.html', ['TITLE' => 'Unable to open page', 'MESSAGE' => $status === 500 ? 'Please try again after checking the local setup.' : $error->getMessage(), 'BACK_URL' => app_config()['base_path'] . 'index.html'], $status);
+    // A broken configuration/template must not fail again inside the error renderer.
+    try {
+        if ($base === null) throw new RuntimeException('Configuration unavailable.');
+        render_page('message.html', ['TITLE' => 'Unable to open page', 'MESSAGE' => $status === 500 ? 'The page could not be opened. Please try again.' : $error->getMessage(), 'BACK_URL' => $base . 'index.html'], $status);
+    } catch (Throwable $renderError) {
+        http_response_code(500);
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'HEAD') echo '<!doctype html><html lang="en"><meta charset="utf-8"><title>Unable to open page</title><h1>Unable to open page</h1><p>The page could not be opened. Please try again.</p></html>';
+    }
 }

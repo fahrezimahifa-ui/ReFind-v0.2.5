@@ -1,9 +1,12 @@
+const qaRuntime = require('./qa-runtime.cjs');
+qaRuntime.assertQa();
+const {themedContext}=require('./qa-browser.cjs');
 // v0.2.5 acceptance: one group per QA finding fixed in this release. Fresh actors and exact-ID cleanup in the owned _test copy.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto');
 const {execFileSync}=require('node:child_process');
-const root=path.resolve(__dirname,'..'),testRoot=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php='C:\\xampp\\php\\php.exe';
-const {chromium}=require(process.env.REFIND_PLAYWRIGHT_MODULE||path.join(os.tmpdir(),'opencode','refind-multipage-check','node_modules','playwright-core'));
-const out=path.join(root,'docs','verification','v025','fixes');assert.equal(JSON.parse(fs.readFileSync(path.join(testRoot,'.refind-b02-test.json'))).source,root);fs.mkdirSync(out,{recursive:true});
+const root=path.resolve(__dirname,'..'),testRoot=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php=qaRuntime.php;
+const {chromium} = qaRuntime.playwright();
+const out=process.env.REFIND_EVIDENCE_DIR?path.resolve(process.env.REFIND_EVIDENCE_DIR):path.join(root,'docs','verification','v025','fixes');assert.equal(JSON.parse(fs.readFileSync(path.join(testRoot,'.refind-b02-test.json'))).source,root);fs.mkdirSync(out,{recursive:true});
 const run='V025-'+Date.now().toString(36),results=[],browserErrors=[],actors=[];let browser;
 function driver(input){return JSON.parse(execFileSync(php,[path.join(testRoot,'tools','b02-fixture.php')],{input:JSON.stringify(input),encoding:'utf8'}));}
 function q(query,values=[]){return driver({action:'query',query,values});}
@@ -31,7 +34,7 @@ function futureInput(days=2){const d=new Date(Date.now()+days*86400000),p=new In
 async function changePickup(s,id,action,extra={}){const d=await pickup(s,id);return s.call('api/handovers.php',{id,action,revision:d.revision,confirm:'1',note:'PRIVATE pickup operation reason.',...extra});}
 const notes=(userId,where='',values=[])=>q('SELECT notification_type,title,message,claim_id,item_id FROM notifications WHERE user_id=? '+where+' ORDER BY notification_id',[Number(userId),...values]).rows;
 const pairs=(lost,found)=>q('SELECT match_status,match_score FROM item_matches WHERE lost_item_id=? AND found_item_id=?',[Number(lost),Number(found)]).rows;
-async function browserPage(a,viewport={width:1280,height:900}){const s=await new Session().login(a),context=await browser.newContext({viewport,timezoneId:'Asia/Jakarta'});await context.addCookies([{name:'refind_020_test',value:s.cookies.get('refind_020_test'),domain:'localhost',path:'/ReFind_0.2.0_Test/'}]);const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));return{page,context,s};}
+async function browserPage(a,viewport={width:1280,height:900}){const s=await new Session().login(a),context=await themedContext(browser,{viewport,timezoneId:'Asia/Jakarta'});await context.addCookies([{name:'refind_020_test',value:s.cookies.get('refind_020_test'),domain:'localhost',path:'/ReFind_0.2.0_Test/'}]);const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));return{page,context,s};}
 async function go(page,route){await page.goto(base+route);await page.waitForSelector('body[data-ready="true"]');}
 
 (async()=>{
@@ -152,7 +155,7 @@ async function go(page,route){await page.goto(base+route);await page.waitForSele
    assert.equal(q("SELECT COUNT(*) AS n FROM item_matches WHERE match_status='SUGGESTED'").rows[0].n,before);
   });
   if(process.argv.includes('--api-only')){persist({complete:true,apiOnly:true});return;}
-  browser=await chromium.launch({executablePath:process.env.REFIND_CHROME||'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true});
+  browser=await chromium.launch({executablePath:qaRuntime.chromePath(),headless:true});
   await test('F06/C14 missing or invalid ids show a not-found state with a way out and no Retry',async()=>{
    const p=await browserPage(A);for(const route of ['item.html','item.html?id=abc','item.html?id=99999999','claim.html','report.html?edit=abc']){await go(p.page,route);assert.ok(await p.page.locator('#page-missing').isVisible(),route);assert.equal(await p.page.locator('#retry-page').isVisible(),false,route);assert.ok(!(await p.page.locator('main').innerText()).includes('Cannot read'),route);}
    await p.context.close();
@@ -207,7 +210,10 @@ async function go(page,route){await page.goto(base+route);await page.waitForSele
   });
   await test('R03/A06 approve offers "Schedule pickup now" in place and Confirm returned warns about a future appointment',async()=>{
    const f=await create(b,'FOUND','approveflow item',{category_id:'8',location_id:'36'}),id=await claim(c,f),p=await browserPage(BM);await go(p.page,'admin.html?tab=claims&claim='+id);
+   let releaseUnread,unreadStarted;const unreadGate=new Promise(resolve=>{releaseUnread=resolve;}),unreadHeld=new Promise(resolve=>{unreadStarted=resolve;});
+   await p.page.route('**/api/notifications.php?count=1',async route=>{unreadStarted();await unreadGate;await route.continue();});
    await p.page.click('[data-bm-action="approved"]');await p.page.check('#operation-confirm');await p.page.click('#operation-submit');await p.page.waitForFunction(()=>!document.querySelector('#operation-dialog').open);
+   await unreadHeld;assert.equal(await p.page.getByRole('button',{name:'Schedule pickup now'}).isDisabled(),true);releaseUnread();
    await p.page.getByRole('button',{name:'Schedule pickup now'}).click();await p.page.waitForSelector('[data-detail-handover-id]');assert.equal(new URL(p.page.url()).searchParams.get('tab'),'handover');
    await p.page.click('[data-bm-action="schedule"]');assert.match(await p.page.inputValue('#operation-date'),/T10:00$/);await p.page.selectOption('#operation-location','36');await p.page.click('#operation-submit');await p.page.waitForFunction(()=>!document.querySelector('#operation-dialog').open);await p.page.waitForSelector('[data-bm-action="complete"]');
    await p.page.click('[data-bm-action="complete"]');assert.match(await p.page.locator('#operation-intro').innerText(),/collected the item early/);await p.page.keyboard.press('Escape');

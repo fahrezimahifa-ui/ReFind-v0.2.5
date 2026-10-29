@@ -1,0 +1,14 @@
+title = "ReFind secret scanning"
+[extend]
+useDefault = true
+
+# All 26 baseline alerts were verified as file SHA-256 entries in these two
+# historical manifests. Keep every other rule/path/content combination enabled.
+[[rules]]
+id = "generic-api-key"
+[[rules.allowlists]]
+description = "Historical release checksums, not credentials"
+condition = "AND"
+paths = ['''^releases/ReFind_0\.2\.0_(B06|UX01)\.manifest\.json$''']
+regexTarget = "line"
+regexes = ['''^\s*"[^"]+":\s*"[a-f0-9]{64}",?\s*$''']

@@ -1,13 +1,14 @@
+<div class="ambient-background" aria-hidden="true"><div class="ambient-layer ambient-layer--cool"></div><div class="ambient-layer ambient-layer--warm"></div></div>
 <header class="topbar app-header">
   <nav class="app-nav" aria-label="Main navigation">
-    <a class="brand" id="nav-brand" href="{{BASE_PATH}}index.html" aria-label="ReFind home"><img src="{{BASE_PATH}}assets/refind-logo-horizontal.png" width="136" height="35" alt="ReFind"></a>
-    <button class="menu-toggle" id="nav-toggle" type="button" aria-controls="nav-content" aria-expanded="false" aria-label="Open navigation"><span>Menu</span><span class="unread-badge menu-unread" id="menu-unread" aria-hidden="true" hidden></span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    <a class="brand" id="nav-brand" href="{{BASE_PATH}}index.html" aria-label="ReFind home"><picture class="brand-light"><source srcset="{{BASE_PATH}}assets/refind-logo-horizontal.svg" type="image/svg+xml"><img src="{{BASE_PATH}}assets/refind-logo-horizontal.png" width="344" height="108" alt="ReFind"></picture><picture class="brand-dark"><source srcset="{{BASE_PATH}}assets/refind-logo-horizontal-dark.svg" type="image/svg+xml"><img src="{{BASE_PATH}}assets/refind-logo-horizontal-dark.png" width="344" height="108" alt="ReFind"></picture></a>
+    <button class="menu-toggle" id="nav-toggle" type="button" aria-controls="nav-content" aria-expanded="false" aria-label="Open navigation"><span>Menu</span><span class="unread-badge menu-unread" id="menu-unread" aria-hidden="true" hidden></span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg></button>
     <div class="nav-content" id="nav-content" hidden>
       <div class="primary-links"><a class="nav-link" id="nav-home" href="{{BASE_PATH}}index.html">Home</a><a class="nav-link" data-main-nav="browse" href="{{BASE_PATH}}browse.html" data-auth-nav hidden>Explore</a><a class="nav-link" data-main-nav="report" href="{{BASE_PATH}}report.html" data-student-nav hidden>Report</a><a class="nav-link" data-main-nav="my-reports" href="{{BASE_PATH}}my-reports.html" data-student-nav hidden>My Activity</a><a class="nav-link" data-main-nav="history" href="{{BASE_PATH}}history.html" data-auth-nav hidden>History</a><a class="nav-link nav-link-notifications" data-main-nav="notifications" href="{{BASE_PATH}}notifications.html" data-auth-nav hidden>Notifications<span class="unread-badge" id="nav-unread" hidden></span></a></div>
       <div class="nav-account">
         <a class="nav-link" id="nav-login" href="{{BASE_PATH}}login.html">Log in</a>
         <div class="account-disclosure" id="account-disclosure" hidden>
-          <button class="account-toggle" id="account-toggle" type="button" aria-controls="account-menu" aria-expanded="false" disabled><span class="account-initials" data-account-initials aria-hidden="true"></span><span>Account</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+          <button class="account-toggle" id="account-toggle" type="button" aria-controls="account-menu" aria-expanded="false" disabled><span class="account-initials" data-account-initials aria-hidden="true"></span><span>Account</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg></button>
           <div class="account-menu" id="account-menu" hidden>
             <div class="account-menu-identity"><strong data-shell-user-name></strong><span data-shell-role></span></div>
             <a class="account-link" data-account-nav="profile" href="{{BASE_PATH}}profile.html">My profile</a>
@@ -17,6 +18,15 @@
         </div>
       </div>
     </div>
+    <button class="appearance-toggle" id="appearance-toggle" type="button" aria-label="Appearance" title="Appearance" aria-haspopup="dialog" aria-controls="appearance-panel" aria-expanded="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.75"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor"/></svg></button><span class="visually-hidden" id="theme-status" role="status"></span>
   </nav>
 </header>
+<dialog class="appearance-panel" id="appearance-panel" aria-labelledby="appearance-panel-title">
+  <div class="appearance-heading"><h2 id="appearance-panel-title">Appearance</h2><button type="button" class="icon-button" aria-label="Close appearance" data-close-appearance><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg></button></div>
+  <span class="appearance-label" id="appearance-theme-label">Color theme</span>
+  <div class="appearance-options" role="radiogroup" aria-labelledby="appearance-theme-label">
+    <label><input type="radio" name="appearance-theme" value="system" checked>System</label><label><input type="radio" name="appearance-theme" value="light">Light</label><label><input type="radio" name="appearance-theme" value="dark">Dark</label>
+  </div>
+  <div class="appearance-motion"><label class="motion-choice" for="appearance-motion"><input id="appearance-motion" type="checkbox" role="switch" data-motion-choice aria-describedby="header-motion-status">Background motion</label><p id="header-motion-status" data-motion-status></p></div>
+</dialog>
 <div class="shell-feedback-wrap"><div class="feedback" id="shell-feedback" role="alert" tabindex="-1" hidden></div></div>

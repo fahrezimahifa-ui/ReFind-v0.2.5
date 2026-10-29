@@ -1,0 +1,127 @@
+const qaRuntime = require('./qa-runtime.cjs');
+qaRuntime.assertQa();
+// Read-only appearance/font/motion acceptance on the owned QA installation.
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
+const{execFileSync}=require('node:child_process');
+const {chromium} = qaRuntime.playwright();
+const sharp=require(process.env.REFIND_SHARP_MODULE||'sharp');
+if(process.argv.includes('--main'))throw new Error('Release QA cannot target the main installation');
+const root=qaRuntime.root,target=qaRuntime.target,base=qaRuntime.base;
+const out=path.resolve(process.env.REFIND_EVIDENCE_DIR||path.join(root,'output/playwright/mvp-finish/appearance'));fs.mkdirSync(out,{recursive:true});
+const accounts=JSON.parse(fs.readFileSync(path.join(target,'storage/setup/demo-accounts.json'))).accounts;
+const results={checks:[],contrast:[],performance:[],errors:[],font:{},recordings:[]};
+function save(){fs.writeFileSync(path.join(out,'appearance-results.json'),JSON.stringify(results,null,2)+'\n');}
+async function check(name,fn){await fn();results.checks.push(name);save();console.log('PASS '+name);}
+function fingerprint(){return execFileSync(qaRuntime.php,[path.join(target,'tools/fingerprint.php')],{encoding:'utf8'}).trim();}
+async function go(p,route='login.html'){await p.goto(base+route);await p.waitForSelector('body[data-ready="true"]');await p.evaluate(()=>document.fonts.ready);}
+function observe(p){p.on('pageerror',e=>results.errors.push(String(e)));}
+async function open(p){if(!(await p.locator('#appearance-panel').evaluate(e=>e.open)))await p.click('#appearance-toggle');await p.waitForTimeout(170);}
+async function login(p,role='STUDENT'){await go(p);const a=Object.values(accounts).find(a=>a.role===role);await p.fill('#email',a.email);await p.fill('#password',a.password);await p.click('#login-submit');await p.waitForURL(role==='STUDENT'?'**/index.html':'**/admin.html');await p.waitForSelector('body[data-ready="true"]');}
+let motionSample=0;
+function readMotionState({state,sample}={}){
+ const known=window.qaMotionAnimations??=[];
+ const animations=document.getAnimations().filter(a=>a.effect?.target?.classList.contains('ambient-layer')).map(a=>{
+  if(!known.includes(a))known.push(a);
+  const transform=Array.from(new DOMMatrixReadOnly(getComputedStyle(a.effect.target).transform).toFloat64Array());
+  return{id:known.indexOf(a),name:a.animationName,time:a.currentTime,state:a.playState,pending:a.pending,transform};
+ }).sort((a,b)=>a.name.localeCompare(b.name));
+ if(state){
+  // Poll synchronously on animation frames; an async predicate is itself truthy.
+  if(animations.map(a=>a.name).join(',')!=='ambient-cool,ambient-warm'||animations.some(a=>a.pending||a.state!==state)){window.qaMotionSettling=null;return false;}
+  const ids=animations.map(a=>a.id).join(','),frame=document.timeline.currentTime;
+  let settling=window.qaMotionSettling;
+  if(!settling||settling.sample!==sample||settling.ids!==ids){window.qaMotionSettling={sample,ids,frame,frames:0};return false;}
+  if(frame!==settling.frame){settling.frame=frame;settling.frames++;}
+  if(settling.frames<2)return false;
+ }
+ return animations;
+}
+async function motionState(p){return p.evaluate(readMotionState);}
+function assertMotionState(animations,state){
+ assert.deepEqual(animations.map(a=>a.name),['ambient-cool','ambient-warm']);
+ for(const a of animations){
+  assert.equal(a.state,state,a.name+' play state');assert.equal(a.pending,false,a.name+' pending operation');
+  assert.ok(Number.isFinite(a.time),a.name+' finite currentTime');
+  assert.equal(a.transform.length,16);assert.ok(a.transform.every(Number.isFinite),a.name+' finite transform');
+ }
+}
+function assertSameAnimations(before,after){assert.deepEqual(after.map(a=>[a.id,a.name]),before.map(a=>[a.id,a.name]),'Ambient animation identities must not change');}
+async function settledMotionState(p,state){
+ // playState can already be paused while the compositor's pause task is pending.
+ // Wait for readiness and two rendered frames, rather than accepting a frame of drift.
+ const snapshot=await p.waitForFunction(readMotionState,{state,sample:++motionSample},{timeout:5000});
+ const animations=await snapshot.jsonValue();await snapshot.dispose();
+ assertMotionState(animations,state);return animations;
+}
+function assertFrozenMotion(before,after){
+ assertMotionState(before,'paused');assertMotionState(after,'paused');assertSameAnimations(before,after);
+ after.forEach((a,i)=>{
+  assert.ok(Math.abs(a.time-before[i].time)<=.1,a.name+' paused currentTime drift exceeds 0.1 ms');
+  a.transform.forEach((value,j)=>assert.ok(Math.abs(value-before[i].transform[j])<=([12,13,14].includes(j)?.01:1e-5),a.name+' paused transform drift at matrix component '+j));
+ });
+}
+async function assertPausedMotion(p){
+ const before=await settledMotionState(p,'paused');await p.waitForTimeout(220);
+ assertFrozenMotion(before,await motionState(p));
+}
+async function assertAdvancingMotion(p){
+ const before=await settledMotionState(p,'running');
+ await p.waitForFunction(before=>{
+  const animations=document.getAnimations().filter(a=>a.effect?.target?.classList.contains('ambient-layer'));
+  return animations.length===before.length&&before.every(previous=>{
+   const a=animations.find(a=>a.animationName===previous.name);
+   return a&&!a.pending&&a.playState==='running'&&Number.isFinite(a.currentTime)&&a.currentTime>previous.time+.1;
+  });
+ },before,{timeout:5000});
+ const after=await motionState(p);assertMotionState(after,'running');assertSameAnimations(before,after);
+ assert.ok(after.every((a,i)=>a.time>before[i].time+.1),'Both ambient animation times must advance');
+}
+async function sampleContrast(p,name){
+ await require('./qa-contrast.cjs').sampleTextContrast(p,'h1,h2,h3,.eyebrow,.journey li,.setup-note,.footer,.intro>p,.hint,.page-heading p,.notification-message,.notification-time,.notification-unread,.card-meta,.btn,.nav-link,.appearance-label,.appearance-options label,.motion-choice,[data-motion-status]',name,sharp,results.contrast,path.join(out,'contrast-failure.png'));
+}
+
+(async()=>{
+ const before=fingerprint(),browser=await chromium.launch({executablePath:qaRuntime.chromePath(),headless:true});
+ try{
+  await check('Appearance keyboard, dismissals and bounded panel work at five widths and short heights',async()=>{
+   const c=await browser.newContext({viewport:{width:360,height:800}}),p=await c.newPage();observe(p);
+   for(const width of [360,390,768,1280,1440])for(const height of [800,430]){await p.setViewportSize({width,height});await go(p);await p.locator('#appearance-toggle').focus();await p.keyboard.press('ArrowDown');await p.waitForTimeout(170);const r=await p.locator('#appearance-panel').boundingBox();assert.ok(r.x>=0&&r.x+r.width<=width&&r.y>=0&&r.y+r.height<=height);assert.equal(await p.evaluate(()=>document.activeElement.name),'appearance-theme');await p.keyboard.press('Escape');assert.equal(await p.evaluate(()=>document.activeElement.id),'appearance-toggle');await open(p);await p.locator('[data-close-appearance]').click();assert.equal(await p.locator('#appearance-toggle').getAttribute('aria-expanded'),'false');}
+   await go(p);await open(p);await p.click('h1');assert.equal(await p.locator('#appearance-panel').evaluate(e=>e.open),false);await open(p);await p.locator('#appearance-motion').focus();await p.keyboard.press('Tab');assert.equal(await p.locator('#appearance-panel').evaluate(e=>e.open),false);await c.close();
+  });
+  await check('Motion advances, pauses without jumping, reloads and synchronizes across tabs independently of theme',async()=>{
+   const c=await browser.newContext({colorScheme:'light',reducedMotion:'no-preference'}),p=await c.newPage();observe(p);await go(p);assert.equal(await p.getAttribute('html','data-motion'),'running');await assertAdvancingMotion(p);await open(p);await p.uncheck('#appearance-motion');assert.equal(await p.getAttribute('html','data-motion'),'paused');await p.keyboard.press('Escape');await assertPausedMotion(p);await p.reload();await p.waitForSelector('body[data-ready="true"]');assert.equal(await p.evaluate(()=>localStorage.getItem('refind-motion')),'off');assert.equal(await p.getAttribute('html','data-motion'),'paused');await assertPausedMotion(p);const peer=await c.newPage();await go(peer);await p.bringToFront();await open(p);await p.check('#appearance-motion');await assertAdvancingMotion(p);await peer.waitForFunction(()=>ReFindTheme.getMotion()===true);await p.locator('[name="appearance-theme"][value="dark"]').check();assert.equal(await p.evaluate(()=>ReFindTheme.getMotion()),true);await p.evaluate(()=>localStorage.clear());await peer.waitForFunction(()=>ReFindTheme.getPreference()==='system'&&ReFindTheme.getMotion());await c.close();
+  });
+  await check('Reduced motion overrides animation and explains the effective state without losing the saved choice',async()=>{
+   const c=await browser.newContext({reducedMotion:'reduce'}),p=await c.newPage();observe(p);await go(p);await open(p);assert.equal(await p.locator('#appearance-motion').isDisabled(),true);assert.match(await p.locator('#header-motion-status').innerText(),/reduced-motion/);assert.equal(await p.getAttribute('html','data-motion'),'paused');await assertPausedMotion(p);await p.emulateMedia({reducedMotion:'no-preference'});await p.waitForFunction(()=>document.documentElement.dataset.motion==='running');assert.equal(await p.locator('#appearance-motion').isEnabled(),true);await assertAdvancingMotion(p);await p.emulateMedia({reducedMotion:'reduce'});await p.waitForFunction(()=>document.documentElement.dataset.motion==='paused');assert.equal(await p.evaluate(()=>ReFindTheme.getMotion()),true);await assertPausedMotion(p);await c.close();
+  });
+  await check('Visibility handler pauses and resumes without changing the user preference (simulated visibility event)',async()=>{
+   const c=await browser.newContext(),p=await c.newPage();observe(p);await go(p);await assertAdvancingMotion(p);await p.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));});assert.equal(await p.getAttribute('html','data-motion'),'paused');assert.equal(await p.evaluate(()=>ReFindTheme.getMotion()),true);await assertPausedMotion(p);await p.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});assert.equal(await p.getAttribute('html','data-motion'),'running');await assertAdvancingMotion(p);await c.close();
+  });
+  await check('Blocked storage and invalid motion values remain usable',async()=>{
+   for(const blocked of [true,false]){const c=await browser.newContext(),p=await c.newPage();observe(p);await p.addInitScript(blocked=>{if(blocked)for(const method of ['getItem','setItem','removeItem'])Storage.prototype[method]=()=>{throw new DOMException('Blocked','SecurityError');};else localStorage.setItem('refind-motion','invalid');},blocked);await go(p);assert.equal(await p.evaluate(()=>ReFindTheme.getMotion()),true);await open(p);await p.uncheck('#appearance-motion');assert.equal(await p.getAttribute('html','data-motion'),'paused');await c.close();}
+  });
+  await check('Cold local font loading and fallback preserve content, drafts and layout',async()=>{
+   const c=await browser.newContext({viewport:{width:390,height:844}}),p=await c.newPage();observe(p);let release;const gate=new Promise(r=>release=r);await p.route('**/assets/fonts/Manrope-variable.woff2',async r=>{await gate;await r.continue();});await p.addInitScript(()=>{window.qaShifts=[];new PerformanceObserver(list=>list.getEntries().forEach(e=>{if(!e.hadRecentInput)window.qaShifts.push(e.value);})).observe({type:'layout-shift',buffered:true});});await p.goto(base+'login.html',{waitUntil:'domcontentloaded'});await p.waitForSelector('body[data-ready="true"]');assert.equal(await p.evaluate(()=>document.fonts.check('16px Manrope')),false);await p.fill('#email','draft@example.test');release();await p.evaluate(()=>document.fonts.ready);assert.equal(await p.evaluate(()=>document.fonts.check('16px Manrope')),true);assert.equal(await p.inputValue('#email'),'draft@example.test');assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));results.font.coldLayoutShift=await p.evaluate(()=>window.qaShifts.reduce((a,b)=>a+b,0));await c.close();
+   const fallback=await browser.newContext(),f=await fallback.newPage();observe(f);await f.route('**/assets/fonts/Manrope-variable.woff2',r=>r.abort());await go(f);assert.equal(await f.evaluate(()=>document.fonts.check('16px Manrope')),false);assert.equal(await f.locator('#email').isVisible(),true);assert.ok(await f.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await fallback.close();
+  });
+  for(const theme of ['light','dark']){
+   const c=await browser.newContext({colorScheme:theme,viewport:{width:1440,height:900}}),p=await c.newPage();observe(p);await login(p);
+   await check(theme+' settings and header controls share state and retain unsaved passwords',async()=>{await go(p,'settings.html');await p.fill('#current-password','Unsaved example');await p.uncheck('#motion-preference');await open(p);assert.equal(await p.locator('#appearance-motion').isChecked(),false);await p.locator('[name="appearance-theme"][value="'+(theme==='light'?'dark':'light')+'"]').check();await p.check('#appearance-motion');assert.equal(await p.locator('#motion-preference').isChecked(),true);assert.equal(await p.inputValue('#current-password'),'Unsaved example');await p.keyboard.press('Escape');await p.selectOption('#theme-preference','system');});
+   await check(theme+' drafts, prepared uploads and input focus survive theme/motion changes',async()=>{await go(p,'report.html?type=lost');await p.fill('#r-title','Unsaved polished draft · André 日本語 😀');await p.locator('#public-photo-section summary').click();await p.setInputFiles('#r-photos',path.join(root,'tools/demo-photos/headphones-overview.jpg'));await p.waitForSelector('.upload-preview');const src=await p.locator('.upload-preview img').getAttribute('src');await p.locator('#r-title').focus();await p.evaluate(()=>{ReFindTheme.setMotion(false);ReFindTheme.setPreference(ReFindTheme.effective()==='dark'?'light':'dark');});assert.equal(await p.inputValue('#r-title'),'Unsaved polished draft · André 日本語 😀');assert.equal(await p.locator('.upload-preview img').getAttribute('src'),src);assert.equal(await p.evaluate(()=>document.activeElement.id),'r-title');await p.evaluate(()=>ReFindTheme.setPreference('system'));});
+   await check(theme+' text remains readable across independent motion phases at mobile and desktop widths',async()=>{
+    const guest=await browser.newContext({colorScheme:theme}),gp=await guest.newPage();observe(gp);
+    for(const width of [360,390,1440])for(const [scene,route]of [['login','login.html'],['home','index.html'],['notifications','notifications.html'],['report','report.html?type=lost']]){const scenePage=scene==='login'?gp:p;await scenePage.setViewportSize({width,height:900});await go(scenePage,route);await scenePage.evaluate(()=>ReFindTheme.setMotion(false));for(const phase of (scene==='login'||scene==='home'?[0,.25,.5,.75,1]:[0,.5,1]))for(const warm of [0,.5,1]){await scenePage.evaluate(({phase,warm})=>{document.getAnimations().filter(a=>a.effect?.target?.classList.contains('ambient-layer')).forEach(a=>{a.pause();a.currentTime=(a.animationName==='ambient-cool'?47000*phase:71000*warm);});},{phase,warm});await sampleContrast(scenePage,theme+' '+scene+' '+width+' '+phase+'/'+warm);}}await guest.close();
+   });
+   await check(theme+' scroll, typing and popup performance are compared with motion on and off',async()=>{
+    await p.setViewportSize({width:1440,height:900});for(const motion of [true,false]){await go(p,'notifications.html');await p.evaluate(value=>ReFindTheme.setMotion(value),motion);const stats=await p.evaluate(async()=>{const frames=[];let last=performance.now();for(let i=0;i<60;i++){await new Promise(requestAnimationFrame);const now=performance.now();frames.push(now-last);last=now;scrollTo(0,(i%15)*120);}frames.sort((a,b)=>a-b);return{meanMs:frames.reduce((a,b)=>a+b,0)/frames.length,p95Ms:frames[Math.floor(frames.length*.95)],maxMs:Math.max(...frames)};});await go(p,'report.html?type=lost');await p.evaluate(value=>ReFindTheme.setMotion(value),motion);const started=performance.now();await p.locator('#r-title').pressSequentially('A responsive report draft',{delay:8});const typingMs=performance.now()-started;assert.equal(await p.inputValue('#r-title'),'A responsive report draft');const popupMs=await p.evaluate(async()=>{const times=[];for(let i=0;i<5;i++){const start=performance.now();document.getElementById('appearance-toggle').click();await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);if(!document.getElementById('appearance-panel').open)throw Error('Popup failed to open');times.push(performance.now()-start);document.querySelector('[data-close-appearance]').click();}return{mean:times.reduce((a,b)=>a+b,0)/times.length,max:Math.max(...times)};});results.performance.push({theme,motion,...stats,typingMs,popupMs});}
+   });
+   if(process.env.REFIND_APPEARANCE_CLAIM_ID)await check(theme+' cross-tab appearance changes retain BM record, decision note and explicit confirmation',async()=>{
+    const staff=await browser.newContext({colorScheme:theme}),bm=await staff.newPage();observe(bm);await login(bm,'BUILDING_MANAGEMENT');await go(bm,'admin.html?tab=claims&claim='+process.env.REFIND_APPEARANCE_CLAIM_ID);await bm.waitForSelector('#bm-detail-content [data-detail-claim-id]');const record=await bm.locator('[data-detail-claim-id]').getAttribute('data-detail-claim-id');await bm.click('[data-bm-action="approved"]');await bm.fill('#operation-note','Retain this unsaved decision');await bm.check('#operation-confirm');const peer=await staff.newPage();await go(peer,'settings.html');await peer.evaluate(()=>{ReFindTheme.setPreference(ReFindTheme.effective()==='dark'?'light':'dark');ReFindTheme.setMotion(false);});await bm.waitForFunction(()=>ReFindTheme.getMotion()===false);assert.equal(await bm.locator('#operation-dialog').evaluate(e=>e.open),true);assert.equal(await bm.inputValue('#operation-note'),'Retain this unsaved decision');assert.equal(await bm.locator('#operation-confirm').isChecked(),true);assert.equal(await bm.locator('#operation-submit').isEnabled(),true);assert.equal(await bm.locator('[data-detail-claim-id]').getAttribute('data-detail-claim-id'),record);await staff.close();
+   });
+   await c.close();
+   const videoContext=await browser.newContext({colorScheme:theme,viewport:{width:1280,height:800},recordVideo:{dir:path.join(out,'recordings'),size:{width:1280,height:800}}}),videoPage=await videoContext.newPage();await go(videoPage);await videoPage.waitForTimeout(12000);const video=videoPage.video();await videoContext.close();const destination=path.join(out,'recordings',theme+'-ambient.webm');await video.saveAs(destination);results.recordings.push(destination);save();
+  }
+  results.notes=[process.env.REFIND_APPEARANCE_CLAIM_ID?'BM confirmation-state preservation exercised using the release runner QA fixture.':'BM confirmation fixture absent: run tools/run-qa.cjs for that coverage.'];
+  results.businessDataUnchanged=before===fingerprint();assert.equal(results.businessDataUnchanged,true);assert.deepEqual(results.errors,[]);results.complete=true;save();console.log('Appearance review complete: '+results.checks.length+' groups; '+results.contrast.length+' phase samples.');
+ }catch(e){results.complete=false;results.failure=String(e);save();throw e;}finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

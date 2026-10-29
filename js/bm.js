@@ -81,11 +81,15 @@ $(async function () {
   const heading = title => $('<h2>').attr('title', title).text(U.titleParts(title).display);
   function claimDetail(claim) {
     const box = $('<article>').attr('data-detail-claim-id', claim.claim_id);
-    box.append(U.stateChip(claim.claim_status, U.claimNames[claim.claim_status]), U.demoChip(claim.item.title), heading(claim.item.title), meta([['Claimant',claim.claimant_name],['Claimant email',claim.claimant_email],['Student ID',claim.claimant_student_id],['Submitted',U.date(claim.created_at,true)],...(claim.resubmitted_at ? [['Resubmitted',U.date(claim.resubmitted_at,true)]] : []),['Location',U.locationText(claim.item)],['Related Lost',claim.lost ? U.titleParts(claim.lost.title).display : 'No linked Lost report']]));
-    if (claim.item.photos.length) box.append($('<img>').addClass('bm-public-image').attr({src:claim.item.photos[0],alt:U.titleParts(claim.item.title).display}));
-    box.append($('<p>').addClass('item-description').text(claim.item.description));
+    box.append(U.stateChip(claim.claim_status, U.claimNames[claim.claim_status]), U.demoChip(claim.item.title), heading(claim.item.title));
+    const summary = $('<div>').addClass('bm-claim-summary').append(meta([['Claimant',claim.claimant_name],['Claimant email',claim.claimant_email],['Student ID',claim.claimant_student_id],['Submitted',U.date(claim.created_at,true)],...(claim.resubmitted_at ? [['Resubmitted',U.date(claim.resubmitted_at,true)]] : []),['Location',U.locationText(claim.item)],['Related Lost',claim.lost ? U.titleParts(claim.lost.title).display : 'No linked Lost report']]));
+    if (claim.item.photos.length) summary.append($('<button>').addClass('bm-report-photo').attr({type:'button','aria-label':'Enlarge public item photo'}).append($('<img>').attr({src:claim.item.photos[0],alt:U.titleParts(claim.item.title).display})).on('click', function () {
+      trigger = this; $('#bm-evidence-title').text('Public item photo'); $('#bm-evidence-image').attr({src:claim.item.photos[0],alt:U.titleParts(claim.item.title).display}); document.querySelector('#bm-evidence-dialog').showModal();
+    }));
+    box.append(summary);
     if (claim.previous_request) box.append($('<div>').addClass('bm-outcome').text('Your previous request (' + U.date(claim.previous_request.at,true) + '):\n' + claim.previous_request.note));
     box.append($('<div>').addClass('bm-compare').append(block('Claimant answer',claim.ownership_answer), block("Finder's private clue",claim.item.verification_clue,true)), evidence(claim.ownership_photos,'Private claim evidence'));
+    box.append($('<p>').addClass('item-description bm-claim-description').text(claim.item.description));
     if (claim.lost) box.append($('<section>').addClass('bm-audit').append(block('Linked Lost identifying detail',claim.lost.verification_clue,true), evidence(claim.lost.ownership_photos,'Private Lost evidence'), U.navAction('Open linked report',U.itemUrl(claim.lost.item_id))));
     if (claim.review_note) box.append($('<div>').addClass('bm-outcome').text(claim.review_note + (claim.reviewed_at ? '\nReviewed ' + U.date(claim.reviewed_at,true) : '')));
     if (claim.approval_blocked) box.append($('<p>').addClass('bm-locked-note').text(claim.approval_blocked));
@@ -201,33 +205,55 @@ $(async function () {
     $('#operation-submit').prop('disabled', !$('#operation-status').val() || final);
   }
   function openOperation(action, snapshot, button) {
-    operation = {action,...snapshot}; trigger = button;
+    operation = {action,...snapshot};
+    trigger = button;
     const draft = drafts.get(draftKey(operation)), record = snapshot.record;
     const noteRequired = snapshot.kind !== 'handover' || ['reschedule','cancel_schedule','release'].includes(action);
     $('#operation-title').text(labels[action]);
     $('#operation-record-title').text(U.titleParts(record.item?.title || record.title).display);
-    $('#operation-record-meta').text((record.claimant_name ? 'Claimant: ' + record.claimant_name + ' · ' : record.reporter_name ? 'Reporter: ' + record.reporter_name + ' · ' : '') + (snapshot.kind === 'claim' ? 'Claim' : snapshot.kind === 'report' ? 'Report' : 'Pickup') + ' #' + snapshot.id);
-    $('#operation-feedback,[data-bm-error],#operation-refresh,#operation-status-warning').prop('hidden',true); $('[data-bm-error]').text(''); $('#operation-confirm').prop('checked',false);
+    const person = record.claimant_name ? 'Claimant: ' + record.claimant_name + ' · ' : record.reporter_name ? 'Reporter: ' + record.reporter_name + ' · ' : '';
+    const recordType = snapshot.kind === 'claim' ? 'Claim' : snapshot.kind === 'report' ? 'Report' : 'Pickup';
+    $('#operation-record-meta').text(person + recordType + ' #' + snapshot.id);
+    $('#operation-feedback,[data-bm-error],#operation-refresh,#operation-status-warning').prop('hidden',true);
+    $('[data-bm-error]').text('');
+    $('#operation-confirm').prop('checked',false);
     $('#operation-submit').removeClass('btn-primary btn-danger btn-warning-outline').addClass(['rejected','release'].includes(action) ? 'btn-danger' : action === 'cancel_schedule' ? 'btn-warning-outline' : 'btn-primary').text(labels[action]);
     $('#operation-dismiss').text(action === 'cancel_schedule' ? 'Keep appointment' : 'Cancel');
-    $('#operation-fields').prop('disabled',false); $('#operation-note').val(draft?.note ?? (action === 'approved' ? 'Ownership details verified by Building Management.' : '')).attr('maxlength',snapshot.kind === 'handover' ? 250 : 500);
+    $('#operation-fields').prop('disabled',false);
+    $('#operation-note').val(draft?.note ?? (action === 'approved' ? 'Ownership details verified by Building Management.' : '')).attr('maxlength',snapshot.kind === 'handover' ? 250 : 500);
     $('#operation-note-label').text(snapshot.kind === 'handover' ? (noteRequired ? 'Reason (8–250 characters) *' : 'Pickup note · optional (max 250 characters)') : 'Review note (8–500 characters) *');
     $('#operation-note-hint').text(snapshot.kind === 'claim' ? 'The claimant receives this note. It does not appear in public history.' : snapshot.kind === 'report' ? 'The reporter receives this note. It does not appear in public history.' : 'The claimant sees this note in their pickup updates.');
-    $('#operation-status-field').prop('hidden',action !== 'status'); $('#operation-schedule-fields').prop('hidden',!['schedule','reschedule'].includes(action));
-    if (action === 'status') { const select = $('#operation-status').empty().append($('<option>').val('').text('Choose next status')); record.allowed_statuses.forEach(code => select.append($('<option>').val(code).text(U.statusNames[code] + (terminalStatuses.includes(code) ? ' (final)' : '')))); if (draft?.status) select.val(draft.status); }
-    if (['schedule','reschedule'].includes(action)) { $('#operation-location').val(draft?.location ?? record.pickup_location_id ?? ''); $('#operation-date').attr('min', localInput(new Date())).val(draft?.date ?? (record.scheduled_at ? localInput(record.scheduled_at) : nextWorkingSlot())); }
+    $('#operation-status-field').prop('hidden',action !== 'status');
+    $('#operation-schedule-fields').prop('hidden',!['schedule','reschedule'].includes(action));
+    if (action === 'status') {
+      const select = $('#operation-status').empty().append($('<option>').val('').text('Choose next status'));
+      record.allowed_statuses.forEach(code => select.append($('<option>').val(code).text(U.statusNames[code] + (terminalStatuses.includes(code) ? ' (final)' : ''))));
+      if (draft?.status) select.val(draft.status);
+    }
+    if (['schedule','reschedule'].includes(action)) {
+      $('#operation-location').val(draft?.location ?? record.pickup_location_id ?? '');
+      $('#operation-date').attr('min', localInput(new Date())).val(draft?.date ?? (record.scheduled_at ? localInput(record.scheduled_at) : nextWorkingSlot()));
+    }
     const early = action === 'complete' && record.scheduled_at && new Date(record.scheduled_at) > new Date();
-    $('#operation-intro').text(action === 'approved' ? 'Approval confirms ownership, creates one handover and closes competing active claims.'
-      : action === 'complete' ? (early ? 'The appointment is on ' + U.date(record.scheduled_at,true) + '. Confirm only if the owner already collected the item early. ' : '') + 'Confirm only after the item has been handed to this verified owner. Linked reports become Returned.'
-      : action === 'release' ? 'Use this when the owner never collects the item or ownership must be withdrawn. The claim is closed as rejected, and both reports become available again.'
-      : action === 'cancel_schedule' ? 'The appointment will be cancelled. Ownership stays approved and the pickup can be scheduled again.'
-      : action === 'rejected' ? 'A rejection is final: the claimant cannot claim this item again.'
-      : 'Check the selected record and your note before saving.');
+    let intro = 'Check the selected record and your note before saving.';
+    if (action === 'approved') {
+      intro = 'Approval confirms ownership, creates one handover and closes competing active claims.';
+    } else if (action === 'complete') {
+      intro = (early ? 'The appointment is on ' + U.date(record.scheduled_at,true) + '. Confirm only if the owner already collected the item early. ' : '') + 'Confirm only after the item has been handed to this verified owner. Linked reports become Returned.';
+    } else if (action === 'release') {
+      intro = 'Use this when the owner never collects the item or ownership must be withdrawn. The claim is closed as rejected, and both reports become available again.';
+    } else if (action === 'cancel_schedule') {
+      intro = 'The appointment will be cancelled. Ownership stays approved and the pickup can be scheduled again.';
+    } else if (action === 'rejected') {
+      intro = 'A rejection is final: the claimant cannot claim this item again.';
+    }
+    $('#operation-intro').text(intro);
     $('#operation-confirm-label').text(action === 'complete' ? 'I confirm this item was physically returned to the verified claimant.' : action === 'status' ? 'I understand this status is final and the report becomes read-only.' : 'I reviewed this record and confirm the decision.');
     $('#operation-confirm-row').prop('hidden', !needsConfirm(action));
     $('#operation-submit').prop('disabled', needsConfirm(action) || action === 'status' && !$('#operation-status').val());
     if (action === 'status') updateStatusConfirm();
-    document.querySelector('#operation-dialog').showModal(); $('#operation-note').trigger('focus');
+    document.querySelector('#operation-dialog').showModal();
+    $('#operation-note').trigger('focus');
   }
   function rememberDraft() { if (operation) drafts.set(draftKey(operation),{note:$('#operation-note').val(),location:$('#operation-location').val(),date:$('#operation-date').val(),status:$('#operation-status').val()}); }
   function showQueue() {
@@ -251,42 +277,105 @@ $(async function () {
   $('#bm-evidence-dialog').on('close',() => $('#bm-evidence-image').removeAttr('src'));
   $('#operation-refresh').on('click',async () => { rememberDraft(); document.querySelector('#operation-dialog').close(); pinned = true; await loadQueue(page); });
   function inlineError(key, message, selector) { $('[data-bm-error="' + key + '"]').text(message).prop('hidden',false); if (selector) $(selector).trigger('focus'); }
-  $('#operation-form').on('submit',async function (event) {
-    event.preventDefault(); if (saving || !operation) return;
-    const action = operation.action, note = $('#operation-note').val().trim(), required = operation.kind !== 'handover' || ['reschedule','cancel_schedule','release'].includes(action);
-    $('[data-bm-error],#operation-feedback').prop('hidden',true);
-    if (required && Array.from(note).length < 8) { inlineError('note','Provide at least 8 characters.','#operation-note'); return; }
-    if (action === 'status' && !$('#operation-status').val()) { inlineError('status','Choose the next status.','#operation-status'); return; }
+  function validateOperation(note) {
+    const action = operation.action;
+    const required = operation.kind !== 'handover' || ['reschedule','cancel_schedule','release'].includes(action);
+    if (required && Array.from(note).length < 8) {
+      inlineError('note','Provide at least 8 characters.','#operation-note');
+      return false;
+    }
+    if (action === 'status' && !$('#operation-status').val()) {
+      inlineError('status','Choose the next status.','#operation-status');
+      return false;
+    }
     if (['schedule','reschedule'].includes(action)) {
       const location = $('#operation-location').val(), date = $('#operation-date').val();
-      if (!location) { inlineError('pickup_location_id','Choose a pickup area.','#operation-location'); return; }
-      if (!date) { inlineError('scheduled_at','Choose a pickup date and time.','#operation-date'); return; }
-      if (new Date(date + ':00+07:00') <= new Date()) { inlineError('scheduled_at','Choose a time in the future (campus time).','#operation-date'); return; }
-      if (action === 'reschedule' && String(location) === String(operation.record.pickup_location_id) && date === localInput(operation.record.scheduled_at)) { inlineError('scheduled_at','Choose a different time or area to reschedule.','#operation-date'); return; }
+      if (!location) {
+        inlineError('pickup_location_id','Choose a pickup area.','#operation-location');
+        return false;
+      }
+      if (!date) {
+        inlineError('scheduled_at','Choose a pickup date and time.','#operation-date');
+        return false;
+      }
+      if (new Date(date + ':00+07:00') <= new Date()) {
+        inlineError('scheduled_at','Choose a time in the future (campus time).','#operation-date');
+        return false;
+      }
+      if (action === 'reschedule' && String(location) === String(operation.record.pickup_location_id) && date === localInput(operation.record.scheduled_at)) {
+        inlineError('scheduled_at','Choose a different time or area to reschedule.','#operation-date');
+        return false;
+      }
     }
-    if (needsConfirm(action) && !$('#operation-confirm').prop('checked')) { inlineError('confirm','Tick the confirmation to continue.'); return; }
-    const values = {id:operation.id,revision:operation.revision,note,confirm:'1'}; let endpoint = 'staff.php';
-    if (operation.kind === 'claim') { values.action = 'review'; values.decision = action; }
-    else if (operation.kind === 'report') { values.action = 'status'; values.status = $('#operation-status').val(); }
-    else { endpoint = 'handovers.php'; values.action = action; if (['schedule','reschedule'].includes(action)) { values.pickup_location_id = $('#operation-location').val(); values.scheduled_at = $('#operation-date').val(); } }
-    saving = true; $('#operation-fields').prop('disabled',true); $('#operation-submit,[data-close-operation],[data-logout]').prop('disabled',true); $('#operation-submit').text('Saving…');
+    if (needsConfirm(action) && !$('#operation-confirm').prop('checked')) {
+      inlineError('confirm','Tick the confirmation to continue.');
+      return false;
+    }
+    return true;
+  }
+  function buildOperationRequest(note) {
+    const action = operation.action;
+    // Every BM mutation carries the displayed revision; a failed request is never replayed automatically.
+    const values = {id:operation.id,revision:operation.revision,note,confirm:'1'};
+    let endpoint = 'staff.php';
+    if (operation.kind === 'claim') {
+      values.action = 'review';
+      values.decision = action;
+    } else if (operation.kind === 'report') {
+      values.action = 'status';
+      values.status = $('#operation-status').val();
+    } else {
+      endpoint = 'handovers.php';
+      values.action = action;
+      if (['schedule','reschedule'].includes(action)) {
+        values.pickup_location_id = $('#operation-location').val();
+        values.scheduled_at = $('#operation-date').val();
+      }
+    }
+    return {endpoint,values};
+  }
+  $('#operation-form').on('submit',async function (event) {
+    event.preventDefault();
+    if (saving || !operation) return;
+    const action = operation.action, note = $('#operation-note').val().trim();
+    $('[data-bm-error],#operation-feedback').prop('hidden',true);
+    if (!validateOperation(note)) return;
+    const {endpoint,values} = buildOperationRequest(note);
+    let next = null;
+    saving = true;
+    $('#operation-fields').prop('disabled',true);
+    $('#operation-submit,[data-close-operation],[data-logout]').prop('disabled',true);
+    $('#operation-submit').text('Saving…');
     try {
-      const result = await app.request(endpoint,values); drafts.delete(draftKey(operation)); document.querySelector('#operation-dialog').close();
-      const next = action === 'approved' && result.handover_id ? $('<button>').addClass('text-button').attr('type','button').text('Schedule pickup now').on('click',() => openRecord('handover', result.handover_id)) : null;
+      const result = await app.request(endpoint,values);
+      drafts.delete(draftKey(operation));
+      document.querySelector('#operation-dialog').close();
+      next = action === 'approved' && result.handover_id ? $('<button>').addClass('text-button').attr('type','button').prop('disabled',true).text('Schedule pickup now').on('click',() => openRecord('handover', result.handover_id)) : null;
       // A released pickup no longer exists, so show the closed claim instead.
       if (action === 'release') await openRecord('claims', operation.record.claim_id, true);
       else { pinned = true; await loadQueue(page,true); }
-      feedback(done[action],true,next); await shell.refreshUnread();
+      feedback(done[action],true,next);
+      await shell.refreshUnread();
     } catch (e) {
-      rememberDraft(); if (e.status === 401) { location.replace(app.loginUrl()); return; }
-      if (e.code === 'csrf_invalid') { const state = await app.session().catch(() => null); if (state && !state.authenticated) { location.replace(app.loginUrl()); return; } }
-      $('#operation-fields').prop('disabled',false); $('#operation-feedback').text(e.message).prop('hidden',false);
+      rememberDraft();
+      if (e.status === 401) { location.replace(app.loginUrl()); return; }
+      if (e.code === 'csrf_invalid') {
+        const state = await app.session().catch(() => null);
+        if (state && !state.authenticated) { location.replace(app.loginUrl()); return; }
+      }
+      $('#operation-fields').prop('disabled',false);
+      $('#operation-feedback').text(e.message).prop('hidden',false);
       for (const [key,message] of Object.entries(e.fields || {})) $('[data-bm-error="' + key + '"]').text(message).prop('hidden',false);
       // A failed attempt must be confirmed again before it is resent.
       $('#operation-confirm').prop('checked',false);
-      $('#operation-refresh').prop('hidden',!(e.status === 409 && e.code === 'state_conflict')); $('#operation-feedback').trigger('focus');
+      $('#operation-refresh').prop('hidden',!(e.status === 409 && e.code === 'state_conflict'));
+      $('#operation-feedback').trigger('focus');
     } finally {
-      saving = false; $('#operation-fields').prop('disabled',false); $('#operation-submit').prop('disabled',needsConfirm(action) && !$('#operation-confirm').prop('checked')).text(labels[action]); $('[data-close-operation],[data-logout]').prop('disabled',false);
+      saving = false;
+      if (next) next.prop('disabled',false);
+      $('#operation-fields').prop('disabled',false);
+      $('#operation-submit').prop('disabled',needsConfirm(action) && !$('#operation-confirm').prop('checked')).text(labels[action]);
+      $('[data-close-operation],[data-logout]').prop('disabled',false);
     }
   });
   try {

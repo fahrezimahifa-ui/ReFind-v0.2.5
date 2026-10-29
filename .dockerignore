@@ -1,0 +1,13 @@
+.git
+node_modules
+output
+app/config.local.php
+api/config.local.php
+.env
+storage/**
+!storage/.htaccess
+!storage/README.md
+releases/*.zip
+docs/references
+docs/verification
+**/__pycache__

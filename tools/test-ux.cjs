@@ -1,10 +1,13 @@
+const qaRuntime = require('./qa-runtime.cjs');
+qaRuntime.assertQa();
+const {themedContext}=require('./qa-browser.cjs');
 // UX01 real browser/HTTP acceptance. Fresh fixture actors and cleanup stay in owned _test.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto');
 const {execFileSync}=require('node:child_process');
 const edition=process.argv.includes('--v025')?'v025':process.argv.includes('--ux02')?'ux02':'ux01';
-const root=path.resolve(__dirname,'..'),target=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php='C:\\xampp\\php\\php.exe',out=edition==='v025'?path.join(root,'docs','verification','v025','ux'):path.join(root,'docs','verification',edition);
+const root=path.resolve(__dirname,'..'),target=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php=qaRuntime.php,out=process.env.REFIND_EVIDENCE_DIR?path.resolve(process.env.REFIND_EVIDENCE_DIR):edition==='v025'?path.join(root,'docs','verification','v025','ux'):path.join(root,'docs','verification',edition);
 assert.equal(JSON.parse(fs.readFileSync(path.join(target,'.refind-b02-test.json'))).source,root);
-const {chromium}=require(process.env.REFIND_PLAYWRIGHT_MODULE||path.join(os.tmpdir(),'opencode','refind-multipage-check','node_modules','playwright-core'));
+const {chromium} = qaRuntime.playwright();
 fs.mkdirSync(out,{recursive:true});
 const run=edition.toUpperCase()+'-'+Date.now().toString(36),actors=[],results=[],browserErrors=[],viewportChecks=[],contrastChecks=[];let browser;
 function driver(input){return JSON.parse(execFileSync(php,[path.join(target,'tools','b02-fixture.php')],{input:JSON.stringify(input),encoding:'utf8'}));}
@@ -22,7 +25,7 @@ async function claim(s,id,lost=''){return(await s.ok('api/claims.php',{itemId:id
 async function review(s,id,decision){const d=(await s.ok('api/staff.php?resource=claims&id='+id)).claim;return s.ok('api/staff.php',{action:'review',id,decision,revision:d.revision,confirm:'1',note:'Private '+run+' '+decision+' review reason.'});}
 async function pickup(s,id,action,extra={}){const d=(await s.ok('api/handovers.php?id='+id)).handovers[0];return s.ok('api/handovers.php',{action,id,revision:d.revision,confirm:'1',note:'Private '+run+' '+action+' reason.',...extra});}
 function future(){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(Date.now()+3*86400000)),v=k=>parts.find(p=>p.type===k).value;return v('year')+'-'+v('month')+'-'+v('day')+'T'+v('hour')+':'+v('minute');}
-async function logged(a,viewport={width:390,height:844}){const s=await new Session().login(a),context=await browser.newContext({viewport,timezoneId:'America/Los_Angeles'});await context.addCookies([{name:'refind_020_test',value:s.cookies.get('refind_020_test'),domain:'localhost',path:'/ReFind_0.2.0_Test/'}]);const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));return{page,context};}
+async function logged(a,viewport={width:390,height:844}){const s=await new Session().login(a),context=await themedContext(browser,{viewport,timezoneId:'America/Los_Angeles'});await context.addCookies([{name:'refind_020_test',value:s.cookies.get('refind_020_test'),domain:'localhost',path:'/ReFind_0.2.0_Test/'}]);const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));return{page,context};}
 async function go(page,route){await page.goto(base+route);await page.waitForSelector('body[data-ready="true"]');}
 async function exact(page,id){await page.waitForSelector('[data-detail-claim-id="'+id+'"]',{state:'attached'});}
 async function group(name,fn){await fn();results.push(name);console.log('PASS UX '+results.length+': '+name);}
@@ -38,7 +41,7 @@ async function group(name,fn){await fn();results.push(name);console.log('PASS UX
     const rejectedItem=await found(b,'Rejected record'),rejectedClaim=await claim(a,rejectedItem);await review(bm,rejectedClaim,'rejected');
     for(let index=0;index<25;index++)await claim(a,await found(b,'Other queued '+index));
     await pickup(bm,scheduled,'schedule',{pickup_location_id:'37',scheduled_at:future()});
-    browser=await chromium.launch({executablePath:process.env.REFIND_CHROME||'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true});
+    browser=await chromium.launch({executablePath:qaRuntime.chromePath(),headless:true});
     const p=await logged(BM),owner=await logged(A),peerPage=await logged(BM2);
     await group('Search/filter clears stale action targets immediately and empty results have no decisions',async()=>{
       await go(p.page,'admin.html?tab=claims&claim='+idA);await p.page.fill('#bm-search',run+' Pending B');await exact(p.page,idB);assert.equal(await p.page.locator('[data-detail-claim-id="'+idA+'"]').count(),0);
@@ -108,7 +111,7 @@ async function group(name,fn){await fn();results.push(name);console.log('PASS UX
       await group('Nine navigation labels preserve real anchor destinations, keyboard activation and native new tabs',async()=>{
         await owner.page.setViewportSize({width:390,height:844});await go(owner.page,'index.html');await clickDestination(owner.page,owner.page.getByRole('link',{name:'Follow my reports and claims',exact:true}),'my-reports.html');
         await go(owner.page,'index.html');const popup=owner.context.waitForEvent('page');await owner.page.getByRole('link',{name:'Explore all',exact:true}).click({modifiers:['Control']});const opened=await popup;await opened.waitForURL(url=>url.pathname.endsWith('/browse.html'));await opened.waitForSelector('body[data-ready="true"]');await opened.close();assert.ok(new URL(owner.page.url()).pathname.endsWith('/index.html'));
-        await go(owner.page,'item.html?id='+itemB);await owner.page.getByRole('link',{name:'← Back to Explore',exact:true}).focus();await owner.page.keyboard.press('Enter');await owner.page.waitForURL(url=>url.pathname.endsWith('/browse.html'));
+        await go(owner.page,'item.html?id='+itemB);await owner.page.getByRole('link',{name:'Back to Explore',exact:true}).focus();await owner.page.keyboard.press('Enter');await owner.page.waitForURL(url=>url.pathname.endsWith('/browse.html'));
         await go(owner.page,'claim.html?id='+itemB);await clickDestination(owner.page,owner.page.locator('#back-to-item'),'item.html',{id:itemB});
         await go(owner.page,'profile.html');await clickDestination(owner.page,owner.page.locator('.profile-summary .navigation-action'),'settings.html');await clickDestination(owner.page,owner.page.locator('.profile-summary .navigation-action'),'profile.html');
         await go(owner.page,'my-reports.html');await clickDestination(owner.page,owner.page.getByRole('link',{name:'View read-only campus history',exact:true}),'history.html');

@@ -1,10 +1,12 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="app-base" content="{{BASE_PATH}}"><title>Report an item — ReFind</title><link rel="icon" href="assets/refind-logo-mark.png"><link rel="stylesheet" href="vendor/bootstrap.min.css"><link rel="stylesheet" href="css/auth.css"><link rel="stylesheet" href="css/styles.css"><link rel="stylesheet" href="css/student.css"></head>
+<head>
+  <script src="js/theme.js"></script>
+  <link rel="preload" href="assets/fonts/Manrope-variable.woff2" as="font" type="font/woff2" crossorigin="anonymous"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="app-base" content="{{BASE_PATH}}"><title>Report an item — ReFind</title><link rel="icon" type="image/svg+xml" href="assets/refind-logo-mark.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/refind-favicon-32.png"><link rel="apple-touch-icon" sizes="180x180" href="assets/refind-shortcut-180.png"><link rel="stylesheet" href="vendor/bootstrap.min.css"><link rel="stylesheet" href="css/theme.css"><link rel="stylesheet" href="css/auth.css"><link rel="stylesheet" href="css/styles.css"><link rel="stylesheet" href="css/student.css"></head>
 <body data-page="report" data-requires-auth="true">
 {{APP_NAVBAR}}
 <main class="student-main form-main">
-  <header class="page-heading"><div><span class="eyebrow">YOUR REPORT</span><h1 id="report-heading">What happened?</h1><p id="report-intro">Describe the item and where you last saw it. Photos are optional; verification details stay private.</p></div></header>
+  <header class="page-heading"><div><h1 id="report-heading">What happened?</h1><p id="report-intro">Describe the item and where you last saw it. Photos are optional; verification details stay private.</p></div></header>
   <p class="context-note" id="report-context" hidden></p><p class="loading-note" id="page-loading" role="status">Loading form…</p><div class="feedback" id="page-feedback" role="alert" tabindex="-1" hidden></div><button class="btn btn-outline" id="retry-page" type="button" hidden>Retry loading</button>
   <form id="report-form" novalidate hidden><fieldset id="report-fields">
     <section class="form-card"><h2>1 · Item details</h2>
