@@ -17,7 +17,65 @@ async function go(p,route='login.html'){await p.goto(base+route);await p.waitFor
 function observe(p){p.on('pageerror',e=>results.errors.push(String(e)));}
 async function open(p){if(!(await p.locator('#appearance-panel').evaluate(e=>e.open)))await p.click('#appearance-toggle');await p.waitForTimeout(170);}
 async function login(p,role='STUDENT'){await go(p);const a=Object.values(accounts).find(a=>a.role===role);await p.fill('#email',a.email);await p.fill('#password',a.password);await p.click('#login-submit');await p.waitForURL(role==='STUDENT'?'**/index.html':'**/admin.html');await p.waitForSelector('body[data-ready="true"]');}
-async function motionState(p){return p.evaluate(()=>[...document.getAnimations()].filter(a=>a.effect?.target?.classList.contains('ambient-layer')).map(a=>({name:a.animationName,time:a.currentTime,state:a.playState,transform:getComputedStyle(a.effect.target).transform})));}
+let motionSample=0;
+function readMotionState({state,sample}={}){
+ const known=window.qaMotionAnimations??=[];
+ const animations=document.getAnimations().filter(a=>a.effect?.target?.classList.contains('ambient-layer')).map(a=>{
+  if(!known.includes(a))known.push(a);
+  const transform=Array.from(new DOMMatrixReadOnly(getComputedStyle(a.effect.target).transform).toFloat64Array());
+  return{id:known.indexOf(a),name:a.animationName,time:a.currentTime,state:a.playState,pending:a.pending,transform};
+ }).sort((a,b)=>a.name.localeCompare(b.name));
+ if(state){
+  // Poll synchronously on animation frames; an async predicate is itself truthy.
+  if(animations.map(a=>a.name).join(',')!=='ambient-cool,ambient-warm'||animations.some(a=>a.pending||a.state!==state)){window.qaMotionSettling=null;return false;}
+  const ids=animations.map(a=>a.id).join(','),frame=document.timeline.currentTime;
+  let settling=window.qaMotionSettling;
+  if(!settling||settling.sample!==sample||settling.ids!==ids){window.qaMotionSettling={sample,ids,frame,frames:0};return false;}
+  if(frame!==settling.frame){settling.frame=frame;settling.frames++;}
+  if(settling.frames<2)return false;
+ }
+ return animations;
+}
+async function motionState(p){return p.evaluate(readMotionState);}
+function assertMotionState(animations,state){
+ assert.deepEqual(animations.map(a=>a.name),['ambient-cool','ambient-warm']);
+ for(const a of animations){
+  assert.equal(a.state,state,a.name+' play state');assert.equal(a.pending,false,a.name+' pending operation');
+  assert.ok(Number.isFinite(a.time),a.name+' finite currentTime');
+  assert.equal(a.transform.length,16);assert.ok(a.transform.every(Number.isFinite),a.name+' finite transform');
+ }
+}
+function assertSameAnimations(before,after){assert.deepEqual(after.map(a=>[a.id,a.name]),before.map(a=>[a.id,a.name]),'Ambient animation identities must not change');}
+async function settledMotionState(p,state){
+ // playState can already be paused while the compositor's pause task is pending.
+ // Wait for readiness and two rendered frames, rather than accepting a frame of drift.
+ const snapshot=await p.waitForFunction(readMotionState,{state,sample:++motionSample},{timeout:5000});
+ const animations=await snapshot.jsonValue();await snapshot.dispose();
+ assertMotionState(animations,state);return animations;
+}
+function assertFrozenMotion(before,after){
+ assertMotionState(before,'paused');assertMotionState(after,'paused');assertSameAnimations(before,after);
+ after.forEach((a,i)=>{
+  assert.ok(Math.abs(a.time-before[i].time)<=.1,a.name+' paused currentTime drift exceeds 0.1 ms');
+  a.transform.forEach((value,j)=>assert.ok(Math.abs(value-before[i].transform[j])<=([12,13,14].includes(j)?.01:1e-5),a.name+' paused transform drift at matrix component '+j));
+ });
+}
+async function assertPausedMotion(p){
+ const before=await settledMotionState(p,'paused');await p.waitForTimeout(220);
+ assertFrozenMotion(before,await motionState(p));
+}
+async function assertAdvancingMotion(p){
+ const before=await settledMotionState(p,'running');
+ await p.waitForFunction(before=>{
+  const animations=document.getAnimations().filter(a=>a.effect?.target?.classList.contains('ambient-layer'));
+  return animations.length===before.length&&before.every(previous=>{
+   const a=animations.find(a=>a.animationName===previous.name);
+   return a&&!a.pending&&a.playState==='running'&&Number.isFinite(a.currentTime)&&a.currentTime>previous.time+.1;
+  });
+ },before,{timeout:5000});
+ const after=await motionState(p);assertMotionState(after,'running');assertSameAnimations(before,after);
+ assert.ok(after.every((a,i)=>a.time>before[i].time+.1),'Both ambient animation times must advance');
+}
 async function sampleContrast(p,name){
  await require('./qa-contrast.cjs').sampleTextContrast(p,'h1,h2,h3,.eyebrow,.journey li,.setup-note,.footer,.intro>p,.hint,.page-heading p,.notification-message,.notification-time,.notification-unread,.card-meta,.btn,.nav-link,.appearance-label,.appearance-options label,.motion-choice,[data-motion-status]',name,sharp,results.contrast,path.join(out,'contrast-failure.png'));
 }
@@ -31,13 +89,13 @@ async function sampleContrast(p,name){
    await go(p);await open(p);await p.click('h1');assert.equal(await p.locator('#appearance-panel').evaluate(e=>e.open),false);await open(p);await p.locator('#appearance-motion').focus();await p.keyboard.press('Tab');assert.equal(await p.locator('#appearance-panel').evaluate(e=>e.open),false);await c.close();
   });
   await check('Motion advances, pauses without jumping, reloads and synchronizes across tabs independently of theme',async()=>{
-   const c=await browser.newContext({colorScheme:'light',reducedMotion:'no-preference'}),p=await c.newPage();observe(p);await go(p);assert.equal(await p.getAttribute('html','data-motion'),'running');const first=await motionState(p);await p.waitForTimeout(220);const second=await motionState(p);assert.equal(first.length,2);assert.ok(second.every((a,i)=>a.time>first[i].time));await open(p);await p.uncheck('#appearance-motion');assert.equal(await p.getAttribute('html','data-motion'),'paused');await p.keyboard.press('Escape');const paused=await motionState(p);await p.waitForTimeout(220);assert.deepEqual(await motionState(p),paused);await p.reload();await p.waitForSelector('body[data-ready="true"]');assert.equal(await p.evaluate(()=>localStorage.getItem('refind-motion')),'off');assert.equal(await p.getAttribute('html','data-motion'),'paused');const peer=await c.newPage();await go(peer);await p.bringToFront();await open(p);await p.check('#appearance-motion');await peer.waitForFunction(()=>ReFindTheme.getMotion()===true);await p.locator('[name="appearance-theme"][value="dark"]').check();assert.equal(await p.evaluate(()=>ReFindTheme.getMotion()),true);await p.evaluate(()=>localStorage.clear());await peer.waitForFunction(()=>ReFindTheme.getPreference()==='system'&&ReFindTheme.getMotion());await c.close();
+   const c=await browser.newContext({colorScheme:'light',reducedMotion:'no-preference'}),p=await c.newPage();observe(p);await go(p);assert.equal(await p.getAttribute('html','data-motion'),'running');await assertAdvancingMotion(p);await open(p);await p.uncheck('#appearance-motion');assert.equal(await p.getAttribute('html','data-motion'),'paused');await p.keyboard.press('Escape');await assertPausedMotion(p);await p.reload();await p.waitForSelector('body[data-ready="true"]');assert.equal(await p.evaluate(()=>localStorage.getItem('refind-motion')),'off');assert.equal(await p.getAttribute('html','data-motion'),'paused');await assertPausedMotion(p);const peer=await c.newPage();await go(peer);await p.bringToFront();await open(p);await p.check('#appearance-motion');await assertAdvancingMotion(p);await peer.waitForFunction(()=>ReFindTheme.getMotion()===true);await p.locator('[name="appearance-theme"][value="dark"]').check();assert.equal(await p.evaluate(()=>ReFindTheme.getMotion()),true);await p.evaluate(()=>localStorage.clear());await peer.waitForFunction(()=>ReFindTheme.getPreference()==='system'&&ReFindTheme.getMotion());await c.close();
   });
   await check('Reduced motion overrides animation and explains the effective state without losing the saved choice',async()=>{
-   const c=await browser.newContext({reducedMotion:'reduce'}),p=await c.newPage();observe(p);await go(p);await open(p);assert.equal(await p.locator('#appearance-motion').isDisabled(),true);assert.match(await p.locator('#header-motion-status').innerText(),/reduced-motion/);assert.equal(await p.getAttribute('html','data-motion'),'paused');const a=await motionState(p);await p.waitForTimeout(180);assert.deepEqual(await motionState(p),a);await p.emulateMedia({reducedMotion:'no-preference'});await p.waitForFunction(()=>document.documentElement.dataset.motion==='running');assert.equal(await p.locator('#appearance-motion').isEnabled(),true);await c.close();
+   const c=await browser.newContext({reducedMotion:'reduce'}),p=await c.newPage();observe(p);await go(p);await open(p);assert.equal(await p.locator('#appearance-motion').isDisabled(),true);assert.match(await p.locator('#header-motion-status').innerText(),/reduced-motion/);assert.equal(await p.getAttribute('html','data-motion'),'paused');await assertPausedMotion(p);await p.emulateMedia({reducedMotion:'no-preference'});await p.waitForFunction(()=>document.documentElement.dataset.motion==='running');assert.equal(await p.locator('#appearance-motion').isEnabled(),true);await assertAdvancingMotion(p);await p.emulateMedia({reducedMotion:'reduce'});await p.waitForFunction(()=>document.documentElement.dataset.motion==='paused');assert.equal(await p.evaluate(()=>ReFindTheme.getMotion()),true);await assertPausedMotion(p);await c.close();
   });
   await check('Visibility handler pauses and resumes without changing the user preference (simulated visibility event)',async()=>{
-   const c=await browser.newContext(),p=await c.newPage();observe(p);await go(p);await p.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));});assert.equal(await p.getAttribute('html','data-motion'),'paused');assert.equal(await p.evaluate(()=>ReFindTheme.getMotion()),true);await p.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});assert.equal(await p.getAttribute('html','data-motion'),'running');await c.close();
+   const c=await browser.newContext(),p=await c.newPage();observe(p);await go(p);await assertAdvancingMotion(p);await p.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));});assert.equal(await p.getAttribute('html','data-motion'),'paused');assert.equal(await p.evaluate(()=>ReFindTheme.getMotion()),true);await assertPausedMotion(p);await p.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});assert.equal(await p.getAttribute('html','data-motion'),'running');await assertAdvancingMotion(p);await c.close();
   });
   await check('Blocked storage and invalid motion values remain usable',async()=>{
    for(const blocked of [true,false]){const c=await browser.newContext(),p=await c.newPage();observe(p);await p.addInitScript(blocked=>{if(blocked)for(const method of ['getItem','setItem','removeItem'])Storage.prototype[method]=()=>{throw new DOMException('Blocked','SecurityError');};else localStorage.setItem('refind-motion','invalid');},blocked);await go(p);assert.equal(await p.evaluate(()=>ReFindTheme.getMotion()),true);await open(p);await p.uncheck('#appearance-motion');assert.equal(await p.getAttribute('html','data-motion'),'paused');await c.close();}
