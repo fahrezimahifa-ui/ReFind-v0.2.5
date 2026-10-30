@@ -16,3 +16,5 @@ docs/verification
 
 .dev-npm-cache
 .dev-php-vendor
+
+.xampp-stage.local.json

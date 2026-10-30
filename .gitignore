@@ -28,3 +28,5 @@ releases/*.zip
 .dev-npm-cache/
 
 .dev-php-vendor/
+
+.xampp-stage.local.json

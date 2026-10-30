@@ -18,6 +18,7 @@ function run_statements(string $file, bool $views = false): void
 try {
     $config = app_config();
     if ($config['db_name'] === 'refind_db_ui_ux_dev') { require_once __DIR__ . '/qa-guard.php'; assert_dev_installation(app_root()); }
+    if (basename(app_root()) === 'refind-xampp-stage' || $config['db_port'] === 3311) { require_once __DIR__ . '/qa-guard.php'; assert_xampp_stage_installation(app_root()); }
     $manifest = json_decode(file_get_contents(app_root() . '/database/manifest.json'), true, 64, JSON_THROW_ON_ERROR);
     foreach ($manifest['files'] as $file => $hash) {
         if (hash_file('sha256', app_root() . '/database/' . $file) !== $hash) throw new RuntimeException('SQL manifest mismatch; inspect before setup.');

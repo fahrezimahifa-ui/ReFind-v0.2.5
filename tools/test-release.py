@@ -42,6 +42,20 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         return result.stdout
 
+    def test_xampp_stage_identity_rejects_main_port_and_session(self):
+        import base64
+        stage = self.parent / 'refind-xampp-stage'
+        (stage / 'app').mkdir(parents=True)
+        shutil.copy2(ROOT / 'app/config.php', stage / 'app/config.php')
+        (stage / '.refind-xampp-stage.json').write_text(json.dumps({'profile':'xampp-stage','source':str(self.source),'port':3311}))
+        config = {'db_host':'127.0.0.1','db_port':3311,'db_name':'refind_db_0_2_0_test','db_user':'refind_stage','base_path':'/refind-xampp-stage/','session_name':'refind_xampp_stage'}
+        code = 'putenv("REFIND_TEST_PROFILE=xampp-stage"); require $argv[1]."/app/config.php"; require $argv[2]; assert_xampp_stage_installation($argv[1]);'
+        for overrides in [{}, {'db_port':3306}, {'session_name':'refind_020'}, {'db_name':'refind_db_0_2_0'}, {'base_path':'/ReFind_0.2.3/'}]:
+            encoded = base64.b64encode(json.dumps(config | overrides).encode()).decode()
+            (stage / 'app/config.local.php').write_text("<?php return json_decode(base64_decode('"+encoded+"'),true);")
+            result = subprocess.run([php_binary(),'-r',code,str(stage),str(ROOT/'tools/qa-guard.php')],capture_output=True)
+            self.assertEqual(result.returncode == 0, not overrides)
+
     def test_notification_return_context_is_typed_and_local(self):
         code = "require 'app/routes.php'; $u=['role'=>'STUDENT']; echo json_encode([safe_return('item.html?id=12&origin=notifications&notification_page=2&notification=50',$u),safe_return('https://example.com/item.html?id=12',$u),safe_return('item.html?id=12&origin=https://example.com',$u)]);"
         result = json.loads(self.php(code))

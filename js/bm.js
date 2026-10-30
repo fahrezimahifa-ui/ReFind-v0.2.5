@@ -35,7 +35,7 @@ $(async function () {
     // On phones an auto-selected record stays out of the URL until it is actually opened.
     if (selected && (!mobile() || $('.bm-layout').attr('data-mobile-view') === 'detail')) query[paramKey()] = selected;
     history.replaceState(history.state, '', app.base + 'admin.html?' + new URLSearchParams(query));
-    document.title = titles[tab] + ' — ReFind';
+    document.title = titles[tab] + ' · ReFind';
     $('#nav-home').attr('aria-current', 'page');
   }
   function switchState() {
@@ -130,7 +130,7 @@ $(async function () {
   function handoverDetail(record) {
     const returned = record.handover_status === 'COMPLETED', scheduled = record.handover_status === 'SCHEDULED';
     const notes = record.notes === 'Arrange pickup with Building Management.' ? 'Awaiting a pickup appointment.' : record.notes;
-    const box = $('<article>').attr({'data-detail-handover-id':record.handover_id,'data-handover-status':record.handover_status}).append(recordHeading(record.title,$('<div>').addClass('chips').append(U.stateChip(record.handover_status,U.pickupNames[record.handover_status]),U.demoChip(record.title))),$('<div>').addClass('bm-pickup-meta').append(meta([['Verified claimant',shell.identity(record.claimant_name,record.claimant_avatar_url)],['Claimant email',record.claimant_email],['Student ID',record.claimant_student_id],['Pickup area',record.pickup_location || 'Not assigned'],...(returned ? [['Returned',U.date(record.completed_at,true)],['Appointment',record.scheduled_at ? U.date(record.scheduled_at,true) : 'Collected without a scheduled appointment']] : [['Schedule',record.scheduled_at ? U.date(record.scheduled_at,true) : 'Not scheduled yet — agree a time with the claimant']])])));
+    const box = $('<article>').attr({'data-detail-handover-id':record.handover_id,'data-handover-status':record.handover_status}).append(recordHeading(record.title,$('<div>').addClass('chips').append(U.stateChip(record.handover_status,U.pickupNames[record.handover_status]),U.demoChip(record.title))),$('<div>').addClass('bm-pickup-meta').append(meta([['Verified claimant',shell.identity(record.claimant_name,record.claimant_avatar_url)],['Claimant email',record.claimant_email],['Student ID',record.claimant_student_id],['Pickup area',record.pickup_location || 'Not assigned'],...(returned ? [['Returned',U.date(record.completed_at,true)],['Appointment',record.scheduled_at ? U.date(record.scheduled_at,true) : 'Collected without a scheduled appointment']] : [['Schedule',record.scheduled_at ? U.date(record.scheduled_at,true) : 'Not scheduled yet. Agree a time with the claimant.']])])));
     if (notes) box.append($('<div>').addClass('bm-outcome').text(notes));
     const actions = $('<div>').addClass('bm-detail-actions');
     record.operations.forEach(action => actions.append(actionButton(action,{kind:'handover',id:record.handover_id,revision:record.revision,record})));

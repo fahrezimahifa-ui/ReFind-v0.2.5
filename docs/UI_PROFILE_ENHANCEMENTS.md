@@ -77,3 +77,7 @@ Online dependency downloads failed with ECONNRESET. Local validation used copied
 The preservation audit confirms all **682 inventoried non-session main files** (including configuration, auth secret, uploads and unpublished working files) and **all 939 inventoried QA files** match their initial hashes. One pre-existing main session file was absent at the end while separate main-app HTTP activity was recorded. Its contents were not inspected or restored; volatile session state was left alone. No task setup, seed, migration, browser login or mutation suite targeted the original main or QA installation. Git fetch/worktree/branch bookkeeping was the only intended shared-repository change.
 
 Main/QA login, seed, migration and mutation traffic is excluded. Physical-device/screen-reader checks remain manual. Delivery is a pushed branch and draft pull request; no merge, auto-merge or deployment is authorized.
+
+## Follow-up: approved local XAMPP integration
+
+The original isolation-only delivery above records the 30 October checkpoint. The subsequent owner-approved XAMPP integration, glass polish, title punctuation cleanup and project-only Docker removal are described in [XAMPP_INTEGRATION.md](XAMPP_INTEGRATION.md). Its current results are recorded separately; existing main credentials/data remain authoritative.

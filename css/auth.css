@@ -100,7 +100,7 @@ h2,h3{letter-spacing:-.015em}
 .journey li:first-child{color:var(--link);font-weight:600}
 .auth-card,.landing-card,.next-card,.filter-panel,.account-card,.form-card:not(.private-card),.detail-card,.bm-queue,.bm-detail{background:var(--glass-panel);border-color:var(--glass-edge);box-shadow:var(--glass-shadow)}
 .app-header{background:var(--glass-navigation);box-shadow:var(--glass-shadow)}
-.account-menu,.appearance-panel,.photo-dialog,.confirm-dialog,.operation-dialog,.sticky-form-actions{background:var(--glass-popup);box-shadow:var(--glass-shadow)}
+.avatar-dialog,.account-menu,.appearance-panel,.photo-dialog,.confirm-dialog,.operation-dialog,.sticky-form-actions{background:var(--glass-popup);box-shadow:var(--glass-shadow)}
 .btn-outline,.btn-danger-outline,.btn-warning-outline,.type-tab,.menu-toggle,.account-toggle{background:var(--glass-control)}
 .form-control,.form-select{color:var(--ink);background-color:var(--field);border-color:var(--control);font-size:16px}
 .form-control:focus,.form-select:focus{color:var(--ink);background-color:var(--field)}

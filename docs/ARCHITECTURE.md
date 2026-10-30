@@ -25,7 +25,7 @@ To run this existing installation:
 
 This PHP installation runs through Apache, its rewrite rules and protected page gateway. Opening an HTML template with `file://` describes the separate academic template, not this workflow.
 
-Runtime prerequisites: Apache with rewrite and the required `.htaccess` overrides; PHP 8.2 with mysqli/mysqlnd, mbstring, fileinfo and sessions; MariaDB/InnoDB. jQuery 3.7.1 and Bootstrap 5.3.8 are shipped locally in `vendor/`. Node/Python/browser automation are development tooling, not website startup requirements.
+Runtime prerequisites: Apache with rewrite and the required `.htaccess` overrides; PHP 8.2 with mysqli/mysqlnd, mbstring, fileinfo, GD (JPEG/PNG/WebP) and sessions; MariaDB/InnoDB. jQuery 3.7.1 and Bootstrap 5.3.8 are shipped locally in `vendor/`. Node/Python/browser automation are development tooling, not website startup requirements.
 
 Configuration and database files establish the intended connection; this guide is not evidence that services are currently running. The documentation handoff does not include a new live SQL export. Existing schema/reference seed and private historical backups have different purposes.
 

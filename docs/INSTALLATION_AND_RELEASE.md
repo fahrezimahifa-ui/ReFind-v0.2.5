@@ -5,7 +5,7 @@ v0.2.5 needs no database migration. Clone the repository into a folder whose nam
 ## Fresh XAMPP installation
 
 1. Extract latest `ReFind_0.2.0_UX01.zip` so the application is at `C:\xampp\htdocs\ReFind_0.2.0`. Historical B06 ZIP remains a separately verified checkpoint.
-2. Start Apache (HTTP80) and MySQL/MariaDB (3306). PHP8.2 needs mysqli/mysqlnd, mbstring, fileinfo and sessions. No Node/Python is required to run the website or create the demo dataset.
+2. Start Apache (HTTP80) and MySQL/MariaDB (3306). PHP8.2 needs mysqli/mysqlnd, mbstring, fileinfo, GD (JPEG/PNG/WebP) and sessions. No Node/Python is required to run the website or create the demo dataset.
 3. If host/port/user/password/path differs, create protected `app/config.local.php` returning only supported keys from `app/config.php`. For another folder set `base_path` to that folder's `/name/`. The app only allows its own main/test DB names. Schema remains 14 tables/2 views.
 4. Open PowerShell with the application as working directory and execute separately:
 

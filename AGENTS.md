@@ -18,7 +18,7 @@ Consult [role/API contracts](docs/ROLE_ROUTE_MATRIX.md), [data dictionary](docs/
 - Effective local `base_path`: `/ReFind_0.2.3/`, set in ignored `app/config.local.php`.
 - Main database: `refind_db_0_2_0` at `127.0.0.1:3306`; isolated QA database: `refind_db_0_2_0_test`.
 - App version **0.2.5**, folder label **0.2.3**, and database label **0.2.0** are intentional. A version-label change does not imply a database migration.
-- Runtime: Apache/XAMPP, PHP 8.2 with mysqli/mysqlnd, mbstring, fileinfo and sessions, MariaDB; frontend HTML/CSS/JS with local jQuery/Bootstrap.
+- Runtime: Apache/XAMPP, PHP 8.2 with mysqli/mysqlnd, mbstring, fileinfo, GD (JPEG/PNG/WebP) and sessions, MariaDB; frontend HTML/CSS/JS with local jQuery/Bootstrap.
 
 ## Working conventions
 

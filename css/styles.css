@@ -154,7 +154,7 @@
 .person-identity{display:inline-flex;align-items:center;gap:var(--space-1);max-width:100%;min-width:0}.person-identity>span:last-child{min-width:0;overflow-wrap:anywhere}
 .avatar-actions{display:flex;flex-direction:column;align-items:center;gap:var(--space-1);margin:var(--space-2) 0}
 .avatar-actions .text-button{min-height:44px}.profile-summary .feedback{text-align:left}
-.avatar-dialog{width:480px;max-width:calc(100vw - 32px);max-height:calc(var(--usable-height,100dvh) - 32px);overflow:auto;border:1px solid var(--glass-edge);border-radius:var(--radius-panel);padding:var(--space-4);background:var(--surface);color:var(--ink)}
+.avatar-dialog{width:480px;max-width:calc(100vw - 32px);max-height:calc(var(--usable-height,100dvh) - 32px);overflow:auto;border:1px solid var(--glass-edge);border-radius:var(--radius-panel);padding:var(--space-4);color:var(--ink)}
 .avatar-dialog::backdrop{background:var(--scrim)}.avatar-dialog h2{font-size:24px;margin:0 0 var(--space-2)}.avatar-dialog p{font-size:14px;line-height:1.5;color:var(--muted)}
 #avatar-canvas{display:block;width:256px;max-width:100%;height:auto;aspect-ratio:1;margin:var(--space-3) auto;border-radius:50%;border:2px solid var(--control);touch-action:none;cursor:grab}
 #avatar-canvas:active{cursor:grabbing}.avatar-controls{display:grid;gap:8px}.avatar-controls label{font-size:14px;font-weight:600}.avatar-controls input{width:100%;min-height:44px;accent-color:var(--primary)}

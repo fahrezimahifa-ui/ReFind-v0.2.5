@@ -7,7 +7,7 @@ import os
 from qa_safety import php_binary, validate_target
 
 ROOT = Path(__file__).resolve().parents[1]
-if ROOT.name == 'refind-dev' or os.environ.get('REFIND_TEST_PROFILE') == 'ui-ux-dev':
+if ROOT.name == 'refind-dev' or os.environ.get('REFIND_TEST_PROFILE') in ['ui-ux-dev', 'xampp-stage']:
     raise RuntimeError('Use the dedicated development services; legacy QA preparation is refused from refind-dev')
 TARGET = ROOT.with_name('ReFind_0.2.0_Test')
 MARKER = TARGET / '.refind-b02-test.json'
