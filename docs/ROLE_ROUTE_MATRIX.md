@@ -52,12 +52,13 @@ UX01 read models add `notification_type`, `item_title`, authorized `handover_id`
 |---|---|---|
 | api/session.php | Guest/auth state + CSRF token; own minimal identity when authenticated | Tidak menyediakan account switch |
 | api/auth.php | — | Login untuk guest; logout untuk session sendiri; CSRF |
-| api/account.php | Own profile; requires login | Edit display name / change password; own session ID, CSRF |
+| api/account.php | Own profile; requires login | Edit display name / change password / update or remove avatar; own session ID, CSRF |
 | api/references.php | Reference labels/categories/locations; v0.2.5 filters list active categories and 6 areas, UI status names, `pickup_desk` | — |
 | api/items.php | Authenticated public list/detail/matches; mine from session; editable private metadata only own eligible report; v0.2.5 `active=1` / `closed=1` | Create/update/delete: Student; ownership + status + transaction |
 | api/claims.php | Student's own claims / BM authorized queue/detail | Submit/resubmit/withdraw (v0.2.5): Student; own Lost link (one active claim per Lost) + Found eligibility + unique pair; rejected claims final |
 | api/staff.php | BM-only scoped report clue/evidence/review data | BM-only review/status, CSRF, allowed transition, transaction |
 | api/handovers.php | Student's own claimed-item pickup record / BM operational queue (claimant email/student ID for BM) | BM-only schedule/reschedule/cancel_schedule/complete/release |
+| api/avatar.php | Any signed-in user; current random token only; profile images are visible to signed-in users | — |
 | api/photos.php | ITEM needs any signed-in user (v0.2.5); OWNERSHIP/claim photo requires BM | — |
 | api/notifications.php | Own notifications; `count=1` returns only the unread count | Mark own record read; `action=read_all` |
 

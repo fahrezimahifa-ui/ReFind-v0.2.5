@@ -20,7 +20,8 @@ $(async function () {
     const role = data.role === 'BUILDING_MANAGEMENT' ? 'Building Management' : 'Student';
     $('[data-profile-name]').text(data.name);
     $('[data-profile-role]').text(role);
-    $('[data-profile-initials]').text(data.name.trim().split(/\s+/u).slice(0,2).map(word=>Array.from(word)[0]||'').join('').toUpperCase());
+    $('[data-profile-initials]').each(function(){shell.renderAvatar(this,data.name,data.avatar_url);});
+    $('#avatar-remove').prop('hidden',!data.avatar_url);
     $('#display-name').val(data.name); $('#profile-email').val(data.email); $('#profile-role').val(role);
     $('#student-id-field').prop('hidden', data.role !== 'STUDENT');
     $('#profile-student-id').val(data.student_id || '');
@@ -63,6 +64,13 @@ $(async function () {
   $('#retry-account').on('click', () => { if (document.body.dataset.shellReady !== 'true') window.location.reload(); else loadAccount(); });
   $('#profile-reset').on('click', () => { if (!profile || saving) return; clearFields(); $('#profile-feedback').prop('hidden',true); $('#display-name').val(profile.name).trigger('focus'); });
   $('#new-password').on('input',passwordPolicy);
+  if(page==='profile')new window.AvatarEditor(async(action,blob)=>{
+    if(saving)return false;
+    saving=true;$('#profile-fields').prop('disabled',true);$('[data-logout]').prop('disabled',true);$('#avatar-change,#avatar-remove').prop('disabled',true);
+    try{const nameDraft=$('#display-name').val();const form=new FormData();form.append('action',action);if(blob)form.append('avatar',blob,'avatar.jpg');const result=await app.request('account.php',form);app.state.csrf=result.csrf;shell.updateUser(result.user);renderProfile(result.profile);$('#display-name').val(nameDraft);showFeedback('#avatar-feedback',result.message,true);return true;}
+    catch(e){await submitFailure(e,'#avatar-feedback');return false;}
+    finally{saving=false;$('#profile-fields').prop('disabled',false);$('[data-logout]').prop('disabled',false);$('#avatar-change,#avatar-remove').prop('disabled',false);}
+  });
 
   $('#profile-form').on('submit',async function(event) {
     event.preventDefault(); if (saving || !profile) return;

@@ -29,6 +29,7 @@ try{
   command(theme+'-'+suite,process.execPath,['tools/test-'+suite+'.cjs',...(suite==='ux'?['--v025']:[])],{REFIND_THEME:theme});
  }
  command('layout',process.execPath,['tools/test-layout.cjs']);
+ command('ui-profile',process.execPath,['tools/test-ui-profile.cjs']);
  }
  // A fresh pending claim ensures BM draft preservation is exercised even on an empty QA seed.
  const accounts=JSON.parse(fs.readFileSync(path.join(qa.target,'storage/setup/demo-accounts.json'),'utf8')).accounts;

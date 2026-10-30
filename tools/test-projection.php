@@ -1,7 +1,8 @@
 <?php
 declare(strict_types=1);
 if (PHP_SAPI !== 'cli') { http_response_code(403); exit; }
-$target = dirname(dirname(__DIR__)) . '/ReFind_0.2.0_Test';
+if (basename(dirname(__DIR__)) === 'refind-dev' && getenv('REFIND_TEST_PROFILE') !== 'ui-ux-dev') throw new RuntimeException('Explicit development test profile required; legacy QA discovery refused.');
+$target = (getenv('REFIND_TEST_PROFILE') === 'ui-ux-dev' ? dirname(__DIR__) : dirname(dirname(__DIR__)) . '/ReFind_0.2.0_Test');
 require $target . '/app/repository.php';
 require __DIR__ . '/qa-guard.php';
 assert_qa_installation($target);
@@ -9,6 +10,7 @@ assert_qa_installation($target);
 function baseline_safe_item(array $record, array $user): array
 {
     $id = (int) $record['item_id'];
+    $record['reporter_avatar_url']=avatar_url($record['reporter_avatar_path']??null);unset($record['reporter_avatar_path']);
     $record['item_id'] = (string) $id;
     $record['reporter_user_id'] = (string) $record['reporter_user_id'];
     $photos = rows("SELECT photo_id FROM item_photos WHERE item_id=? AND photo_kind='ITEM' ORDER BY is_primary DESC,photo_id", [$id]);

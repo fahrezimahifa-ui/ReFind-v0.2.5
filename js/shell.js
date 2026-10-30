@@ -26,7 +26,14 @@ window.ReFindShell = (() => {
     if (!open) setAccount(false);
     if (focus) $('#nav-toggle').trigger('focus');
   }
+  const headerObserver=new ResizeObserver(entries=>{const height=entries[0].borderBoxSize?.[0]?.blockSize;if(height)document.documentElement.style.setProperty('--app-header-height',height+'px');});
+  const appHeader=document.querySelector('.app-header');if(appHeader)headerObserver.observe(appHeader);
   function initials(name) { return name.trim().split(/\s+/u).slice(0,2).map(part => Array.from(part)[0] || '').join('').toUpperCase(); }
+  function renderAvatar(element,name,url){
+    const box=$(element).empty().addClass('user-avatar').attr('aria-hidden','true').append($('<span>').text(name?initials(name):''));
+    if(url)box.append($('<img>').attr({src:url,alt:'',width:70,height:70,decoding:'async'}).on('error',function(){$(this).remove();}));
+  }
+  function identity(name,url){return $('<span>').addClass('person-identity').append($('<span>').each(function(){renderAvatar(this,name,url);}),$('<span>').text(name));}
   function updateUser(user) {
     app.state.user = user;
     const bm = user?.role === 'BUILDING_MANAGEMENT';
@@ -40,10 +47,10 @@ window.ReFindShell = (() => {
     $('[data-student-nav]').prop('hidden',!user||bm);
     $('[data-shell-user-name]').text(user?.name || '');
     $('[data-shell-role]').text(bm ? 'Building Management' : 'Student');
-    $('[data-account-initials]').text(user ? initials(user.name) : '');
+    $('[data-account-initials]').each(function(){renderAvatar(this,user?.name||'',user?.avatar_url);});
     const page = document.body.dataset.page;
     $('#nav-home').attr('aria-current', page === 'home' || page === 'bm' ? 'page' : null);
-    $('[data-main-nav]').each(function(){const current=$(this).attr('data-main-nav');$(this).attr('aria-current',current===page||(page==='item'||page==='claim')&&current==='browse'?'page':null);});
+    $('[data-main-nav]').each(function(){const current=$(this).attr('data-main-nav');$(this).attr('aria-current',current===page||(page==='item'||page==='claim')&&current===(page==='item'&&new URLSearchParams(location.search).get('origin')==='notifications'?'notifications':'browse')?'page':null);});
     $('[data-account-nav]').each(function () {
       const active = $(this).attr('data-account-nav') === page;
       $(this).attr('aria-current', active ? 'page' : null);
@@ -108,5 +115,5 @@ window.ReFindShell = (() => {
   }));
   // Handle the rejected bootstrap even when a page has no additional controller.
   ready.catch(() => {});
-  return {ready, updateUser, refreshUnread, setUnread, reportError, setAccount, setNavigation};
+  return {ready, renderAvatar, identity, updateUser, refreshUnread, setUnread, reportError, setAccount, setNavigation};
 })();

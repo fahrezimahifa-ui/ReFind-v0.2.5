@@ -35,7 +35,7 @@ function auth_user(): ?array
         $now - $auth['last_seen'] >= $c['idle_seconds'] || $now - $auth['issued_at'] >= $c['absolute_seconds']) {
         invalidate_identity(); return null;
     }
-    $record = row('SELECT user_id, student_id, full_name, email, role, is_active, password_hash FROM users WHERE user_id = ?', [$auth['user_id']]);
+    $record = row('SELECT user_id, student_id, full_name, email, role, is_active, password_hash, avatar_path FROM users WHERE user_id = ?', [$auth['user_id']]);
     if (!$record || !(int) $record['is_active'] || !hash_equals($auth['fingerprint'], credential_fingerprint($record['password_hash']))) {
         invalidate_identity(); return null;
     }
@@ -46,7 +46,7 @@ function auth_user(): ?array
 }
 function public_identity(array $user): array
 {
-    return ['id' => $user['user_id'], 'name' => $user['full_name'], 'role' => $user['role']];
+    return ['id' => $user['user_id'], 'name' => $user['full_name'], 'role' => $user['role'], 'avatar_url' => avatar_url($user['avatar_path'] ?? null)];
 }
 function require_user(): array
 {
@@ -119,7 +119,7 @@ function login_account(string $email, string $password): array
             fail('Too many login attempts. Please wait and try again.', 429, 'login_rate_limited');
         }
         $record = filter_var($email, FILTER_VALIDATE_EMAIL) && strlen($email) <= 150
-            ? row('SELECT user_id, email, full_name, student_id, role, is_active, password_hash FROM users WHERE email = ?', [$email]) : null;
+            ? row('SELECT user_id, email, full_name, student_id, role, is_active, password_hash, avatar_path FROM users WHERE email = ?', [$email]) : null;
         $validPassword = password_verify($password, $record['password_hash'] ?? $secret['dummy_hash']);
         $accepted = $record && (int) $record['is_active'] === 1 && $password !== '' && $validPassword;
         if (!$accepted) {
@@ -148,4 +148,9 @@ function logout_account(): void
     session_destroy();
     setcookie(app_config()['session_name'], '', ['expires' => time() - 3600, 'path' => $p['path'],
         'secure' => $p['secure'], 'httponly' => true, 'samesite' => 'Lax']);
+}
+
+function avatar_url(?string $path): ?string
+{
+    return $path && preg_match('~^avatars/([a-f0-9]{32})\.jpg$~D', $path, $match) ? app_config()['base_path'] . 'api/avatar.php?token=' . $match[1] : null;
 }

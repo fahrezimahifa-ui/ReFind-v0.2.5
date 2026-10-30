@@ -17,11 +17,12 @@ function run_statements(string $file, bool $views = false): void
 
 try {
     $config = app_config();
+    if ($config['db_name'] === 'refind_db_ui_ux_dev') { require_once __DIR__ . '/qa-guard.php'; assert_dev_installation(app_root()); }
     $manifest = json_decode(file_get_contents(app_root() . '/database/manifest.json'), true, 64, JSON_THROW_ON_ERROR);
     foreach ($manifest['files'] as $file => $hash) {
         if (hash_file('sha256', app_root() . '/database/' . $file) !== $hash) throw new RuntimeException('SQL manifest mismatch; inspect before setup.');
     }
-    foreach (['', 'setup', 'auth', 'sessions', 'items', 'evidence', 'claims'] as $dir) {
+    foreach (['', 'setup', 'auth', 'sessions', 'items', 'evidence', 'claims', 'avatars'] as $dir) {
         $path = storage_dir($dir);
         if (!is_dir($path) && !mkdir($path, 0700, true)) throw new RuntimeException('Cannot create private storage.');
     }
@@ -29,7 +30,8 @@ try {
     if (!$lock || !flock($lock, LOCK_EX)) throw new RuntimeException('Cannot lock setup.');
     $receiptPath = storage_dir('setup') . '/database-receipt.json';
     $receipt = is_file($receiptPath) ? json_decode(file_get_contents($receiptPath), true, 64, JSON_THROW_ON_ERROR) : null;
-    if ($receipt && ($receipt['database'] !== $config['db_name'] || $receipt['sql_hashes'] !== $manifest['files'])) throw new RuntimeException('Setup receipt/configuration mismatch.');
+    $previous = json_decode((string) file_get_contents(app_root() . '/database/migrations/avatars-previous-files.json'), true, 32, JSON_THROW_ON_ERROR);
+    if ($receipt && ($receipt['database'] !== $config['db_name'] || !in_array($receipt['sql_hashes'], [$manifest['files'], $previous], true))) throw new RuntimeException('Setup receipt/configuration mismatch.');
     $admin = new mysqli($config['db_host'], $config['db_user'], $config['db_password'], '', $config['db_port']);
     $stmt = $admin->prepare('SELECT COUNT(*) AS n FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?');
     $stmt->bind_param('s', $config['db_name']); $stmt->execute();
@@ -37,6 +39,7 @@ try {
     // Name is allowlisted by app_config(), never taken from HTTP input.
     $admin->query('CREATE DATABASE IF NOT EXISTS `' . $config['db_name'] . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
     $admin->close();
+    if ($receipt) { require_once __DIR__ . '/../app/avatar-migration.php'; migrate_avatar_schema($receipt, $manifest); }
     file_put_contents($receiptPath, json_encode(['database' => $config['db_name'], 'sql_hashes' => $manifest['files'], 'status' => 'initializing'], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR), LOCK_EX);
     run_statements(app_root() . '/database/schema.sql');
     run_statements(app_root() . '/database/views.sql', true);

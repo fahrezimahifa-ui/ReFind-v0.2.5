@@ -51,7 +51,7 @@ $(async function () {
     $('[data-bm-tab]').each(function () { const active = $(this).attr('data-bm-tab') === tab; $(this).toggleClass('active', active).attr('aria-pressed', String(active)); });
   }
   function evidence(urls, title) {
-    const section = $('<div>').append($('<h3>').text(title)), photos = $('<div>').addClass('bm-evidence');
+    const section = $('<section>').addClass('bm-evidence-section').append($('<h3>').text(title)), photos = $('<div>').addClass('bm-evidence');
     if (!urls?.length) section.append($('<p>').addClass('small muted').text('No supporting images provided.'));
     else urls.forEach((src, index) => photos.append($('<button>').attr({type:'button','aria-label':'Enlarge ' + title + ' ' + (index + 1)}).append($('<img>').attr({src, alt:title + ' ' + (index + 1), loading:'lazy'})).on('click', function () {
       trigger = this; $('#bm-evidence-title').text(title + ' ' + (index + 1)); $('#bm-evidence-image').attr({src, alt:title + ' ' + (index + 1)}); document.querySelector('#bm-evidence-dialog').showModal();
@@ -59,7 +59,7 @@ $(async function () {
     return section.append(photos);
   }
   function block(title, text, priv = false) { return $('<div>').addClass('bm-block' + (priv ? ' private' : '')).append($('<h3>').text(title), $('<p>').text(text || 'No identifying detail recorded.')); }
-  function meta(values) { const list = $('<dl>').addClass('detail-meta'); values.forEach(([title, value]) => list.append($('<div>').append($('<dt>').text(title), $('<dd>').text(value || 'Not specified')))); return list; }
+  function meta(values) { const list = $('<dl>').addClass('detail-meta'); values.forEach(([title, value]) => list.append($('<div>').append($('<dt>').text(title), $('<dd>').append(value instanceof jQuery ? value : document.createTextNode(String(value || 'Not specified')))))); return list; }
   function actionStyle(action, record) {
     if (action === 'rejected' || action === 'release') return 'btn-danger-outline';
     if (action === 'cancel_schedule') return 'btn-warning-outline';
@@ -79,10 +79,11 @@ $(async function () {
     $('#bm-search').val(''); switchState(); setView('detail'); syncUrl(); await loadQueue(1, true);
   }
   const heading = title => $('<h2>').attr('title', title).text(U.titleParts(title).display);
+  const recordHeading=(title,chips)=>$('<header>').addClass('bm-record-heading').append(chips,heading(title));
   function claimDetail(claim) {
     const box = $('<article>').attr('data-detail-claim-id', claim.claim_id);
-    box.append(U.stateChip(claim.claim_status, U.claimNames[claim.claim_status]), U.demoChip(claim.item.title), heading(claim.item.title));
-    const summary = $('<div>').addClass('bm-claim-summary').append(meta([['Claimant',claim.claimant_name],['Claimant email',claim.claimant_email],['Student ID',claim.claimant_student_id],['Submitted',U.date(claim.created_at,true)],...(claim.resubmitted_at ? [['Resubmitted',U.date(claim.resubmitted_at,true)]] : []),['Location',U.locationText(claim.item)],['Related Lost',claim.lost ? U.titleParts(claim.lost.title).display : 'No linked Lost report']]));
+    box.append(recordHeading(claim.item.title,$('<div>').addClass('chips').append(U.stateChip(claim.claim_status,U.claimNames[claim.claim_status]),U.demoChip(claim.item.title))));
+    const summary = $('<div>').addClass('bm-claim-summary').append(meta([['Claimant',shell.identity(claim.claimant_name,claim.claimant_avatar_url)],['Claimant email',claim.claimant_email],['Student ID',claim.claimant_student_id],['Submitted',U.date(claim.created_at,true)],...(claim.resubmitted_at ? [['Resubmitted',U.date(claim.resubmitted_at,true)]] : []),['Location',U.locationText(claim.item)],['Related Lost',claim.lost ? U.titleParts(claim.lost.title).display : 'No linked Lost report']]));
     if (claim.item.photos.length) summary.append($('<button>').addClass('bm-report-photo').attr({type:'button','aria-label':'Enlarge public item photo'}).append($('<img>').attr({src:claim.item.photos[0],alt:U.titleParts(claim.item.title).display})).on('click', function () {
       trigger = this; $('#bm-evidence-title').text('Public item photo'); $('#bm-evidence-image').attr({src:claim.item.photos[0],alt:U.titleParts(claim.item.title).display}); document.querySelector('#bm-evidence-dialog').showModal();
     }));
@@ -100,7 +101,7 @@ $(async function () {
     return box.append(actions);
   }
   function reportDetail(report) {
-    const box = $('<article>').attr('data-detail-report-id',report.item_id).append(U.chips(report), heading(report.title), meta([['Type',report.item_type === 'LOST' ? 'Lost' : 'Found'],['Location',U.locationText(report)],['Event',U.eventDate(report)],['Reporter',report.reporter_name]]), $('<p>').addClass('item-description').text(report.description), block('Private verification clue',report.verification_clue,true), evidence(report.ownership_photos,'Private report evidence'));
+    const box = $('<article>').attr('data-detail-report-id',report.item_id).append(recordHeading(report.title,U.chips(report)), meta([['Type',report.item_type === 'LOST' ? 'Lost' : 'Found'],['Location',U.locationText(report)],['Event',U.eventDate(report)],['Reporter',shell.identity(report.reporter_name,report.reporter_avatar_url)]]), $('<p>').addClass('item-description').text(report.description), block('Private verification clue',report.verification_clue,true), evidence(report.ownership_photos,'Private report evidence'));
     const actions = $('<div>').addClass('bm-detail-actions');
     if (report.allowed_statuses.length) actions.append(actionButton('status',{kind:'report',id:report.item_id,revision:report.revision,record:report}));
     else if (['RESOLVED','UNCLAIMED_CLOSED'].includes(report.status_code)) box.append($('<p>').addClass('bm-locked-note').text('Archived report · read-only.'));
@@ -129,7 +130,7 @@ $(async function () {
   function handoverDetail(record) {
     const returned = record.handover_status === 'COMPLETED', scheduled = record.handover_status === 'SCHEDULED';
     const notes = record.notes === 'Arrange pickup with Building Management.' ? 'Awaiting a pickup appointment.' : record.notes;
-    const box = $('<article>').attr({'data-detail-handover-id':record.handover_id,'data-handover-status':record.handover_status}).append(U.stateChip(record.handover_status,U.pickupNames[record.handover_status]),U.demoChip(record.title),heading(record.title),$('<div>').addClass('bm-pickup-meta').append(meta([['Verified claimant',record.claimant_name],['Claimant email',record.claimant_email],['Student ID',record.claimant_student_id],['Pickup area',record.pickup_location || 'Not assigned'],...(returned ? [['Returned',U.date(record.completed_at,true)],['Appointment',record.scheduled_at ? U.date(record.scheduled_at,true) : 'Collected without a scheduled appointment']] : [['Schedule',record.scheduled_at ? U.date(record.scheduled_at,true) : 'Not scheduled yet — agree a time with the claimant']])])));
+    const box = $('<article>').attr({'data-detail-handover-id':record.handover_id,'data-handover-status':record.handover_status}).append(recordHeading(record.title,$('<div>').addClass('chips').append(U.stateChip(record.handover_status,U.pickupNames[record.handover_status]),U.demoChip(record.title))),$('<div>').addClass('bm-pickup-meta').append(meta([['Verified claimant',shell.identity(record.claimant_name,record.claimant_avatar_url)],['Claimant email',record.claimant_email],['Student ID',record.claimant_student_id],['Pickup area',record.pickup_location || 'Not assigned'],...(returned ? [['Returned',U.date(record.completed_at,true)],['Appointment',record.scheduled_at ? U.date(record.scheduled_at,true) : 'Collected without a scheduled appointment']] : [['Schedule',record.scheduled_at ? U.date(record.scheduled_at,true) : 'Not scheduled yet — agree a time with the claimant']])])));
     if (notes) box.append($('<div>').addClass('bm-outcome').text(notes));
     const actions = $('<div>').addClass('bm-detail-actions');
     record.operations.forEach(action => actions.append(actionButton(action,{kind:'handover',id:record.handover_id,revision:record.revision,record})));
@@ -152,6 +153,7 @@ $(async function () {
       const data = type === 'claims' ? (await get('staff.php',{resource:'claims',id})).claim : type === 'reports' ? (await get('staff.php',{resource:'reports',id})).report : (await get('handovers.php',{id})).handovers[0];
       if (sequence !== detailRequest || tab !== type || selected !== id) return;
       current = data; $('#bm-detail-content').empty().append(type === 'claims' ? claimDetail(data) : type === 'reports' ? reportDetail(data) : handoverDetail(data));
+      if(focus)document.querySelector('#bm-detail').scrollTop=0;
       $('.bm-queue-card').each(function () { const active = $(this).attr('data-record-id') === selected; $(this).toggleClass('selected',active).attr('aria-pressed',String(active)); });
       if (focus) setView('detail');
       syncUrl(); if (focus) U.focusRecord(document.querySelector('#bm-detail'));
@@ -182,7 +184,9 @@ $(async function () {
         const id = String(record[idKey()]), code = tab === 'claims' ? record.claim_status : tab === 'reports' ? record.status_code : record.handover_status;
         const label = tab === 'claims' ? U.claimNames[code] : tab === 'reports' ? U.statusNames[code] : U.pickupNames[code];
         const detail = tab === 'claims' ? record.claimant_name + ' · ' + record.proof_count + ' supporting image(s)' : tab === 'reports' ? (record.item_type === 'LOST' ? 'Lost · ' : 'Found · ') + U.locationText(record) : record.claimant_name + ' · ' + (code === 'COMPLETED' ? 'Returned' : record.scheduled_at ? U.date(record.scheduled_at,true) : 'Not scheduled yet');
-        box.append($('<button>').addClass('bm-queue-card').toggleClass('selected',id === selected).attr({type:'button','data-record-id':id,'aria-pressed':String(id === selected)}).append(U.stateChip(code,label),$('<h3>').attr('title',record.title).text(U.titleParts(record.title).display),U.demoChip(record.title),$('<p>').text(detail),$('<span>').addClass('queue-open').text('View details →')).on('click',async function () {
+        const summary=$('<p>').text(detail);
+        if(tab!=='reports'){const extra=tab==='claims'?record.proof_count+' supporting image(s)':code==='COMPLETED'?'Returned':record.scheduled_at?U.date(record.scheduled_at,true):'Not scheduled yet';summary.empty().addClass('bm-queue-person').append(shell.identity(record.claimant_name,record.claimant_avatar_url),$('<span>').text(extra));}
+        box.append($('<button>').addClass('bm-queue-card').toggleClass('selected',id === selected).attr({type:'button','data-record-id':id,'aria-pressed':String(id === selected)}).append(U.stateChip(code,label),$('<h3>').attr('title',record.title).text(U.titleParts(record.title).display),U.demoChip(record.title),summary,$('<span>').addClass('queue-open').text('View details →')).on('click',async function () {
           if (saving) return; selected = id; pinned = false; $('#bm-selection-note').prop('hidden',true);
           // On phones the detail is its own step, so the system Back button returns to the list.
           if (mobile() && !history.state?.bmDetail) history.pushState({bmDetail:true}, '', app.base + 'admin.html?' + new URLSearchParams({tab, [paramKey()]: id}));
@@ -192,7 +196,8 @@ $(async function () {
       if (!records.length) box.append(emptyDetail('Queue is clear','No records match this view. Change the filter to revisit outcomes.'));
       const pager = $('#bm-pager').empty();
       if (data.pages > 1) pager.append($('<button>').addClass('btn btn-outline').attr('type','button').prop('disabled',page <= 1).text('Previous').on('click',() => { resetSelection(); loadQueue(page - 1); }),$('<span>').text(page + ' / ' + data.pages),$('<button>').addClass('btn btn-outline').attr('type','button').prop('disabled',page >= data.pages).text('Next').on('click',() => { resetSelection(); loadQueue(page + 1); }));
-      syncUrl(); await loadDetail(initialFocus); initialFocus = false;
+      // Remove the queue loading row before focus calculates its final scroll position.
+      syncUrl(); $('#bm-loading').prop('hidden',true); await loadDetail(initialFocus); initialFocus = false;
       if (sequence !== request) return;
       $('#bm-loading').prop('hidden',true); document.body.dataset.ready = 'true';
     } catch (e) { if (sequence === request) error(e); }

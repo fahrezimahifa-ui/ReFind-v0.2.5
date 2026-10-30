@@ -42,6 +42,26 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         return result.stdout
 
+    def test_notification_return_context_is_typed_and_local(self):
+        code = "require 'app/routes.php'; $u=['role'=>'STUDENT']; echo json_encode([safe_return('item.html?id=12&origin=notifications&notification_page=2&notification=50',$u),safe_return('https://example.com/item.html?id=12',$u),safe_return('item.html?id=12&origin=https://example.com',$u)]);"
+        result = json.loads(self.php(code))
+        base = self.php("require 'app/config.php'; echo app_config()['base_path'];")
+        self.assertEqual(result[0], base + 'item.html?id=12&origin=notifications&notification_page=2&notification=50')
+        self.assertEqual(result[1:], [base+'index.html', base+'index.html'])
+
+    def test_avatar_reference_is_current_token_only(self):
+        code = "require 'app/auth.php'; echo json_encode([avatar_url(null),avatar_url('../private.jpg'),avatar_url('avatars/'.str_repeat('a',32).'.jpg')]);"
+        result = json.loads(self.php(code))
+        base = self.php("require 'app/config.php'; echo app_config()['base_path'];")
+        self.assertEqual(result, [None,None,base+'api/avatar.php?token='+'a'*32])
+
+    def test_development_profile_cannot_prepare_the_legacy_qa_sibling(self):
+        env = os.environ.copy()
+        env['REFIND_TEST_PROFILE'] = 'ui-ux-dev'
+        result = subprocess.run([os.sys.executable,str(ROOT/'tools/prepare-test.py')],env=env,capture_output=True,text=True)
+        self.assertNotEqual(result.returncode,0)
+        self.assertIn('legacy QA preparation is refused',result.stderr)
+
     def test_valid_qa_preserves_config_and_existing_upload(self):
         sentinel = self.target / 'storage/items/keep.png'
         sentinel.parent.mkdir(parents=True)

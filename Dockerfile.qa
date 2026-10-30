@@ -7,12 +7,14 @@ COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
-    && apt-get update && apt-get install -y --no-install-recommends python3 python-is-python3 python3-pil git unzip libonig-dev libzip-dev mariadb-client \
-    && docker-php-ext-install mysqli mbstring zip \
+    && apt-get update && apt-get install -y --no-install-recommends python3 python-is-python3 python3-pil git unzip libonig-dev libzip-dev libpng-dev libjpeg62-turbo-dev libwebp-dev mariadb-client \
+    && docker-php-ext-configure gd --with-jpeg --with-webp \
+    && docker-php-ext-install mysqli mbstring zip gd \
     && a2enmod rewrite headers \
     && printf '<Directory /var/www/html>\nAllowOverride All\nRequire all granted\n</Directory>\n' > /etc/apache2/conf-available/refind-qa.conf \
     && a2enconf refind-qa
-WORKDIR /var/www/html/ReFind_0.2.3
+ARG REFIND_APP_ROOT=/var/www/html/ReFind_0.2.3
+WORKDIR ${REFIND_APP_ROOT}
 COPY . .
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/refind-browsers
 RUN npm ci --ignore-scripts \

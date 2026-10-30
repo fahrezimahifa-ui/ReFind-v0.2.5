@@ -49,7 +49,7 @@ class Session{
   });
   browser=await qa.playwright().chromium.launch({executablePath:qa.chromePath(),headless:true});
   await check('Stored display-name markup renders as text under the existing CSP',async()=>{
-   const c=await browser.newContext();await c.addCookies([{name:'refind_020_test',value:student.cookies.get('refind_020_test'),domain:'localhost',path:'/ReFind_0.2.0_Test/',httpOnly:true,sameSite:'Lax'}]);
+   const c=await browser.newContext();await c.addCookies([{name:qa.sessionName,value:student.cookies.get(qa.sessionName),domain:'localhost',path:qa.basePath,httpOnly:true,sameSite:'Lax'}]);
    const p=await c.newPage();p.on('pageerror',e=>results.errors.push(String(e)));const response=await p.goto(qa.base+'profile.html');await p.waitForSelector('body[data-ready="true"]');await p.waitForLoadState('networkidle');
    assert.equal(await p.locator('[data-profile-name]').innerText(),name);assert.equal(await p.locator('[data-profile-name] img').count(),0);assert.equal(await p.evaluate(()=>window.releaseXss),undefined);assert.match(response.headers()['content-security-policy'],/script-src 'self'/);assert.deepEqual(results.errors,[]);await c.close();
   });

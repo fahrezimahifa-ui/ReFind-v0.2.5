@@ -39,7 +39,8 @@ function safe_return(mixed $value, ?array $user = null): string
     $clean = [];
     foreach ($query as $key => $v) {
         if (!is_string($v) || preg_match('/[\x00-\x1f\x7f]/', $v)) return $fallback;
-        if (in_array($key, ['id', 'edit', 'claim','report','handover','category_id','location_id','page','from'], true) && preg_match('/^[1-9][0-9]{0,9}$/D', $v) && (float) $v <= 4294967295) $clean[$key] = $v;
+        if (in_array($key, ['id', 'edit', 'claim','report','handover','category_id','location_id','page','from','notification_page','notification'], true) && preg_match('/^[1-9][0-9]{0,9}$/D', $v) && (float) $v <= 4294967295) $clean[$key] = $v;
+        elseif ($key === 'origin' && $v === 'notifications') $clean[$key] = $v;
         elseif ($key === 'tab' && in_array($v, ['reports', 'claims', 'handover','closed'], true)) $clean[$key] = $v;
         elseif ($key === 'view' && in_array($v, ['all', 'returned', 'unclaimed', 'lost', 'found'], true)) $clean[$key] = $v;
         elseif ($key === 'type' && in_array(strtolower($v), ['lost', 'found'], true)) $clean[$key] = strtolower($v);

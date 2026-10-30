@@ -5,7 +5,7 @@ require_once __DIR__ . '/workflow.php';
 function staff_report(int $id,array $user): array
 {
     $raw=find_item($id);
-    $public=row('SELECT '.public_columns().' FROM v_items_overview v WHERE v.item_id=?',[$id]);
+    $public=row('SELECT '.public_columns().',u.avatar_path AS reporter_avatar_path FROM v_items_overview v JOIN users u ON u.user_id=v.reporter_user_id WHERE v.item_id=?',[$id]);
     $result=safe_item($public,$user);
     $result['verification_clue']=$raw['verification_clue'];
     $result['ownership_photos']=array_map(fn($p)=>app_config()['base_path'].'api/photos.php?kind=item&id='.$p['photo_id'],rows("SELECT photo_id FROM item_photos WHERE item_id=? AND photo_kind='OWNERSHIP' ORDER BY photo_id",[$id]));
@@ -19,8 +19,9 @@ function staff_report(int $id,array $user): array
 }
 function staff_claim(int $id,array $user): array
 {
-    $raw=row('SELECT c.*,u.full_name AS claimant_name,u.email AS claimant_email,u.student_id AS claimant_student_id FROM claims c JOIN users u ON u.user_id=c.claimant_user_id WHERE c.claim_id=?',[$id]);
+    $raw=row('SELECT c.*,u.full_name AS claimant_name,u.avatar_path AS claimant_avatar_path,u.email AS claimant_email,u.student_id AS claimant_student_id FROM claims c JOIN users u ON u.user_id=c.claimant_user_id WHERE c.claim_id=?',[$id]);
     if(!$raw)fail('Claim not found.',404,'not_found');
+    $raw['claimant_avatar_url']=avatar_url($raw['claimant_avatar_path']);unset($raw['claimant_avatar_path']);
     $revision=claim_revision($raw);$raw['claim_id']=(string)$raw['claim_id'];
     $raw['item']=staff_report((int)$raw['item_id'],$user);
     $raw['lost']= $raw['related_lost_item_id']?staff_report((int)$raw['related_lost_item_id'],$user):null;

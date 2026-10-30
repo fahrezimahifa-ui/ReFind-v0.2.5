@@ -2,7 +2,7 @@
   "status": "As-built / B06",
   "baseline_sql_sha256": "8b2fe2c560b524c4e8710280c1a7222551f0e52ee047f0201e7993b09f0ae289",
   "schema_implemented": true,
-  "actual_sql_sha256": "c32b9a38110ea7ab02884d11fb18f6ddc0704ba3b23a845bfdfe37c7705a8eba",
+  "actual_sql_sha256": "45071de45a7a89f327a34e7112410958caebd1bfe73ec01c124ba20f70cf153f",
   "tables": {
     "users": {
       "columns": [
@@ -50,6 +50,11 @@
           "name": "updated_at",
           "definition": "datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()",
           "nullable": false
+        },
+        {
+          "name": "avatar_path",
+          "definition": "varchar(80) DEFAULT NULL",
+          "nullable": true
         }
       ],
       "primary": [

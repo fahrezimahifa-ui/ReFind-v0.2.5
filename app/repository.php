@@ -145,6 +145,8 @@ function safe_items(array $records, array $user): array
 function safe_item(array $record, array $user, ?array $context = null): array
 {
     $id = (int) $record['item_id'];
+    $record['reporter_avatar_url'] = avatar_url($record['reporter_avatar_path'] ?? null);
+    unset($record['reporter_avatar_path']);
     $record['item_id'] = (string) $id;
     $record['reporter_user_id'] = (string) $record['reporter_user_id'];
     $photos = $context !== null ? $context[$id]['photos'] : rows("SELECT photo_id FROM item_photos WHERE item_id=? AND photo_kind='ITEM' ORDER BY is_primary DESC,photo_id", [$id]);

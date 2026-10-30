@@ -216,3 +216,7 @@ python "tools/verify-fresh-install.py" --batch UX01
 ```
 
 Development QA requires the owned test copy and Node/Python tooling. Fresh QA uses a new extracted folder and isolated MariaDB3307 datadir; the existing3306 schemas remain intact, and the temporary server is stopped afterwards. Actual screen-only clips: `docs/verification/b06/DEMO_STUDENT_WORKFLOW.webm` and `DEMO_BM_WORKFLOW.webm`. All six planned batches are complete; use the final SOP for acceptance review/demo.
+
+## Isolated UI/profile development
+
+See [UI/profile enhancements](docs/UI_PROFILE_ENHANCEMENTS.md) for the separate development runtime, avatar migration and current verification evidence. Application version remains 0.2.5.

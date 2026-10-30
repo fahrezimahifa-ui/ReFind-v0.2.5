@@ -15,7 +15,7 @@ This guide describes the source reviewed at `857acea`, with the existing local p
 | Source defaults | `app/config.php` |
 | Local override | Ignored `app/config.local.php`, returning the current `base_path` |
 
-The folder/database labels retain earlier versions. **v0.2.5 required no schema migration.** The source default URL remains `/ReFind_0.2.0/`; this installation's local override is essential.
+The folder/database labels retain earlier versions. **The original v0.2.5 release required no schema migration.** The profile enhancement adds a nullable avatar reference; see [the upgrade guide](UI_PROFILE_ENHANCEMENTS.md). The source default URL remains `/ReFind_0.2.0/`; this installation's local override is essential.
 
 To run this existing installation:
 
@@ -83,7 +83,8 @@ Browser state is not the authority for role, ownership or persisted business rec
 |---|---|
 | `api/session.php` | Guest/auth state and CSRF bootstrap |
 | `api/auth.php` | Login/logout |
-| `api/account.php` | Own profile and password changes |
+| `api/account.php` | Own profile, avatar and password changes |
+| `api/avatar.php` | Authenticated current-avatar delivery |
 | `api/references.php` | Categories, locations, status labels and configurable pickup-desk details |
 | `api/items.php` | Search/detail/matches, own reports, report mutations |
 | `api/claims.php` | Authorized claims and Student submit/resubmit/withdraw |
@@ -132,6 +133,7 @@ Views: `v_items_overview`, `v_pending_claims`. `users` already stores the MVP pr
 - `storage/items/`: discoverable report images.
 - `storage/evidence/`: private Lost ownership evidence.
 - `storage/claims/`: private claim evidence.
+- `storage/avatars/`: private prepared profile images, visible to signed-in users through the avatar endpoint.
 - `storage/auth/`: per-install auth secret and throttle state.
 - `storage/sessions/`: server-side PHP sessions.
 - `storage/setup/`: installation/demo receipts and private local backups.
@@ -217,3 +219,5 @@ The latest [MVP visual finish report](MVP_VISUAL_FINISH_REPORT.md) describes the
 - [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md#source-register): primary academic sources, provenance and page-number convention.
 
 Physical custody history, separate security/Student Service accounts, campus SSO and automated retention/disposal are not implemented by the present schema/routes. See [REQUIREMENTS_AND_ROADMAP.md](REQUIREMENTS_AND_ROADMAP.md) before treating later UX proposals as existing capability.
+
+UI/profile development uses a separate worktree and Docker project; see [its environment and migration guide](UI_PROFILE_ENHANCEMENTS.md). Do not use the existing QA sibling for this branch’s local verification.

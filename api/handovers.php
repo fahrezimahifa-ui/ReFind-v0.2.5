@@ -17,9 +17,10 @@ $search=text($_GET,'q',200,false);if($search!==''){$where[]="LOCATE(?,CONCAT_WS(
 $from=' FROM handovers h JOIN claims c ON c.claim_id=h.claim_id JOIN items i ON i.item_id=c.item_id JOIN users u ON u.user_id=c.claimant_user_id LEFT JOIN campus_locations l ON l.location_id=h.pickup_location_id';
 $clause=$where?' WHERE '.implode(' AND ',$where):'';[$page,$limit,$offset]=pagination($_GET,24);
 $total=(int)row('SELECT COUNT(*) AS n'.$from.$clause,$values)['n'];
-$records=rows('SELECT h.*,c.item_id,c.related_lost_item_id,c.claim_status,c.claimant_user_id,u.full_name AS claimant_name,u.email AS claimant_email,u.student_id AS claimant_student_id,i.title,l.location_name AS pickup_location'.$from.$clause.' ORDER BY h.updated_at DESC,h.handover_id DESC LIMIT ? OFFSET ?',array_merge($values,[$limit,$offset]));
+$records=rows('SELECT h.*,c.item_id,c.related_lost_item_id,c.claim_status,c.claimant_user_id,u.full_name AS claimant_name,u.avatar_path AS claimant_avatar_path,u.email AS claimant_email,u.student_id AS claimant_student_id,i.title,l.location_name AS pickup_location'.$from.$clause.' ORDER BY h.updated_at DESC,h.handover_id DESC LIMIT ? OFFSET ?',array_merge($values,[$limit,$offset]));
 if (isset($_GET['id']) && !$records) fail('Pickup record not found.', 404, 'not_found');
 foreach ($records as &$record) {
+    $record['claimant_avatar_url']=avatar_url($record['claimant_avatar_path']);unset($record['claimant_avatar_path']);
     foreach(['handover_id','claim_id','item_id']as $key)$record[$key]=(string)$record[$key];
     foreach(['pickup_location_id','related_lost_item_id','handled_by_user_id']as $key)$record[$key]=$record[$key]!==null?(string)$record[$key]:null;
     if($user['role']==='BUILDING_MANAGEMENT'){
