@@ -51,3 +51,5 @@ After successful cutover, export and checksum the Docker development database an
 - A private copy of the main database/media passed populated upgrade, repeat upgrade and SQL/media recovery followed by re-upgrade. All14 original table-value hashes, 73 existing media files and the staging auth secret were preserved. Fresh setup was exercised before the matrix on the same isolated server.
 
 Private current receipts are under ignored `output/playwright/release-readiness/results/xampp-glass-20261031-r3`, `output/playwright/xampp-rehearsal`, and `storage/setup/xampp-final-static.*`. Historical Docker results remain separately labelled. Main cutover and targeted Docker cleanup receipts remain with the operator's private backups; the draft PR records their final disposition.
+
+The subsequent source-only [account-menu and layout polish](ACCOUNT_MENU_POLISH.md) uses the same guarded staging workflow without rerunning main setup or migrations.

@@ -25,7 +25,7 @@
 .account-toggle { width:100%; justify-content:flex-start; }
 .account-toggle svg { margin-left:auto; }
 .account-initials { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:var(--primary-soft); font-size:12px; font-weight:700; }
-.account-menu { padding:8px; margin-top:8px; border:1px solid var(--line); background:var(--glass-popup); border-radius:13px; }
+.account-menu { padding:8px; margin-top:8px; border:1px solid var(--line); background:var(--glass-account-menu); border-radius:13px; overscroll-behavior:contain; }
 .account-menu-identity { padding:8px 10px 12px; border-bottom:1px solid var(--line); margin-bottom:6px; }
 .account-menu-identity strong,.account-menu-identity span { display:block; overflow-wrap:anywhere; }
 .account-menu-identity strong { font-size:14px; }
@@ -72,7 +72,7 @@
   .primary-links { flex-direction:row; }
   .nav-account { margin:0; }
   .account-toggle { width:auto; }
-  .account-menu { position:absolute; right:0; top:calc(100% + 8px); width:280px; max-width:calc(100vw - 36px); margin:0; box-shadow:var(--glass-shadow); }
+
   .account-layout { grid-template-columns:280px minmax(0,1fr); gap:24px; }
   .account-card { padding:26px; }
 }
@@ -160,3 +160,11 @@
 #avatar-canvas:active{cursor:grabbing}.avatar-controls{display:grid;gap:8px}.avatar-controls label{font-size:14px;font-weight:600}.avatar-controls input{width:100%;min-height:44px;accent-color:var(--primary)}
 .avatar-dialog-actions{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-3)}.avatar-dialog-actions .btn{flex:1 1 110px}
 #avatar-editor-status{margin:var(--space-2) 0 0}
+
+/* Desktop menus escape the header backdrop root while retaining disclosure semantics. */
+.account-menu.account-menu--floating{position:fixed;z-index:1040;width:280px;max-width:calc(100vw - 36px);margin:0;overflow-y:auto}
+.app-version{margin:32px 0 0;color:var(--muted);font-size:14px;line-height:1.5}
+.btn-report-delete{--bs-btn-color:var(--danger);--bs-btn-hover-color:var(--danger);--bs-btn-active-color:var(--danger);--bs-btn-disabled-color:var(--danger);--bs-btn-bg:var(--delete-soft);--bs-btn-hover-bg:var(--delete-hover);--bs-btn-active-bg:var(--delete-pressed);--bs-btn-disabled-bg:var(--delete-soft);color:var(--danger);border-color:var(--danger);background:var(--delete-soft)}
+.btn-report-delete:hover{color:var(--danger);border-color:var(--danger);background:var(--delete-hover)}
+.btn-report-delete:active,.btn-report-delete:disabled{color:var(--danger);border-color:var(--danger);background:var(--delete-pressed)}
+@media(forced-colors:active){.btn-report-delete{color:ButtonText;background:ButtonFace;border-color:ButtonText}}

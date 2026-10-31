@@ -22,7 +22,7 @@ class Session{
 const image={name:'headphones.jpg',type:'image/jpeg',buffer:fs.readFileSync(path.join(root,'tools','demo-photos','headphones-overview.jpg'))};
 const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const tomorrow=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+86400000));
-// Each scenario gets its own vocabulary so suggestions never leak between scenarios or into the demo data.
+// Recognizable fixture vocabulary; other eligible demo matches may coexist with these scenario candidates.
 function report(type,label,extra={}){return{action:'create',type,title:run+' '+label,description:run+' '+label+' item with a distinctive marking.',category_id:'1',location_id:'37',location_detail:'',date:'2026-10-10',time:'',clue:'PRIVATE '+label+' hidden mark under the cover.',...extra};}
 async function create(s,type,label,extra={},files={}){return(await s.ok('api/items.php',report(type,label,extra),files)).id;}
 async function item(s,id){return(await s.ok('api/items.php?id='+id)).item;}
@@ -51,7 +51,7 @@ async function go(page,route){await page.goto(base+route);await page.waitForSele
    const real=await create(b,'FOUND','silverlaptop charger',{description:run+' silverlaptop charger with blue tape and a dented plug.'});
    assert.equal(pairs(lost,self).length,0);assert.equal(pairs(lost,otherCategory).length,0);assert.equal(pairs(lost,tooEarly).length,0);
    const pair=pairs(lost,real);assert.equal(pair.length,1);assert.ok(Number(pair[0].match_score)>=55);
-   const l=await item(a,lost);assert.equal(l.status_code,'POTENTIAL_MATCH');assert.deepEqual(l.matches.map(m=>m.item_id),[real]);
+   const l=await item(a,lost);assert.equal(l.status_code,'POTENTIAL_MATCH');const scenario=new Set([self,otherCategory,tooEarly,real]);assert.deepEqual(l.matches.filter(m=>scenario.has(m.item_id)).map(m=>m.item_id),[real]);
    const weak=await create(b,'FOUND','unrelatedthing',{location_id:'38',date:'2026-09-20',description:run+' something else entirely.'});assert.equal(pairs(lost,weak).length,0);
    ctx.matchLost=lost;ctx.matchFound=real;
   });
@@ -232,8 +232,8 @@ async function go(page,route){await page.goto(base+route);await page.waitForSele
    await p.page.locator('.bm-queue-card').first().click();await p.page.waitForSelector('[data-detail-report-id]');await p.page.click('#bm-back');await p.page.waitForFunction(()=>document.querySelector('.bm-layout').dataset.mobileView==='queue');assert.ok(p.page.url().includes('admin.html'));
    await p.context.close();
   });
-  await test('Copy and version: 0.2.5 footer, History in Student nav, no developer jargon on key pages',async()=>{
-   const p=await browserPage(A);for(const route of ['index.html','browse.html','history.html','notifications.html','my-reports.html','profile.html','settings.html']){await go(p.page,route);const body=await p.page.locator('body').innerText();assert.match(body,/ReFind 0\.2\.5/,route);for(const jargon of ['UTF-8','readonly','transaction commits','saved to the database','setup receipt','not UMN SSO'])assert.ok(!body.includes(jargon),route+' '+jargon);}
+  await test('Copy and version: Settings version, no repeated footer, History and clear page copy',async()=>{
+   const p=await browserPage(A);for(const route of ['index.html','browse.html','history.html','notifications.html','my-reports.html','profile.html','settings.html']){await go(p.page,route);const body=await p.page.locator('body').innerText();assert.equal(await p.page.locator('footer.footer').count(),0,route);if(route==='settings.html')assert.equal(await p.page.locator('.app-version').innerText(),'Version 0.2.5');for(const jargon of ['UTF-8','readonly','transaction commits','saved to the database','setup receipt','not UMN SSO'])assert.ok(!body.includes(jargon),route+' '+jargon);}
    assert.ok(await p.page.locator('[data-main-nav="history"]').isVisible()||await p.page.locator('#nav-toggle').isVisible());
    await go(p.page,'history.html');assert.match(await p.page.locator('#result-count').innerText(),/closed report/);
    for(const[width,height]of[[390,844],[768,1024],[1440,900]]){await p.page.setViewportSize({width,height});for(const route of ['notifications.html','my-reports.html?tab=claims','history.html']){await go(p.page,route);assert.ok(await p.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'overflow '+width+' '+route);}}

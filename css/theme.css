@@ -9,6 +9,7 @@
   --bg:#f7f8fc; --surface:#f8faff; --panel:#fff; --field:#fff;
   --glass-panel:#f8faff; --glass-navigation:#f8faff; --glass-popup:#f8faff;
   --glass-control:#f8faff; --glass-edge:#cdd5e4; --subtle:#f1f4fa;
+  --glass-account-menu:#f8faff; --delete-soft:#fff2e8; --delete-hover:#ffe4d2; --delete-pressed:#ffdbc5;
   --glass-inset:#f8faff; --glass-private:#fffaf0;
   --readonly:#edf0f6; --media:#e9edf4;
   --danger:#922e3e; --danger-bg:#fff5f6; --danger-line:#c8798b; --danger-active:#fae8ed;
@@ -38,6 +39,7 @@
   --bg:#0b1220; --surface:#131f35; --panel:#131f35; --field:#101c31;
   --glass-panel:#131f35; --glass-navigation:#131f35; --glass-popup:#131f35;
   --glass-control:#1c2c46; --glass-edge:#46556f; --subtle:#1a2942;
+  --glass-account-menu:#131f35; --delete-soft:#362820; --delete-hover:#493227; --delete-pressed:#56382b;
   --glass-inset:#131f35; --glass-private:#302b25;
   --readonly:#1e2b40; --media:#0e192b;
   --danger:#ffb2c0; --danger-bg:#3a2435; --danger-line:#ad7187; --danger-active:#503044;
@@ -54,15 +56,15 @@
 }
 @media(min-width:768px) { :root { --page-gutter:24px; --page-top:32px; } }
 @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
-  :root { --glass-inset:rgb(255 255 255 / .36); --glass-private:rgb(255 250 240 / .9); --panel:rgb(255 255 255 / .84); --glass-panel:rgb(255 255 255 / .64); --glass-navigation:rgb(248 250 255 / .82); --glass-popup:rgb(248 250 255 / .88); --glass-control:rgb(248 250 255 / .8); --glass-edge:rgb(255 255 255 / .72); --field:rgb(255 255 255 / .98); }
-  :root[data-theme="dark"] { --glass-inset:rgb(19 31 53 / .38); --glass-private:rgb(48 43 37 / .9); --panel:rgb(19 31 53 / .82); --glass-panel:rgb(19 31 53 / .62); --glass-navigation:rgb(19 31 53 / .82); --glass-popup:rgb(19 31 53 / .88); --glass-control:rgb(28 44 70 / .8); --glass-edge:rgb(205 222 255 / .22); --field:rgb(16 28 49 / .98); }
+  :root { --glass-account-menu:rgb(248 250 255 / .92); --glass-inset:rgb(255 255 255 / .36); --glass-private:rgb(255 250 240 / .9); --panel:rgb(255 255 255 / .84); --glass-panel:rgb(255 255 255 / .64); --glass-navigation:rgb(248 250 255 / .82); --glass-popup:rgb(248 250 255 / .88); --glass-control:rgb(248 250 255 / .8); --glass-edge:rgb(255 255 255 / .72); --field:rgb(255 255 255 / .98); }
+  :root[data-theme="dark"] { --glass-account-menu:rgb(19 31 53 / .9); --glass-inset:rgb(19 31 53 / .38); --glass-private:rgb(48 43 37 / .9); --panel:rgb(19 31 53 / .82); --glass-panel:rgb(19 31 53 / .62); --glass-navigation:rgb(19 31 53 / .82); --glass-popup:rgb(19 31 53 / .88); --glass-control:rgb(28 44 70 / .8); --glass-edge:rgb(205 222 255 / .22); --field:rgb(16 28 49 / .98); }
   .avatar-dialog,.discovery-card,.activity-card,.empty-state,.auth-card,.landing-card,.next-card,.filter-panel,.notification-list,.account-card,.form-card:not(.private-card),.detail-card,.bm-queue,.bm-detail,.app-header,.account-menu,.appearance-panel,.photo-dialog,.confirm-dialog,.operation-dialog,.sticky-form-actions { -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px); }
   @media(max-width:767px){.avatar-dialog,.discovery-card,.activity-card,.empty-state,.auth-card,.landing-card,.next-card,.filter-panel,.notification-list,.account-card,.form-card:not(.private-card),.detail-card,.bm-queue,.bm-detail,.app-header,.account-menu,.appearance-panel,.photo-dialog,.confirm-dialog,.operation-dialog,.sticky-form-actions{-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}}
   .app-header .account-menu,.notification-list>.empty-state{-webkit-backdrop-filter:none;backdrop-filter:none}
 }
 @media (prefers-reduced-transparency:reduce), (forced-colors:active) {
-  :root { --glass-inset:#f8faff; --glass-private:#fffaf0; --panel:#fff; --glass-panel:#f8faff; --glass-navigation:#f8faff; --glass-popup:#f8faff; --glass-control:#f8faff; --glass-edge:#cdd5e4; --field:#fff; }
-  :root[data-theme="dark"] { --glass-inset:#131f35; --glass-private:#302b25; --panel:#131f35; --glass-panel:#131f35; --glass-navigation:#131f35; --glass-popup:#131f35; --glass-control:#1c2c46; --glass-edge:#46556f; --field:#101c31; }
+  :root { --glass-account-menu:#f8faff; --glass-inset:#f8faff; --glass-private:#fffaf0; --panel:#fff; --glass-panel:#f8faff; --glass-navigation:#f8faff; --glass-popup:#f8faff; --glass-control:#f8faff; --glass-edge:#cdd5e4; --field:#fff; }
+  :root[data-theme="dark"] { --glass-account-menu:#131f35; --glass-inset:#131f35; --glass-private:#302b25; --panel:#131f35; --glass-panel:#131f35; --glass-navigation:#131f35; --glass-popup:#131f35; --glass-control:#1c2c46; --glass-edge:#46556f; --field:#101c31; }
   .avatar-dialog,.discovery-card,.activity-card,.empty-state,.auth-card,.landing-card,.next-card,.filter-panel,.notification-list,.account-card,.form-card,.detail-card,.bm-queue,.bm-detail,.app-header,.account-menu,.appearance-panel,.photo-dialog,.confirm-dialog,.operation-dialog,.sticky-form-actions { -webkit-backdrop-filter:none!important; backdrop-filter:none!important; }
   body::before,.ambient-background { display:none; }
 }
