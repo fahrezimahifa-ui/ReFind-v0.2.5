@@ -42,7 +42,7 @@ def mysql(host, query=None, dump=False, data=None):
 
 
 def media(folder):
-    return {str(p.relative_to(folder)): hashlib.sha256(p.read_bytes()).hexdigest() for collection in ['items', 'evidence', 'claims'] for p in (folder / 'storage' / collection).glob('*') if p.is_file()}
+    return {str(p.relative_to(folder)): hashlib.sha256(p.read_bytes()).hexdigest() for collection in ['items', 'evidence', 'claims', 'avatars'] for p in (folder / 'storage' / collection).glob('*') if p.is_file()}
 
 
 try:

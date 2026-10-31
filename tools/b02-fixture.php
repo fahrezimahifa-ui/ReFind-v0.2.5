@@ -2,7 +2,7 @@
 declare(strict_types=1);
 if (PHP_SAPI !== 'cli') { http_response_code(403); exit; }
 require __DIR__ . '/../app/auth.php';
-if (app_config()['db_name'] !== 'refind_db_0_2_0_test') { fwrite(STDERR, 'Fixture mutations require the isolated _test database.' . PHP_EOL); exit(1); }
+if (!in_array(app_config()['db_name'], ['refind_db_0_2_0_test', 'refind_db_ui_ux_dev'], true)) { fwrite(STDERR, 'Fixture mutations require the isolated _test database.' . PHP_EOL); exit(1); }
 require_once __DIR__ . '/qa-guard.php';
 assert_qa_installation(app_root());
 try {

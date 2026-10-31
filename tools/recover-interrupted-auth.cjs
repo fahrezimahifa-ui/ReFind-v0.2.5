@@ -1,3 +1,4 @@
+if(require('node:path').basename(require('node:path').resolve(__dirname,'..'))==='refind-dev')throw new Error('Historical auth recovery is refused from the development worktree');
 // Scoped recovery of the interrupted B02-mv3k0md9 test run only; never main data.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {execFileSync}=require('node:child_process');

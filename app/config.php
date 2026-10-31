@@ -29,9 +29,10 @@ function validate_app_config(array $config): array
         !is_string($config['db_password']) || str_contains($config['db_password'], "\0")) {
         throw new RuntimeException('Invalid database configuration.');
     }
-    if (!in_array($config['db_name'], ['refind_db_0_2_0', 'refind_db_0_2_0_test'], true)) {
-        throw new RuntimeException('This version only uses its own 0.2.0 databases.');
+    if (!in_array($config['db_name'], ['refind_db_0_2_0', 'refind_db_0_2_0_test', 'refind_db_ui_ux_dev'], true)) {
+        throw new RuntimeException('Unsupported application database.');
     }
+    if ($config['db_name'] === 'refind_db_ui_ux_dev' && (!in_array($config['db_host'], ['database','upgrade-database','recovery-database'], true) || $config['db_user'] !== 'refind_dev' || $config['base_path'] !== '/refind-dev/' || $config['session_name'] !== 'refind_ui_ux_dev')) throw new RuntimeException('Development configuration must stay isolated.');
     if (!is_string($config['base_path']) || !preg_match('~^/(?!\.{1,2}/)[A-Za-z0-9_.-]+/$~D', $config['base_path']) ||
         !is_string($config['session_name']) || !preg_match('/^[A-Za-z0-9_]+$/D', $config['session_name'])) {
         throw new RuntimeException('Invalid application path/session configuration.');
@@ -70,7 +71,7 @@ function app_config(): array
 function app_root(): string { return dirname(__DIR__); }
 function storage_dir(string $collection = ''): string
 {
-    if ($collection !== '' && !in_array($collection, ['auth', 'sessions', 'setup', 'items', 'evidence', 'claims'], true)) {
+    if ($collection !== '' && !in_array($collection, ['auth', 'sessions', 'setup', 'items', 'evidence', 'claims', 'avatars'], true)) {
         throw new RuntimeException('Invalid storage collection.');
     }
     return app_root() . '/storage' . ($collection === '' ? '' : '/' . $collection);

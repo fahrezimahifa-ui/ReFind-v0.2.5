@@ -1,5 +1,7 @@
 # Local runtime configuration and credentials
 app/config.local.php
+.refind-dev.json
+.dev.env
 api/config.local.php
 .env
 
@@ -22,3 +24,9 @@ playwright-report/
 
 # Generated release archives stay local; source and checksum receipts are versioned.
 releases/*.zip
+
+.dev-npm-cache/
+
+.dev-php-vendor/
+
+.xampp-stage.local.json

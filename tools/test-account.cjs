@@ -9,12 +9,12 @@ const os = require('node:os');
 const crypto = require('node:crypto');
 const {execFileSync} = require('node:child_process');
 const root = path.resolve(__dirname,'..');
-const testRoot = path.resolve(root,'..','ReFind_0.2.0_Test');
-const base = 'http://localhost/ReFind_0.2.0_Test/';
+const testRoot = qaRuntime.target;
+const base = qaRuntime.base;
 const php = qaRuntime.php;
 const {chromium} = qaRuntime.playwright();
 const out = process.env.REFIND_EVIDENCE_DIR ? path.resolve(process.env.REFIND_EVIDENCE_DIR) : process.env.REFIND_EVIDENCE_BATCH ? path.join(root,'docs','verification',process.env.REFIND_EVIDENCE_BATCH,'account') : path.join(root,'docs','verification','b03');
-assert.ok(fs.existsSync(path.join(testRoot,'.refind-b02-test.json')));
+if(!qaRuntime.dev)assert.ok(fs.existsSync(path.join(testRoot,'.refind-b02-test.json')));
 fs.mkdirSync(out,{recursive:true});
 const run = 'B03-' + Date.now().toString(36);
 const results=[], browserErrors=[], viewportChecks=[], created=[];
@@ -35,7 +35,7 @@ function account(label,role='STUDENT') {
 }
 class Session {
   cookies=new Map();csrf='';user=null;
-  id() { return this.cookies.get('refind_020_test'); }
+  id() { return this.cookies.get(qaRuntime.sessionName); }
   async call(endpoint,values,options={}) {
     const headers={Cookie:[...this.cookies].map(([k,v])=>k+'='+v).join('; '),...(options.headers||{})};
     const init={headers,redirect:'manual'};
@@ -54,7 +54,7 @@ async function openAccountMenu(page) {
 }
 async function loggedPage(a,viewport={width:390,height:844}) {
   const s=await new Session().login(a),context=await themedContext(browser,{viewport});
-  await context.addCookies([{name:'refind_020_test',value:s.id(),domain:'localhost',path:'/ReFind_0.2.0_Test/',httpOnly:true,sameSite:'Lax'}]);
+  await context.addCookies([{name:qaRuntime.sessionName,value:s.id(),domain:'localhost',path:qaRuntime.basePath,httpOnly:true,sameSite:'Lax'}]);
   const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));
   return {s,page,context};
 }
@@ -112,7 +112,7 @@ async function go(page,route) {const r=await page.goto(base+route);await page.wa
       const next='  Zółć New Password!  ';const r=await a.change(A,next);
       assert.notEqual(a.id(),oldCookie);assert.notEqual(a.csrf,oldCsrf);assert.equal((await a.call('api/account.php')).status,200);
       assert.equal((await other.call('api/account.php')).status,401);
-      const replay=new Session();replay.cookies.set('refind_020_test',oldCookie);replay.csrf=oldCsrf;assert.equal((await replay.call('api/account.php')).status,401);
+      const replay=new Session();replay.cookies.set(qaRuntime.sessionName,oldCookie);replay.csrf=oldCsrf;assert.equal((await replay.call('api/account.php')).status,401);
       assert.equal((await a.call('api/account.php',{action:'update_profile',name:'Bad stale token'},{csrf:oldCsrf})).status,403);
       const old=new Session();let g=await old.call('api/session.php');old.csrf=g.data.csrf;assert.equal((await old.call('api/auth.php',{action:'login',email:A.email,password:oldPassword})).status,401);
       await new Session().login(A);assert.ok(!r.text.includes('password_hash')&&!r.text.includes(next));

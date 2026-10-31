@@ -5,10 +5,16 @@ $(async function(){
   const query=values=>new URLSearchParams(Object.entries(values).filter(([,v])=>v!==''&&v!==null&&v!==undefined)).toString();
   const validId=value=>/^[1-9][0-9]{0,9}$/.test(value||'');
   const validPage=value=>{const n=Number(value);return Number.isInteger(n)&&n>=1&&n<=100000?n:1;};
+  const fromNotifications=page==='item'&&params.get('origin')==='notifications';
+  const notificationPage=validPage(params.get('notification_page'));
+  const notificationId=validId(params.get('notification'))?params.get('notification'):null;
+  const backHref=fromNotifications?app.base+'notifications.html?'+new URLSearchParams({page:notificationPage,...(notificationId?{notification:notificationId}:{})}):app.base+'browse.html';
+  const backLabel=fromNotifications?'Back to Notifications':'Back to Explore';
+  if(page==='item')$('#item-back').attr('href',backHref).find('span').text(backLabel);
   function loading(value){$('#page-loading').prop('hidden',!value);}
   function bindRetry(load){$('#retry-page').off('click.student').on('click.student',()=>load());}
   // A missing or deleted record cannot be fixed by retrying, so offer a way out instead.
-  function showMissing(title='Report not found',detail='It may have been deleted, or the link is incomplete.'){loading(false);$('#retry-page,#page-feedback').prop('hidden',true);$('#page-missing').remove();$('<div>').attr('id','page-missing').append(U.empty(title,detail,app.base+'browse.html','Go to Explore')).insertAfter('#page-feedback');document.body.dataset.ready='true';}
+  function showMissing(title='Report not found',detail='It may have been deleted, or the link is incomplete.'){loading(false);$('#retry-page,#page-feedback').prop('hidden',true);$('#page-missing').remove();$('<div>').attr('id','page-missing').append(U.empty(title,detail,backHref,fromNotifications?backLabel:'Go to Explore')).insertAfter('#page-feedback');document.body.dataset.ready='true';}
   function failed(e){if(e.status===404||e.code==='invalid_id'){showMissing();return;}U.showError(e);$('#retry-page').prop('hidden',false);loading(false);}
   function clearPage(){ $('#page-feedback,#retry-page').prop('hidden',true); }
   function showList(selector,items,emptyTitle,emptyDetail){const box=$(selector).empty();if(!items.length)box.append(U.empty(emptyTitle,emptyDetail));else items.forEach(item=>box.append(U.card(item)));}
@@ -45,14 +51,14 @@ $(async function(){
     const id=params.get('id');let item,photoIndex=0;
     if(!validId(id)){showMissing();return;}
     function showPhoto(){const photo=item.photos[photoIndex];$('#gallery-image').attr({src:photo||'',alt:item.title}).prop('hidden',!photo);$('#gallery-empty').prop('hidden',!!photo);$('#gallery-open').prop('disabled',!photo);$('#gallery-thumbs button').attr('aria-pressed','false').eq(photoIndex).attr('aria-pressed','true');}
-    async function load(){clearPage();loading(true);try{item=(await get('items.php',{id})).item;document.title=U.titleParts(item.title).display+' — ReFind';$('#item-title').text(U.titleParts(item.title).display).attr('title',item.title);$('#item-description').text(item.description);$('#item-category').text(item.category_name);$('#item-location').text(U.locationText(item));$('#item-event').text(U.eventDate(item));$('#item-reporter').text(item.reporter_name);$('#item-chips').empty().append(U.chips(item).children());
+    async function load(){clearPage();loading(true);try{item=(await get('items.php',{id})).item;document.title=U.titleParts(item.title).display+' · ReFind';$('#item-title').text(U.titleParts(item.title).display).attr('title',item.title);$('#item-description').text(item.description);$('#item-category').text(item.category_name);$('#item-location').text(U.locationText(item));$('#item-event').text(U.eventDate(item));$('#item-reporter').empty().append(shell.identity(item.reporter_name,item.reporter_avatar_url));$('#item-chips').empty().append(U.chips(item).children());
       $('#gallery-thumbs').empty();item.photos.forEach((photo,index)=>$('#gallery-thumbs').append($('<button>').attr({type:'button','aria-label':'Public photo '+(index+1),'aria-pressed':String(index===0)}).append($('<img>').attr({src:photo,alt:'Public photo '+(index+1)})).on('click',()=>{photoIndex=index;showPhoto();})));photoIndex=0;showPhoto();
       const actions=$('#item-actions').empty(),notice=$('#item-notice').prop('hidden',true).empty(),note=text=>notice.append($('<p>').text(text)).prop('hidden',false);
       if(item.can_claim)actions.append($('<a>').addClass('btn btn-primary').attr('href',U.claimUrl(id)).text(item.own_claim?'Update my claim':'I think this is mine'));
       if(item.can_report_found)actions.append(U.navAction('I found this item',app.base+'report.html?type=found&from='+encodeURIComponent(id)));
       // The notice is built from parts so a linked pair never hides the claimant's own claim status.
       if(item.own_claim){const own=item.own_claim;note('Your claim: '+U.claimNames[own.claim_status]+(own.review_note?' · '+own.review_note:''));if(own.claim_status==='REJECTED')note('A rejected claim is final for this item.');if(own.claim_status==='APPROVED')note('Your pickup details are in My Activity.');actions.append($('<a>').addClass('btn btn-outline').attr('href',app.base+'my-reports.html?tab=claims&claim='+own.claim_id).text('Follow my claim'));}
-      if(item.can_edit)actions.append($('<a>').addClass('btn btn-outline').attr('href',app.base+'report.html?edit='+id).text('Edit report'),$('<button>').addClass('btn btn-outline').attr({type:'button',id:'delete-report'}).text('Delete report').on('click',function(){requestDelete(id,load,this);}));
+      if(item.can_edit)actions.append($('<a>').addClass('btn btn-outline').attr('href',app.base+'report.html?edit='+id).text('Edit report'),$('<button>').addClass('btn btn-danger-outline btn-report-delete').attr({type:'button',id:'delete-report'}).text('Delete report').on('click',function(){requestDelete(id,load,this);}));
       else if(item.edit_locked_reason)note(item.edit_locked_reason);
       if(app.state.user?.role==='BUILDING_MANAGEMENT')actions.append(U.navAction('Open in Review Queue',app.base+'admin.html?tab=reports&report='+encodeURIComponent(id)));
       if(item.matched_item_id){notice.append($('<p>').text('Verified report pair.'),U.navAction('Open linked report',U.itemUrl(item.matched_item_id))).prop('hidden',false);}
@@ -305,14 +311,14 @@ $(async function(){
         });if(!data.claims.length)box.append(U.empty('No claims yet','Open an eligible Found report to submit ownership details.',app.base+'browse.html?type=FOUND','Explore Found reports'));$('#activity-count').text(data.total+' own claim(s)');U.pager(data,next=>{highlight=null;return load(next);},'#activity-count');
       }else{const data=await get('items.php',{mine:1,page:currentPage,limit:24,...(tab==='closed'?{closed:1}:{active:1})});
         if(data.total&&currentPage>data.pages)return load(data.pages);
-        data.items.forEach(item=>{const card=U.card(item);if(item.can_edit)card.append($('<div>').addClass('own-report-actions').append(U.navAction('Edit report',app.base+'report.html?edit='+item.item_id),$('<button>').addClass('btn btn-danger-outline record-delete').attr('type','button').text('Delete').on('click',function(){requestDelete(item.item_id,()=>load(currentPage),this);})));else if(item.edit_locked_reason)card.find('.discovery-body').append($('<p>').addClass('small muted').text(item.edit_locked_reason));box.append(card);});if(!data.items.length)box.append(U.empty(tab==='closed'?'No closed reports':'No active reports','Your own reports appear here.',app.base+'report.html','Report an item'));$('#activity-count').text(data.total+' '+(tab==='closed'?'closed':'active')+' report(s)');U.pager(data,next=>load(next),'#activity-count');}
+        data.items.forEach(item=>{const card=U.card(item);if(item.can_edit)card.append($('<div>').addClass('own-report-actions').append(U.navAction('Edit report',app.base+'report.html?edit='+item.item_id),$('<button>').addClass('btn btn-danger-outline btn-report-delete record-delete').attr('type','button').text('Delete').on('click',function(){requestDelete(item.item_id,()=>load(currentPage),this);})));else if(item.edit_locked_reason)card.find('.discovery-body').append($('<p>').addClass('small muted').text(item.edit_locked_reason));box.append(card);});if(!data.items.length)box.append(U.empty(tab==='closed'?'No closed reports':'No active reports','Your own reports appear here.',app.base+'report.html','Report an item'));$('#activity-count').text(data.total+' '+(tab==='closed'?'closed':'active')+' report(s)');U.pager(data,next=>load(next),'#activity-count');}
       history.replaceState(null,'',app.base+'my-reports.html?tab='+tab+(claimTarget?'&claim='+encodeURIComponent(claimTarget):''));
       if(claimTarget){const target=box.find('[data-claim-id]').filter(function(){return $(this).attr('data-claim-id')===claimTarget;});target.addClass('selected-claim').attr('tabindex','-1');focusTarget=target[0];}
       loading(false);document.body.dataset.ready='true';if(focusTarget)U.focusRecord(focusTarget);}catch(e){failed(e);}}
     $('[data-activity]').on('click',function(){tab=$(this).attr('data-activity');highlight=null;load(1);});bindRetry(load);await load();
   }
   async function notifications(){
-    let currentPage=1;
+    let currentPage=validPage(params.get('page')),restore=validId(params.get('notification'))?params.get('notification'):null;
     async function load(next=currentPage){currentPage=next;clearPage();loading(true);
       try{const data=await get('notifications.php',{page:currentPage,limit:24}),box=$('#notification-results').empty();let lastGroup='';
         if(data.total&&currentPage>data.pages)return load(data.pages);
@@ -341,14 +347,17 @@ $(async function(){
           if(!Number(note.is_read))actions.append($('<button>').addClass('text-button mark-read').attr('type','button').text('Mark as read').on('click',async function(){const button=$(this).prop('disabled',true);try{await mark();const destination=card.find('a.notification-destination').first();(destination.length?destination:heading).trigger('focus');}catch(e){U.showError(e);button.prop('disabled',false);}}));
           let target=null,label='View item';
           if(note.claim_id){if(app.state.user.role==='STUDENT'){target=app.base+'my-reports.html?tab=claims&claim='+note.claim_id;label=note.pickup_event?'View my pickup':'View my claim';}else if(note.notification_type?.startsWith('HANDOVER_')&&note.handover_id){target=app.base+'admin.html?tab=handover&handover='+note.handover_id;label='View handover';}else{target=app.base+'admin.html?tab=claims&claim='+note.claim_id;label='Review claim';}}
-          else if(note.item_id)target=U.itemUrl(note.item_id);
+          else if(note.item_id)target=U.itemUrl(note.item_id)+'&'+new URLSearchParams({origin:'notifications',notification_page:currentPage,notification:note.notification_id});
           // Following an unread link marks it read first; modified clicks (new tab) stay native.
           if(target)actions.prepend($('<a>').addClass('text-link notification-destination').attr('href',target).text(label).on('click',async function(e){if(Number(note.is_read))return;if(e.ctrlKey||e.metaKey||e.shiftKey||e.button===1){mark().catch(()=>{});return;}e.preventDefault();try{await mark();}catch{}location.assign(target);}).on('auxclick',function(e){if(e.button===1&&!Number(note.is_read))mark().catch(()=>{});}));
           if(actions.children().length)card.append(actions);
           groupSection.append(card);
         }
         if(!data.notifications.length)box.append(U.empty('You are all caught up','Report and claim updates will appear here.'));
+        const locationQuery=new URLSearchParams({...((currentPage>1||restore)?{page:currentPage}:{}),...(restore?{notification:restore}:{})});
+        history.replaceState(history.state,'',app.base+'notifications.html'+(locationQuery.size?'?'+locationQuery:''));
         U.pager(data,next=>load(next),'#notification-results');loading(false);document.body.dataset.ready='true';
+        if(restore){U.focusRecord(box.find('[data-notification-id="'+restore+'"] .notification-title')[0]||box[0]);restore=null;}
       }catch(e){failed(e);}
     }
     $('#mark-all-read').on('click',async function(){const button=$(this).prop('disabled',true);try{const result=await app.request('notifications.php',{action:'read_all'});shell.setUnread(result.unread_count);await load(currentPage);U.notify('All notifications are marked as read.');$('#shell-feedback').trigger('focus');}catch(e){U.showError(e);}finally{button.prop('disabled',false);}});

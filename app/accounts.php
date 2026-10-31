@@ -5,7 +5,7 @@ require_once __DIR__ . '/auth.php';
 function account_profile(array $user): array
 {
     return ['id' => (string) $user['user_id'], 'name' => $user['full_name'], 'email' => $user['email'],
-        'student_id' => $user['role'] === 'STUDENT' ? $user['student_id'] : null, 'role' => $user['role']];
+        'student_id' => $user['role'] === 'STUDENT' ? $user['student_id'] : null, 'role' => $user['role'], 'avatar_url' => avatar_url($user['avatar_path'] ?? null)];
 }
 function profile_name(array $data): string
 {
@@ -29,7 +29,7 @@ function account_password(array $data, string $key, bool $new = false): string
 }
 function lock_own_account(array $user): array
 {
-    $record = row('SELECT user_id, full_name, email, student_id, role, is_active, password_hash FROM users WHERE user_id = ? FOR UPDATE', [(int) $user['user_id']]);
+    $record = row('SELECT user_id, full_name, email, student_id, role, is_active, password_hash, avatar_path FROM users WHERE user_id = ? FOR UPDATE', [(int) $user['user_id']]);
     if (!$record || !(int) $record['is_active'] || !isset($_SESSION['auth']['fingerprint']) ||
         !hash_equals($_SESSION['auth']['fingerprint'], credential_fingerprint($record['password_hash']))) {
         invalidate_identity();

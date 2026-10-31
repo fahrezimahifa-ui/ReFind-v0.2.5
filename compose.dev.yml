@@ -1,0 +1,76 @@
+name: refind-ui-ux-dev
+services:
+  database:
+    image: mariadb:10.11@sha256:d769e37960821dfdcf096954f6e7ac89f747e116c1bba98e48edd265dfc7deae
+    environment:
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+      MARIADB_DATABASE: refind_db_ui_ux_dev
+      MARIADB_USER: refind_dev
+      MARIADB_PASSWORD: ${REFIND_DEV_DB_PASSWORD:?Use the private .dev.env file}
+    volumes:
+      - dev-database:/var/lib/mysql
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  upgrade-database:
+    image: mariadb:10.11@sha256:d769e37960821dfdcf096954f6e7ac89f747e116c1bba98e48edd265dfc7deae
+    profiles: [verification]
+    environment:
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+      MARIADB_DATABASE: refind_db_ui_ux_dev
+      MARIADB_USER: refind_dev
+      MARIADB_PASSWORD: ${REFIND_DEV_DB_PASSWORD:?Use the private .dev.env file}
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  recovery-database:
+    image: mariadb:10.11@sha256:d769e37960821dfdcf096954f6e7ac89f747e116c1bba98e48edd265dfc7deae
+    profiles: [verification]
+    environment:
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+      MARIADB_DATABASE: refind_db_ui_ux_dev
+      MARIADB_USER: refind_dev
+      MARIADB_PASSWORD: ${REFIND_DEV_DB_PASSWORD:?Use the private .dev.env file}
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.qa
+      args:
+        REFIND_APP_ROOT: /var/www/html/refind-dev
+    command: [bash, -c, "php tools/qa-guard.php /var/www/html/refind-dev && exec apache2-foreground"]
+    ports:
+      - "127.0.0.1:8081:80"
+    volumes:
+      - .:/var/www/html/refind-dev
+      - dev-node:/var/www/html/refind-dev/node_modules
+      - dev-php:/var/www/html/refind-dev/output/playwright/php-vendor
+    working_dir: /var/www/html/refind-dev
+    environment:
+      REFIND_TEST_PROFILE: ui-ux-dev
+      REFIND_TESTED_SHA: ${REFIND_TESTED_SHA:-working-tree}
+      REFIND_DEV_DB_PASSWORD: ${REFIND_DEV_DB_PASSWORD:?Use the private .dev.env file}
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, http://localhost/refind-dev/css/theme.css]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+volumes:
+  dev-database:
+  dev-node:
+  dev-php:

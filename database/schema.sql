@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `avatar_path` varchar(80) DEFAULT NULL,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `uq_user_email` (`email`),
   UNIQUE KEY `uq_student_id` (`student_id`),

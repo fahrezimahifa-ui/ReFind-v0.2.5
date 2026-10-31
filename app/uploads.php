@@ -47,12 +47,12 @@ function save_upload(array $image, string $collection, array &$created): string
 }
 function media_path(string $relative): ?string
 {
-    return preg_match('~^(items|evidence|claims)/[a-f0-9]{32}\.(jpg|png|webp)$~D', $relative) ? storage_dir() . '/' . $relative : null;
+    return preg_match('~^(items|evidence|claims|avatars)/[a-f0-9]{32}\.(jpg|png|webp)$~D', $relative) ? storage_dir() . '/' . $relative : null;
 }
 function cleanup_media(array $files, bool $checkReferences = false): void
 {
     foreach (array_unique($files) as $relative) {
-        if ($checkReferences && (row('SELECT photo_id FROM item_photos WHERE file_path = ? LIMIT 1', [$relative]) || row('SELECT claim_photo_id FROM claim_photos WHERE file_path = ? LIMIT 1', [$relative]))) continue;
+        if ($checkReferences && (row('SELECT user_id FROM users WHERE avatar_path = ? LIMIT 1', [$relative]) || row('SELECT photo_id FROM item_photos WHERE file_path = ? LIMIT 1', [$relative]) || row('SELECT claim_photo_id FROM claim_photos WHERE file_path = ? LIMIT 1', [$relative]))) continue;
         $path = media_path($relative);
         if ($path && is_file($path) && !@unlink($path)) error_log('ReFind unused media cleanup failed.');
     }

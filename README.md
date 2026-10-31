@@ -67,7 +67,7 @@ Repository berisi source, SQL/reference seed, licensed demo inputs, draw.io sour
 Setelah login, buka **Account → My profile / Account settings**. URL: `profile.html` dan `settings.html`. Nama disimpan ke DB; password change meminta current/new/confirmation, merotasi ID/CSRF session current dan menginvalidasi sessions lain. Mobile navigation membuka menu di bawah header, bukan sidebar.
 
 1. Copy folder lengkap ke `C:\xampp\htdocs\ReFind_0.2.0`.
-2. Start Apache + MySQL XAMPP, port DB 3306. PHP 8.2 dengan mysqli/mysqlnd, mbstring, fileinfo, session diperlukan.
+2. Start Apache + MySQL XAMPP, port DB 3306. PHP 8.2 dengan mysqli/mysqlnd, mbstring, fileinfo, GD (JPEG/PNG/WebP), session diperlukan.
 3. Bila koneksi berbeda, `app/config.local.php` dapat mengoverride keys di `app/config.php`; file lokal di-Git-ignore dan diblokir HTTP. B02 hanya menerima nama DB 0.2.0/main atau `_test` agar tidak mengarah ke DB versi lain.
 4. Dari folder proyek:
 
@@ -216,3 +216,9 @@ python "tools/verify-fresh-install.py" --batch UX01
 ```
 
 Development QA requires the owned test copy and Node/Python tooling. Fresh QA uses a new extracted folder and isolated MariaDB3307 datadir; the existing3306 schemas remain intact, and the temporary server is stopped afterwards. Actual screen-only clips: `docs/verification/b06/DEMO_STUDENT_WORKFLOW.webm` and `DEMO_BM_WORKFLOW.webm`. All six planned batches are complete; use the final SOP for acceptance review/demo.
+
+## Isolated UI/profile development
+
+See [UI/profile enhancements](docs/UI_PROFILE_ENHANCEMENTS.md) for the separate development runtime, avatar migration and current verification evidence. Application version remains 0.2.5.
+
+Local XAMPP integration and Docker-free staging: [XAMPP integration guide](docs/XAMPP_INTEGRATION.md).

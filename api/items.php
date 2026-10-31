@@ -25,7 +25,7 @@ if (isset($_GET['q'])) {$q=text($_GET,'q',200,false);if ($q!=='') {$where[]="LOC
 $clause=$where?' WHERE '.implode(' AND ',$where):'';
 [$page,$limit,$offset]=pagination($_GET);
 $total=(int)row('SELECT COUNT(*) AS n FROM v_items_overview v'.$clause,$values)['n'];
-$items=rows('SELECT '.public_columns().' FROM v_items_overview v'.$clause.' ORDER BY v.created_at DESC,v.item_id DESC LIMIT ? OFFSET ?',array_merge($values,[$limit,$offset]));
+$items=rows('SELECT '.public_columns().',u.avatar_path AS reporter_avatar_path FROM v_items_overview v JOIN users u ON u.user_id=v.reporter_user_id'.$clause.' ORDER BY v.created_at DESC,v.item_id DESC LIMIT ? OFFSET ?',array_merge($values,[$limit,$offset]));
 if (isset($_GET['id']) && !$items) fail('Report not found.', 404, 'not_found');
 $items=safe_items($items,$user);
 if (isset($_GET['editable'])) {

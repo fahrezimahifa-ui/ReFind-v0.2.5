@@ -8,13 +8,13 @@ const path = require('node:path');
 const os = require('node:os');
 const {execFileSync, spawnSync} = require('node:child_process');
 const root = path.resolve(__dirname, '..');
-const testRoot = path.resolve(root, '..', 'ReFind_0.2.0_Test');
-const base = 'http://localhost/ReFind_0.2.0_Test/';
+const testRoot = qaRuntime.target;
+const base = qaRuntime.base;
 const php = qaRuntime.php;
 const {chromium} = qaRuntime.playwright();
 const out = process.env.REFIND_EVIDENCE_DIR ? path.resolve(process.env.REFIND_EVIDENCE_DIR) : process.env.REFIND_EVIDENCE_BATCH ? path.join(root, 'docs', 'verification', process.env.REFIND_EVIDENCE_BATCH, 'auth') : path.join(root, 'docs', 'verification', 'b02');
-assert.ok(fs.existsSync(testRoot) && fs.existsSync(path.join(testRoot, '.refind-b02-test.json')));
-assert.equal(new URL(base).pathname, '/ReFind_0.2.0_Test/');
+if(!qaRuntime.dev)assert.ok(fs.existsSync(testRoot) && fs.existsSync(path.join(testRoot, '.refind-b02-test.json')));
+assert.equal(new URL(base).pathname, qaRuntime.basePath);
 fs.mkdirSync(out, {recursive: true});
 const accounts = JSON.parse(fs.readFileSync(path.join(testRoot, 'storage', 'setup', 'demo-accounts.json'), 'utf8')).accounts;
 const A = accounts['student-a@refind.test'], B = accounts['student-b@refind.test'], BM = accounts['bm@refind.test'];
@@ -35,7 +35,7 @@ async function showAccountMenu(page) {
 class Session {
   cookies = new Map(); csrf = ''; user = null;
   cookie() {return [...this.cookies].map(([k, v]) => k + '=' + v).join('; ');}
-  id() {return this.cookies.get('refind_020_test');}
+  id() {return this.cookies.get(qaRuntime.sessionName);}
   async call(endpoint, values, options = {}) {
     const headers = {Cookie: this.cookie(), ...(options.headers || {})};
     const init = {redirect: 'manual', headers, method: options.method || (values === undefined ? 'GET' : 'POST')};
@@ -104,7 +104,7 @@ function seedFixtures() {
     await test('Guest bootstrap has no implicit user; cookies HttpOnly/SameSite/scoped', async () => {
       const r = await student.call('api/session.php'); student.csrf = r.data.csrf;
       assert.equal(r.data.authenticated, false); assert.equal(r.data.user, null); assert.match(r.data.csrf, /^[a-f0-9]{64}$/);
-      const cookie = r.headers.getSetCookie().join(';'); assert.match(cookie, /HttpOnly/i); assert.match(cookie, /SameSite=Lax/i); assert.match(cookie, /path=\/ReFind_0\.2\.0_Test\//i);
+      const cookie = r.headers.getSetCookie().join(';').toLowerCase(); assert.ok(cookie.includes('httponly'),'HttpOnly cookie'); assert.ok(cookie.includes('samesite=lax'),'SameSite cookie'); assert.ok(cookie.includes('path='+qaRuntime.basePath.toLowerCase()),'Cookie path must match the isolated test profile');
       assert.equal((await student.call('api/session.php', {account: 'admin'})).status, 405);
     });
     await test('Credential login rotates ID/token and resolves three roles from DB', async () => {
@@ -114,7 +114,7 @@ function seedFixtures() {
       assert.notEqual(student.id(), id); assert.notEqual(student.csrf, csrf); assert.equal(student.user.role, 'STUDENT');
       await second.login(B); const bm = await staff.login(BM); assert.equal(bm.data.user.role, 'BUILDING_MANAGEMENT');
       assert.match(bm.data.redirect, /admin\.html$/); assert.notEqual(student.user.id, second.user.id);
-      const old = new Session(); old.cookies.set('refind_020_test', id); assert.equal((await old.call('api/items.php')).status, 401);
+      const old = new Session(); old.cookies.set(qaRuntime.sessionName, id); assert.equal((await old.call('api/items.php')).status, 401);
       assert.equal((await student.call('api/items.php', {action: 'create'}, {csrf})).status, 403);
     });
     await test('Reload/bootstrap retains identity, with no credential/fingerprint exposure', async () => {
@@ -202,7 +202,7 @@ function seedFixtures() {
     await test('Logout destroys authorization and old session/token cannot be replayed', async () => {
       const s = new Session(); await s.login(A); const cookie = s.id(), token = s.csrf;
       assert.equal((await s.call('api/auth.php', {action: 'logout'})).status, 200);
-      const old = new Session(); old.cookies.set('refind_020_test', cookie); old.csrf = token;
+      const old = new Session(); old.cookies.set(qaRuntime.sessionName, cookie); old.csrf = token;
       assert.equal((await old.call('api/items.php')).status, 401); assert.equal((await old.call('admin.html')).status, 302);
       assert.equal((await old.call('api/auth.php', {action: 'logout'})).status, 401);
     });
@@ -238,10 +238,10 @@ function seedFixtures() {
     await test('Safe return rejects external/traversal/wrong-role routes and allows authorized local routes', async () => {
       clearThrottle();
       for (const candidate of ['https://outside.example', '//outside.example', '../app/config.php', 'admin.html', '%2f%2foutside.example']) {
-        const s = new Session(); const r = await s.login(A, candidate); assert.equal(r.data.redirect, '/ReFind_0.2.0_Test/index.html');
+        const s = new Session(); const r = await s.login(A, candidate); assert.equal(r.data.redirect, qaRuntime.basePath+'index.html');
       }
-      const s = new Session(); assert.equal((await s.login(A, 'report.html?type=lost')).data.redirect, '/ReFind_0.2.0_Test/report.html?type=lost');
-      const b = new Session(); assert.equal((await b.login(BM, 'report.html')).data.redirect, '/ReFind_0.2.0_Test/admin.html');
+      const s = new Session(); assert.equal((await s.login(A, 'report.html?type=lost')).data.redirect, qaRuntime.basePath+'report.html?type=lost');
+      const b = new Session(); assert.equal((await b.login(BM, 'report.html')).data.redirect, qaRuntime.basePath+'admin.html');
     });
     await test('Throttling survives fresh sessions and serializes concurrent failed logins', async () => {
       clearThrottle();
@@ -263,9 +263,9 @@ function seedFixtures() {
       const rejected = new Session(); await rejected.init(); assert.equal((await rejected.call('api/auth.php',{action:'login',email:A.email,password:password+'x'})).status,401);
       query('UPDATE users SET password_hash=? WHERE user_id=?',[originalA.password_hash,Number(A.user_id)]); clearThrottle();
     });
-    await test('CLI fixture rejects main database; no public debug endpoint', async () => {
-      const denied = spawnSync(php, [path.join(root, 'tools', 'b02-fixture.php')], {input: JSON.stringify({action: 'query', query: 'SELECT 1'}), encoding: 'utf8'});
-      assert.notEqual(denied.status, 0); assert.match(denied.stderr, /isolated _test/);
+    await test('CLI fixture rejects unauthorized installation; no public debug endpoint', async () => {
+      const denied = spawnSync(php, [path.join(root, 'tools', 'b02-fixture.php')], {input: JSON.stringify({action: 'query', query: 'SELECT 1'}), encoding: 'utf8',env:{...process.env,...(qaRuntime.dev?{REFIND_TEST_PROFILE:''}:{})}});
+      assert.equal(denied.error,undefined);assert.notEqual(denied.status, 0); assert.match(denied.stderr+denied.stdout,qaRuntime.dev?/real isolated test directory/:/isolated _test/);
     });
     browser = await chromium.launch({executablePath: qaRuntime.chromePath(), headless: true});
     await test('Real browser Student/BM login, wrong-password recovery, logout and server page guards', async () => {
@@ -293,7 +293,7 @@ function seedFixtures() {
     await test('Displayed DB names are escaped and produce no browser exceptions', async () => {
       query('UPDATE users SET full_name=? WHERE user_id=?', ['<img src=x onerror=alert(1)>', Number(A.user_id)]);
       const s = new Session(); await s.login(A); const context = await themedContext(browser);
-      await context.addCookies([{name:'refind_020_test',value:s.id(),domain:'localhost',path:'/ReFind_0.2.0_Test/'}]); const page = await context.newPage(); page.on('pageerror', e => browserErrors.push(String(e)));
+      await context.addCookies([{name:qaRuntime.sessionName,value:s.id(),domain:'localhost',path:qaRuntime.basePath}]); const page = await context.newPage(); page.on('pageerror', e => browserErrors.push(String(e)));
       await page.goto(base + 'index.html'); await page.waitForSelector('body[data-ready="true"]'); assert.equal(await page.locator('[data-user-name]').innerText(), '<img src=x onerror=alert(1)>'); assert.equal(await page.locator('[data-user-name] img').count(), 0);
       query('UPDATE users SET full_name=? WHERE user_id=?', [originalA.full_name, Number(A.user_id)]); await context.close(); assert.deepEqual(browserErrors, []);
     });

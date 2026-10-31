@@ -4,9 +4,9 @@ const {themedContext}=require('./qa-browser.cjs');
 // v0.2.5 acceptance: one group per QA finding fixed in this release. Fresh actors and exact-ID cleanup in the owned _test copy.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto');
 const {execFileSync}=require('node:child_process');
-const root=path.resolve(__dirname,'..'),testRoot=path.resolve(root,'..','ReFind_0.2.0_Test'),base='http://localhost/ReFind_0.2.0_Test/',php=qaRuntime.php;
+const root=path.resolve(__dirname,'..'),testRoot=qaRuntime.target,base=qaRuntime.base,php=qaRuntime.php;
 const {chromium} = qaRuntime.playwright();
-const out=process.env.REFIND_EVIDENCE_DIR?path.resolve(process.env.REFIND_EVIDENCE_DIR):path.join(root,'docs','verification','v025','fixes');assert.equal(JSON.parse(fs.readFileSync(path.join(testRoot,'.refind-b02-test.json'))).source,root);fs.mkdirSync(out,{recursive:true});
+const out=process.env.REFIND_EVIDENCE_DIR?path.resolve(process.env.REFIND_EVIDENCE_DIR):path.join(root,'docs','verification','v025','fixes');if(!qaRuntime.dev)assert.equal(JSON.parse(fs.readFileSync(path.join(testRoot,'.refind-b02-test.json'))).source,root);fs.mkdirSync(out,{recursive:true});
 const run='V025-'+Date.now().toString(36),results=[],browserErrors=[],actors=[];let browser;
 function driver(input){return JSON.parse(execFileSync(php,[path.join(testRoot,'tools','b02-fixture.php')],{input:JSON.stringify(input),encoding:'utf8'}));}
 function q(query,values=[]){return driver({action:'query',query,values});}
@@ -22,7 +22,7 @@ class Session{
 const image={name:'headphones.jpg',type:'image/jpeg',buffer:fs.readFileSync(path.join(root,'tools','demo-photos','headphones-overview.jpg'))};
 const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const tomorrow=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+86400000));
-// Each scenario gets its own vocabulary so suggestions never leak between scenarios or into the demo data.
+// Recognizable fixture vocabulary; other eligible demo matches may coexist with these scenario candidates.
 function report(type,label,extra={}){return{action:'create',type,title:run+' '+label,description:run+' '+label+' item with a distinctive marking.',category_id:'1',location_id:'37',location_detail:'',date:'2026-10-10',time:'',clue:'PRIVATE '+label+' hidden mark under the cover.',...extra};}
 async function create(s,type,label,extra={},files={}){return(await s.ok('api/items.php',report(type,label,extra),files)).id;}
 async function item(s,id){return(await s.ok('api/items.php?id='+id)).item;}
@@ -34,7 +34,7 @@ function futureInput(days=2){const d=new Date(Date.now()+days*86400000),p=new In
 async function changePickup(s,id,action,extra={}){const d=await pickup(s,id);return s.call('api/handovers.php',{id,action,revision:d.revision,confirm:'1',note:'PRIVATE pickup operation reason.',...extra});}
 const notes=(userId,where='',values=[])=>q('SELECT notification_type,title,message,claim_id,item_id FROM notifications WHERE user_id=? '+where+' ORDER BY notification_id',[Number(userId),...values]).rows;
 const pairs=(lost,found)=>q('SELECT match_status,match_score FROM item_matches WHERE lost_item_id=? AND found_item_id=?',[Number(lost),Number(found)]).rows;
-async function browserPage(a,viewport={width:1280,height:900}){const s=await new Session().login(a),context=await themedContext(browser,{viewport,timezoneId:'Asia/Jakarta'});await context.addCookies([{name:'refind_020_test',value:s.cookies.get('refind_020_test'),domain:'localhost',path:'/ReFind_0.2.0_Test/'}]);const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));return{page,context,s};}
+async function browserPage(a,viewport={width:1280,height:900}){const s=await new Session().login(a),context=await themedContext(browser,{viewport,timezoneId:'Asia/Jakarta'});await context.addCookies([{name:qaRuntime.sessionName,value:s.cookies.get(qaRuntime.sessionName),domain:'localhost',path:qaRuntime.basePath}]);const page=await context.newPage();page.on('pageerror',e=>browserErrors.push(String(e)));return{page,context,s};}
 async function go(page,route){await page.goto(base+route);await page.waitForSelector('body[data-ready="true"]');}
 
 (async()=>{
@@ -51,7 +51,7 @@ async function go(page,route){await page.goto(base+route);await page.waitForSele
    const real=await create(b,'FOUND','silverlaptop charger',{description:run+' silverlaptop charger with blue tape and a dented plug.'});
    assert.equal(pairs(lost,self).length,0);assert.equal(pairs(lost,otherCategory).length,0);assert.equal(pairs(lost,tooEarly).length,0);
    const pair=pairs(lost,real);assert.equal(pair.length,1);assert.ok(Number(pair[0].match_score)>=55);
-   const l=await item(a,lost);assert.equal(l.status_code,'POTENTIAL_MATCH');assert.deepEqual(l.matches.map(m=>m.item_id),[real]);
+   const l=await item(a,lost);assert.equal(l.status_code,'POTENTIAL_MATCH');const scenario=new Set([self,otherCategory,tooEarly,real]);assert.deepEqual(l.matches.filter(m=>scenario.has(m.item_id)).map(m=>m.item_id),[real]);
    const weak=await create(b,'FOUND','unrelatedthing',{location_id:'38',date:'2026-09-20',description:run+' something else entirely.'});assert.equal(pairs(lost,weak).length,0);
    ctx.matchLost=lost;ctx.matchFound=real;
   });
@@ -145,7 +145,7 @@ async function go(page,route){await page.goto(base+route);await page.waitForSele
    const f=await create(b,'FOUND','orangecap schedule',{category_id:'4',location_id:'35',description:run+' orangecap schedule test.'}),id=await claim(a,f),h=(await review(bm,id,'approved')).handover_id;
    let r=await changePickup(bm,h,'schedule',{pickup_location_id:'',scheduled_at:futureInput(2)});assert.equal(r.status,422);assert.ok(r.data.fields.pickup_location_id);
    r=await changePickup(bm,h,'schedule',{pickup_location_id:'35',scheduled_at:''});assert.equal(r.status,422);assert.ok(r.data.fields.scheduled_at);
-   const photoItem=await create(b,'FOUND','photo check',{category_id:'4',location_id:'35'},{photos:[image]}),url=(await item(b,photoItem)).photos[0].replace('/ReFind_0.2.0_Test/','');
+   const photoItem=await create(b,'FOUND','photo check',{category_id:'4',location_id:'35'},{photos:[image]}),url=(await item(b,photoItem)).photos[0].replace(qaRuntime.basePath,'');
    assert.equal((await new Session().call(url)).status,401);assert.equal((await a.call(url)).status,200);
    assert.ok((await item(a,f)).history.some(x=>x.status_code==='HANDOVER'&&x.status_name==='Ready for pickup'));
   });
@@ -165,7 +165,7 @@ async function go(page,route){await page.goto(base+route);await page.waitForSele
    const p=await browserPage(A);await go(p.page,'item.html?id='+f);const text=await p.page.locator('#item-notice').innerText();assert.match(text,/Your claim: Approved/);assert.match(text,/Verified report pair/);assert.equal(await p.page.getByRole('link',{name:'Open linked report',exact:true}).count(),1);
    const other=await create(c,'LOST','lavenderscarf knitted',{category_id:'4',location_id:'36',description:run+' lavenderscarf knitted wool.'});await go(p.page,'item.html?id='+other);await p.page.getByRole('link',{name:'I found this item',exact:true}).click();await p.page.waitForURL('**/report.html?type=found&from='+other);await p.page.waitForSelector('body[data-ready="true"]');
    assert.equal(await p.page.inputValue('#r-category'),'4');assert.equal(await p.page.inputValue('#r-location'),'36');assert.ok(await p.page.locator('#report-context').isVisible());assert.equal(await p.page.locator('#lost-evidence').isHidden(),true);assert.match(await p.page.locator('#report-intro').innerText(),/where you found it/);
-   await p.context.close();const s=await browserPage(BM);await go(s.page,'item.html?id='+f);assert.equal(await s.page.getByRole('link',{name:'Open in Review Queue',exact:true}).getAttribute('href'),'/ReFind_0.2.0_Test/admin.html?tab=reports&report='+f);await s.context.close();
+   await p.context.close();const s=await browserPage(BM);await go(s.page,'item.html?id='+f);assert.equal(await s.page.getByRole('link',{name:'Open in Review Queue',exact:true}).getAttribute('href'),qaRuntime.basePath+'admin.html?tab=reports&report='+f);await s.context.close();
   });
   await test('F05/C05/C10 report form blocks future dates in the browser and shows a success message after saving',async()=>{
    const p=await browserPage(B);await go(p.page,'report.html?type=lost');assert.equal(await p.page.getAttribute('#r-date','max'),today);await p.page.click('[data-report-type="FOUND"]');assert.ok(p.page.url().includes('type=found'));
@@ -199,11 +199,11 @@ async function go(page,route){await page.goto(base+route);await page.waitForSele
    await p.context.close();
   });
   await test('R03/A10/C07/F11/R06 BM confirmation only for final actions, status placeholder, clear labels and per-tab titles',async()=>{
-   const p=await browserPage(BM);await go(p.page,'admin.html?tab=handover&handover='+ctx.pickup);assert.equal(await p.page.title(),'Handover — ReFind');
+   const p=await browserPage(BM);await go(p.page,'admin.html?tab=handover&handover='+ctx.pickup);assert.equal(await p.page.title(),'Handover · ReFind');
    await p.page.click('[data-bm-action="reschedule"]');assert.equal(await p.page.locator('#operation-confirm').isVisible(),false);await p.page.fill('#operation-note','PRIVATE unchanged reschedule attempt.');const before=await pickup(bm,ctx.pickup);await p.page.click('#operation-submit');assert.match(await p.page.locator('[data-bm-error="scheduled_at"]').innerText(),/different/);assert.equal((await pickup(bm,ctx.pickup)).revision,before.revision);await p.page.keyboard.press('Escape');
    await p.page.click('[data-bm-action="cancel_schedule"]');assert.equal(await p.page.locator('#operation-dismiss').innerText(),'Keep appointment');await p.page.keyboard.press('Escape');
    await p.page.click('[data-bm-action="release"]');assert.ok(await p.page.locator('#operation-confirm').isVisible());assert.equal(await p.page.locator('#operation-submit').isDisabled(),true);await p.page.keyboard.press('Escape');
-   const f=await create(b,'FOUND','statusplaceholder item',{category_id:'8',location_id:'35'});await go(p.page,'admin.html?tab=reports&report='+f);assert.equal(await p.page.title(),'Report review — ReFind');await p.page.click('[data-bm-action="status"]');assert.equal(await p.page.inputValue('#operation-status'),'');assert.ok((await p.page.locator('#operation-status').innerText()).includes('Never retrieved (final)'));
+   const f=await create(b,'FOUND','statusplaceholder item',{category_id:'8',location_id:'35'});await go(p.page,'admin.html?tab=reports&report='+f);assert.equal(await p.page.title(),'Report review · ReFind');await p.page.click('[data-bm-action="status"]');assert.equal(await p.page.inputValue('#operation-status'),'');assert.ok((await p.page.locator('#operation-status').innerText()).includes('Never retrieved (final)'));
    await p.page.selectOption('#operation-status','UNCLAIMED_CLOSED');assert.ok(await p.page.locator('#operation-confirm').isVisible());assert.ok(await p.page.locator('#operation-status-warning').isVisible());await p.page.selectOption('#operation-status','UNDER_REVIEW');assert.equal(await p.page.locator('#operation-confirm').isVisible(),false);await p.page.keyboard.press('Escape');
    assert.equal(await p.page.locator('[data-main-nav="handover"]').count(),0);
    await p.context.close();
@@ -232,8 +232,8 @@ async function go(page,route){await page.goto(base+route);await page.waitForSele
    await p.page.locator('.bm-queue-card').first().click();await p.page.waitForSelector('[data-detail-report-id]');await p.page.click('#bm-back');await p.page.waitForFunction(()=>document.querySelector('.bm-layout').dataset.mobileView==='queue');assert.ok(p.page.url().includes('admin.html'));
    await p.context.close();
   });
-  await test('Copy and version: 0.2.5 footer, History in Student nav, no developer jargon on key pages',async()=>{
-   const p=await browserPage(A);for(const route of ['index.html','browse.html','history.html','notifications.html','my-reports.html','profile.html','settings.html']){await go(p.page,route);const body=await p.page.locator('body').innerText();assert.match(body,/ReFind 0\.2\.5/,route);for(const jargon of ['UTF-8','readonly','transaction commits','saved to the database','setup receipt','not UMN SSO'])assert.ok(!body.includes(jargon),route+' '+jargon);}
+  await test('Copy and version: Settings version, no repeated footer, History and clear page copy',async()=>{
+   const p=await browserPage(A);for(const route of ['index.html','browse.html','history.html','notifications.html','my-reports.html','profile.html','settings.html']){await go(p.page,route);const body=await p.page.locator('body').innerText();assert.equal(await p.page.locator('footer.footer').count(),0,route);if(route==='settings.html')assert.equal(await p.page.locator('.app-version').innerText(),'Version 0.2.5');for(const jargon of ['UTF-8','readonly','transaction commits','saved to the database','setup receipt','not UMN SSO'])assert.ok(!body.includes(jargon),route+' '+jargon);}
    assert.ok(await p.page.locator('[data-main-nav="history"]').isVisible()||await p.page.locator('#nav-toggle').isVisible());
    await go(p.page,'history.html');assert.match(await p.page.locator('#result-count').innerText(),/closed report/);
    for(const[width,height]of[[390,844],[768,1024],[1440,900]]){await p.page.setViewportSize({width,height});for(const route of ['notifications.html','my-reports.html?tab=claims','history.html']){await go(p.page,route);assert.ok(await p.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'overflow '+width+' '+route);}}

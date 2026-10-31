@@ -14,10 +14,40 @@ window.ReFindShell = (() => {
   document.addEventListener('focusin',updateViewport);
   document.addEventListener('focusout',()=>requestAnimationFrame(updateViewport));
   updateViewport();
+  const accountMenu=document.getElementById('account-menu'),accountToggle=document.getElementById('account-toggle');
+  const accountSlot=document.createComment('Inline account menu position');
+  accountMenu?.before(accountSlot);
+  function placeAccount(){
+    if(!accountMenu)return;
+    const floating=!mobile.matches;
+    if(floating&&accountMenu.parentElement!==document.body)document.body.append(accountMenu);
+    else if(!floating&&accountMenu.previousSibling!==accountSlot)accountSlot.after(accountMenu);
+    accountMenu.classList.toggle('account-menu--floating',floating);
+    if(!floating){accountMenu.style.removeProperty('left');accountMenu.style.removeProperty('top');accountMenu.style.removeProperty('max-height');}
+  }
+  function positionAccount(){
+    if(accountMenu&&!accountMenu.hidden&&!mobile.matches)window.ReFindTheme.positionHeaderPopup(accountMenu,accountToggle);
+  }
+  let popupFrame=0;
+  function positionPopups(){
+    if(popupFrame)return;
+    popupFrame=requestAnimationFrame(()=>{
+      popupFrame=0;positionAccount();
+      const appearance=document.getElementById('appearance-panel'),toggle=document.getElementById('appearance-toggle');
+      if(appearance?.open&&toggle)window.ReFindTheme.positionHeaderPopup(appearance,toggle);
+    });
+  }
+  window.addEventListener('resize',positionPopups);
+  window.addEventListener('scroll',positionPopups,{passive:true});
+  window.visualViewport?.addEventListener('resize',positionPopups);
+  window.visualViewport?.addEventListener('scroll',positionPopups);
   function setAccount(open, focus = false) {
+    placeAccount();
+    if(open&&document.getElementById('appearance-panel')?.open)document.getElementById('appearance-panel').close();
     $('#account-menu').prop('hidden', !open);
     $('#account-toggle').attr('aria-expanded', String(open));
-    if (focus) $('#account-toggle').trigger('focus');
+    if(open)positionAccount();
+    if (focus) accountToggle?.focus({preventScroll:true});
   }
   function setNavigation(open, focus = false) {
     $('#nav-content').prop('hidden', mobile.matches && !open);
@@ -26,9 +56,17 @@ window.ReFindShell = (() => {
     if (!open) setAccount(false);
     if (focus) $('#nav-toggle').trigger('focus');
   }
+  const headerObserver=new ResizeObserver(entries=>{const height=entries[0].borderBoxSize?.[0]?.blockSize;if(height){document.documentElement.style.setProperty('--app-header-height',height+'px');positionPopups();}});
+  const appHeader=document.querySelector('.app-header');if(appHeader)headerObserver.observe(appHeader);
   function initials(name) { return name.trim().split(/\s+/u).slice(0,2).map(part => Array.from(part)[0] || '').join('').toUpperCase(); }
+  function renderAvatar(element,name,url){
+    const box=$(element).empty().addClass('user-avatar').attr('aria-hidden','true').append($('<span>').text(name?initials(name):''));
+    if(url)box.append($('<img>').attr({src:url,alt:'',width:70,height:70,decoding:'async'}).on('error',function(){$(this).remove();}));
+  }
+  function identity(name,url){return $('<span>').addClass('person-identity').append($('<span>').each(function(){renderAvatar(this,name,url);}),$('<span>').text(name));}
   function updateUser(user) {
     app.state.user = user;
+    if(!user)setAccount(false);
     const bm = user?.role === 'BUILDING_MANAGEMENT';
     const home = app.base + (bm ? 'admin.html?tab=claims' : 'index.html');
     $('#nav-brand,#nav-home').attr('href', home);
@@ -40,10 +78,10 @@ window.ReFindShell = (() => {
     $('[data-student-nav]').prop('hidden',!user||bm);
     $('[data-shell-user-name]').text(user?.name || '');
     $('[data-shell-role]').text(bm ? 'Building Management' : 'Student');
-    $('[data-account-initials]').text(user ? initials(user.name) : '');
+    $('[data-account-initials]').each(function(){renderAvatar(this,user?.name||'',user?.avatar_url);});
     const page = document.body.dataset.page;
     $('#nav-home').attr('aria-current', page === 'home' || page === 'bm' ? 'page' : null);
-    $('[data-main-nav]').each(function(){const current=$(this).attr('data-main-nav');$(this).attr('aria-current',current===page||(page==='item'||page==='claim')&&current==='browse'?'page':null);});
+    $('[data-main-nav]').each(function(){const current=$(this).attr('data-main-nav');$(this).attr('aria-current',current===page||(page==='item'||page==='claim')&&current===(page==='item'&&new URLSearchParams(location.search).get('origin')==='notifications'?'notifications':'browse')?'page':null);});
     $('[data-account-nav]').each(function () {
       const active = $(this).attr('data-account-nav') === page;
       $(this).attr('aria-current', active ? 'page' : null);
@@ -73,6 +111,16 @@ window.ReFindShell = (() => {
     $('#account-toggle').on('click', () => setAccount($('#account-toggle').attr('aria-expanded') !== 'true'));
     $('#account-toggle').on('keydown', event => {
       if (event.key === 'ArrowDown') { event.preventDefault(); setAccount(true); $('#account-menu a').first().trigger('focus'); }
+      else if(event.key==='Tab'&&!event.shiftKey&&!mobile.matches&&!accountMenu.hidden){event.preventDefault();$('#account-menu a').first().trigger('focus');}
+    });
+    $('#account-menu').on('keydown',event=>{
+      if(event.key!=='Tab'||mobile.matches)return;
+      const actions=Array.from(accountMenu.querySelectorAll('a,button')).filter(e=>!e.disabled&&!e.hidden);
+      if(event.shiftKey&&document.activeElement===actions[0]){event.preventDefault();accountToggle.focus({preventScroll:true});}
+      else if(!event.shiftKey&&document.activeElement===actions.at(-1)){event.preventDefault();setAccount(false);document.getElementById('appearance-toggle').focus({preventScroll:true});}
+    });
+    $(document).on('focusin',event=>{
+      if(!accountMenu.hidden&&!accountMenu.contains(event.target)&&!accountToggle.contains(event.target))setAccount(false);
     });
     $(document).on('keydown', event => {
       if (event.key !== 'Escape') return;
@@ -80,13 +128,16 @@ window.ReFindShell = (() => {
       else if (mobile.matches && !$('#nav-content').prop('hidden')) { event.preventDefault(); setNavigation(false, true); }
     });
     $(document).on('click', event => {
-      if (!$(event.target).closest('#account-disclosure').length && !$('#account-menu').prop('hidden')) {
-        const focused = $('#account-menu')[0]?.contains(document.activeElement);
-        setAccount(false, focused);
+      if (!$(event.target).closest('#account-disclosure,#account-menu').length && !$('#account-menu').prop('hidden')) {
+        setAccount(false);
       }
       if (mobile.matches && !$(event.target).closest('.app-nav').length && !$('#nav-content').prop('hidden')) setNavigation(false);
     });
-    mobile.addEventListener('change', () => setNavigation(false));
+    mobile.addEventListener('change', () => {
+      const focused=accountMenu.contains(document.activeElement)||document.activeElement===accountToggle;
+      setNavigation(false);placeAccount();
+      if(focused)document.getElementById(mobile.matches?'nav-toggle':'account-toggle').focus({preventScroll:true});
+    });
     $('[data-logout]').on('click', async function () {
       const buttons = $('[data-logout]').prop('disabled',true);
       $(this).text('Logging out…');
@@ -108,5 +159,5 @@ window.ReFindShell = (() => {
   }));
   // Handle the rejected bootstrap even when a page has no additional controller.
   ready.catch(() => {});
-  return {ready, updateUser, refreshUnread, setUnread, reportError, setAccount, setNavigation};
+  return {ready, renderAvatar, identity, updateUser, refreshUnread, setUnread, reportError, setAccount, setNavigation};
 })();

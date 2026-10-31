@@ -42,13 +42,21 @@
     if(event.key===motionKey||event.key===null)motion=event.key===null?true:event.newValue!=='off';
     if(event.key===themeKey||event.key===motionKey||event.key===null)render();
   });
+  function positionHeaderPopup(panel,toggle){
+    const viewport=window.visualViewport,offsetX=viewport?.offsetLeft||0,offsetY=viewport?.offsetTop||0;
+    const availableWidth=viewport?.width||innerWidth,availableHeight=viewport?.height||innerHeight;
+    const box=toggle.getBoundingClientRect(),header=document.querySelector('.app-header')?.getBoundingClientRect();
+    const width=panel.getBoundingClientRect().width;
+    const top=Math.max(offsetY,box.bottom,header?.bottom||0)+12;
+    panel.style.left=Math.max(offsetX+18,Math.min(offsetX+availableWidth-width-18,box.right-width))+'px';
+    panel.style.top=top+'px';
+    panel.style.maxHeight=Math.max(44,offsetY+availableHeight-top-16)+'px';
+  }
   document.addEventListener('DOMContentLoaded',()=>{
     const toggle=document.getElementById('appearance-toggle'),panel=document.getElementById('appearance-panel');
     function position(){
       if(!panel?.open||!toggle)return;
-      const box=toggle.getBoundingClientRect(),width=panel.getBoundingClientRect().width;
-      panel.style.left=Math.max(18,Math.min(innerWidth-width-18,box.right-width))+'px';
-      panel.style.top=Math.max(8,box.bottom+10)+'px';
+      positionHeaderPopup(panel,toggle);
     }
     function close(focus=false){if(!panel?.open)return;panel.close();toggle.setAttribute('aria-expanded','false');if(focus)toggle.focus({preventScroll:true});}
     function open(){
@@ -70,5 +78,5 @@
     document.querySelectorAll('[data-motion-choice]').forEach(input=>input.addEventListener('change',()=>setMotion(input.checked)));
     render();
   });
-  window.ReFindTheme=Object.freeze({getPreference:()=>preference||'system',effective,setPreference,getMotion:()=>motion,motionEffective,setMotion});
+  window.ReFindTheme=Object.freeze({positionHeaderPopup,getPreference:()=>preference||'system',effective,setPreference,getMotion:()=>motion,motionEffective,setMotion});
 })();

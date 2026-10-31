@@ -20,9 +20,9 @@ try{
   'scheduled_pickup_timestamp'=>"SELECT handover_id FROM handovers WHERE (handover_status='SCHEDULED' AND scheduled_at IS NULL) OR (handover_status='PENDING' AND scheduled_at IS NOT NULL)",
   'active_claim_not_assigned'=>"SELECT c.claim_id FROM claims c JOIN items i ON i.item_id=c.item_id JOIN item_statuses s ON s.status_id=i.status_id WHERE c.claim_status IN ('PENDING','NEED_MORE_INFO') AND s.status_code IN ('HANDOVER','RESOLVED','UNCLAIMED_CLOSED')",
  ];$checks=[];foreach($queries as $name=>$query)$checks[$name]=!rows($query);
- $records=rows("SELECT file_path,IF(photo_kind='ITEM','items','evidence') AS collection FROM item_photos UNION ALL SELECT file_path,'claims' FROM claim_photos");$missing=[];$invalid=[];$references=[];
+ $records=rows("SELECT file_path,IF(photo_kind='ITEM','items','evidence') AS collection FROM item_photos UNION ALL SELECT file_path,'claims' FROM claim_photos UNION ALL SELECT avatar_path,'avatars' FROM users WHERE avatar_path IS NOT NULL");$missing=[];$invalid=[];$references=[];
  foreach($records as $r){$references[]=$r['file_path'];if(!preg_match('~^'.$r['collection'].'/[a-f0-9]{32}\.(jpg|png|webp)$~D',$r['file_path']))$invalid[]=$r['file_path'];$path=media_path($r['file_path']);if(!$path||!is_file($path))$missing[]=$r['file_path'];}
- $orphan=[];foreach(['items','evidence','claims'] as $collection)foreach(glob(storage_dir($collection).'/*')?:[] as $p)if(is_file($p)&&!in_array($collection.'/'.basename($p),$references,true))$orphan[]=$collection.'/'.basename($p);
+ $orphan=[];foreach(['items','evidence','claims','avatars'] as $collection)foreach(glob(storage_dir($collection).'/*')?:[] as $p)if(is_file($p)&&!in_array($collection.'/'.basename($p),$references,true))$orphan[]=$collection.'/'.basename($p);
  $checks['media_collection_paths']=!$invalid;$checks['media_exists']=!$missing;$checks['no_orphan_media']=!$orphan;
  echo json_encode(['database'=>app_config()['db_name'],'passed'=>!in_array(false,$checks,true),'checks'=>$checks,'missing'=>$missing,'orphan'=>$orphan,'invalid'=>$invalid],JSON_PRETTY_PRINT).PHP_EOL;
  exit(in_array(false,$checks,true)?1:0);

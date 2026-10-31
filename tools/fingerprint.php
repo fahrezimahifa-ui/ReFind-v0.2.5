@@ -14,7 +14,7 @@ try {
     }
     db()->rollback();
     $files = [];
-    foreach (['items', 'evidence', 'claims'] as $collection) {
+    foreach (['items', 'evidence', 'claims', 'avatars'] as $collection) {
         foreach (glob(app_root() . '/storage/' . $collection . '/*') ?: [] as $path) {
             if (is_file($path)) $files[$collection . '/' . basename($path)] = hash_file('sha256', $path);
         }

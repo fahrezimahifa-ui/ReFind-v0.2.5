@@ -25,8 +25,8 @@ if($resource==='claims'){
     $from=' FROM claims c JOIN items i ON i.item_id=c.item_id JOIN users u ON u.user_id=c.claimant_user_id LEFT JOIN campus_locations l ON l.location_id=i.location_id';
     $clause=$where?' WHERE '.implode(' AND ',$where):'';
     $total=(int)row('SELECT COUNT(*) AS n'.$from.$clause,$values)['n'];
-    $claims=rows('SELECT c.claim_id,c.item_id,c.claim_status,c.created_at,c.updated_at,i.title,u.full_name AS claimant_name,(SELECT COUNT(*) FROM claim_photos p WHERE p.claim_id=c.claim_id) AS proof_count'.$from.$clause.' ORDER BY c.updated_at DESC,c.claim_id DESC LIMIT ? OFFSET ?',array_merge($values,[$limit,$offset]));
-    foreach($claims as &$claim){$claim['claim_id']=(string)$claim['claim_id'];$claim['item_id']=(string)$claim['item_id'];$claim['created_at']=utc_iso($claim['created_at']);$claim['updated_at']=utc_iso($claim['updated_at']);}unset($claim);
+    $claims=rows('SELECT c.claim_id,c.item_id,c.claim_status,c.created_at,c.updated_at,i.title,u.full_name AS claimant_name,u.avatar_path AS claimant_avatar_path,(SELECT COUNT(*) FROM claim_photos p WHERE p.claim_id=c.claim_id) AS proof_count'.$from.$clause.' ORDER BY c.updated_at DESC,c.claim_id DESC LIMIT ? OFFSET ?',array_merge($values,[$limit,$offset]));
+    foreach($claims as &$claim){$claim['claimant_avatar_url']=avatar_url($claim['claimant_avatar_path']);unset($claim['claimant_avatar_path']);$claim['claim_id']=(string)$claim['claim_id'];$claim['item_id']=(string)$claim['item_id'];$claim['created_at']=utc_iso($claim['created_at']);$claim['updated_at']=utc_iso($claim['updated_at']);}unset($claim);
     $counts=array_column(rows('SELECT claim_status,COUNT(*) AS n FROM claims GROUP BY claim_status'),'n','claim_status');
     json_response(['claims'=>$claims,'counts'=>$counts,'total'=>$total,'page'=>$page,'pages'=>max(1,(int)ceil($total/$limit))]);
 }
@@ -34,7 +34,7 @@ if($status!==''&&$status!=='all'){if(!row('SELECT status_id FROM item_statuses W
 if(isset($_GET['type'])&&$_GET['type']!==''){$type=strtoupper(text($_GET,'type',10));if(!in_array($type,['LOST','FOUND'],true))fail('Invalid report type.',400);$where[]='v.item_type=?';$values[]=$type;}
 if($search!==''){$where[]="LOCATE(?,CONCAT_WS(' ',v.title,v.category_name,v.location_name,v.location_detail,v.floor_name,v.reporter_name))>0";$values[]=$search;}
 $clause=$where?' WHERE '.implode(' AND ',$where):'';$total=(int)row('SELECT COUNT(*) AS n FROM v_items_overview v'.$clause,$values)['n'];
-$reports=rows('SELECT '.public_columns().' FROM v_items_overview v'.$clause.' ORDER BY v.created_at DESC,v.item_id DESC LIMIT ? OFFSET ?',array_merge($values,[$limit,$offset]));
+$reports=rows('SELECT '.public_columns().',u.avatar_path AS reporter_avatar_path FROM v_items_overview v JOIN users u ON u.user_id=v.reporter_user_id'.$clause.' ORDER BY v.created_at DESC,v.item_id DESC LIMIT ? OFFSET ?',array_merge($values,[$limit,$offset]));
 $reports=safe_items($reports,$user);
 foreach($reports as &$report){$raw=find_item((int)$report['item_id']);$report['allowed_statuses']=allowed_manual_statuses($raw);$report['revision']=item_revision($raw);}unset($report);
 json_response(['reports'=>$reports,'total'=>$total,'page'=>$page,'pages'=>max(1,(int)ceil($total/$limit))]);

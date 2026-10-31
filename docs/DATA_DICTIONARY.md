@@ -27,6 +27,9 @@ Parent dapat memiliki nol children. `1:M` tidak mewajibkan minimal satu child. F
 | `is_active` | — | No | `tinyint(1) NOT NULL DEFAULT 1` |
 | `created_at` | — | No | `datetime NOT NULL DEFAULT current_timestamp()` |
 | `updated_at` | — | No | `datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()` |
+| `avatar_path` | — | Yes | `varchar(80) DEFAULT NULL` |
+
+The field stores a private random avatar reference. APIs return an authenticated URL, never the storage path. See [migration and verification](UI_PROFILE_ENHANCEMENTS.md).
 
 - PK: `user_id`.
 - UNIQUE `uq_user_email`: (email).
