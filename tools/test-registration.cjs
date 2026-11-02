@@ -12,15 +12,26 @@ fs.mkdirSync(out, {recursive: true});
 const receipt = path.join(out, 'registration-results.json');
 assert.ok(!fs.existsSync(receipt), 'Refuse to overwrite registration evidence');
 const checks = [], browserErrors = [];
-let browser, sequence = 0, begun = false;
+let browser, sequence = 0, begun = false, activeCheck = '', failure;
 function control(action) {
   execFileSync(qa.php, [path.join(qa.target, 'tools/registration-fixture.php'), action, run], {stdio: ['ignore', 'pipe', 'pipe']});
 }
 function q(query, values = []) {
   return JSON.parse(execFileSync(qa.php, [path.join(qa.target, 'tools/b02-fixture.php')], {input: JSON.stringify({action: 'query', query, values}), encoding: 'utf8'})).rows;
 }
-function save(status = 'RUNNING') { fs.writeFileSync(receipt, JSON.stringify({run, status, scope: 'Owned synthetic QA only; no main requests', theme: process.env.REFIND_THEME, checks, browserErrors}, null, 2) + '\n'); }
-async function check(name, fn) { await fn(); checks.push(name); save(); console.log('PASS ' + name); }
+function save(status = 'RUNNING') { fs.writeFileSync(receipt, JSON.stringify({run, status, scope: 'Owned synthetic QA only; no main requests', theme: process.env.REFIND_THEME, checks, browserErrors, failure}, null, 2) + '\n'); }
+async function check(name, fn) { activeCheck=name; await fn(); checks.push(name); save(); console.log('PASS ' + name); }
+async function availability(enabled) {
+  control(enabled?'enable':'disable');
+  // Allow the server's normal configuration cache to observe a CLI-written override.
+  const deadline=Date.now()+5000;
+  do {
+    const session=await new Session().init();
+    if((await session.call('api/session.php')).data.registration_enabled===enabled)return;
+    await new Promise(resolve=>setTimeout(resolve,100));
+  }while(Date.now()<deadline);
+  assert.fail('QA server did not observe its registration configuration');
+}
 function payload(extra = {}) {
   return {name: 'Synthetic Registration Student', email: prefix + (++sequence) + '@refind.test', password: 'Synthetic! ' + crypto.randomBytes(8).toString('hex'), ...extra};
 }
@@ -221,13 +232,13 @@ async function cleanupUsers() {
       } finally { await context.close(); }
     });
     await check('Disabled registration is hidden and unavailable; authenticated pages redirect safely', async () => {
-      control('disable');
+      await availability(false);
       try {
         const s=await new Session().init(), before=count(); assert.equal((await s.call('api/session.php')).data.registration_enabled,false);
         assert.equal((await s.register(payload())).status,403); assert.equal(count(),before);
         const r=await s.call('register.html'); assert.equal(r.status,302); assert.equal(r.headers.get('location'),qa.basePath+'login.html');
         const login=await browserPage(s,'login.html'); assert.equal(await login.page.locator('#registration-link').isVisible(),false); await login.context.close();
-      } finally { control('enable'); }
+      } finally { await availability(true); }
       const bm=await new Session().login(accounts.find(a=>a.role==='BUILDING_MANAGEMENT'));
       assert.equal((await bm.call('register.html')).headers.get('location'),qa.basePath+'admin.html');
     });
@@ -241,4 +252,8 @@ async function cleanupUsers() {
       }
     }
   }
-})().catch(()=>{ save('FAIL'); console.error('Registration QA failed; inspect the synthetic receipt. No form contents recorded.'); process.exitCode=1; });
+})().catch(error=>{
+  const primitive=value=>typeof value==='number'||typeof value==='boolean'?value:undefined;
+  failure={check:activeCheck,type:error.name,actual:primitive(error.actual),expected:primitive(error.expected),line:String(error.stack).match(/test-registration\.cjs:(\d+):\d+/)?.[1]};
+  save('FAIL'); console.error('Registration QA failed: '+JSON.stringify(failure)+'. No form contents recorded.'); process.exitCode=1;
+});

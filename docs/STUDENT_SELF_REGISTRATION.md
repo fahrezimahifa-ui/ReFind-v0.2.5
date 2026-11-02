@@ -91,6 +91,8 @@ The existing release-readiness workflow runs on this feature branch with pinned 
 
 Changes comprise the registration application module/API, shared authentication-session helper, validated configuration/session capability, page gateway/route/rewrite, Sign Up UI/login link/auth styling, guarded QA controls, offline/browser/integration suites, CI wiring and current developer guides. Existing workflow modules, database schema, dependency lockfiles and historical reports are unchanged.
 
+The first remote history scan flagged the same public, synthetic validation password twice on one test line. Its exact file and complete line are narrowly allowlisted; real credentials, other test values and all other source/history remain scanned. The existing checker version is unchanged. This is feature-fixture handling, not an import from either security branch.
+
 | Check executed locally | Result |
 |---|---|
 | PHP syntax | PASS, 45 files |
