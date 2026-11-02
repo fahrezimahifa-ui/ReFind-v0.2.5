@@ -18,7 +18,7 @@ def prepare(root):
     folder.mkdir()
     ca='[req]\ndistinguished_name=dn\nx509_extensions=ca\nprompt=no\n[dn]\nCN=ReFind isolated QA CA\n[ca]\nbasicConstraints=critical,CA:TRUE\nkeyUsage=critical,keyCertSign,cRLSign\n'
     leaf='[req]\ndistinguished_name=dn\nprompt=no\n[dn]\nCN=localhost\n[server]\nbasicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\nsubjectAltName=DNS:localhost,IP:127.0.0.1,IP:::1\n'
-    (folder/'ca.cnf').write_text(ca);(folder/'server.cnf').write_text(leaf)
+    (folder/'ca.cnf').write_text(ca, encoding='utf-8');(folder/'server.cnf').write_text(leaf, encoding='utf-8')
     openssl=str(root/'apache/Apache24/bin/openssl.exe')
     commands=[
         ['req','-x509','-newkey','rsa:2048','-noenc','-sha256','-days','7','-config',str(folder/'ca.cnf'),'-keyout',str(folder/'ca.key'),'-out',str(folder/'ca.pem')],
@@ -40,21 +40,21 @@ SSLCipherSuite HIGH:!aNULL:!MD5:!3DES
  SSLCertificateKeyFile "{(folder/'server.key').as_posix()}"
 </VirtualHost>
 """
-    (root/'conf/tls.conf').write_text(config)
+    (root/'conf/tls.conf').write_text(config, encoding='utf-8')
 
 
 def run(root,source):
-    state=json.loads((root/'.native-state.local.json').read_text())
+    state=json.loads((root/'.native-state.local.json').read_text(encoding='utf-8'))
     # Reuse whichever explicitly isolated database the QA config currently selects.
     import base64,re
     target=root/'www/ReFind_0.2.3'
-    encoded=re.search("base64_decode\\('([^']+)'\\)",(target/'app/config.local.php').read_text())[1]
+    encoded=re.search("base64_decode\\('([^']+)'\\)",(target/'app/config.local.php').read_text(encoding='utf-8'))[1]
     port=json.loads(base64.b64decode(encoded))['db_port']
     if port not in [3312,3313]:raise RuntimeError('Unexpected synthetic DB endpoint')
     qa.free_port(8086);qa.free_port(8446)
     p=root/'conf/httpd.conf'
     include='Include "'+(root/'conf/tls.conf').as_posix()+'"'
-    if include not in p.read_text():p.write_text(p.read_text()+'\n'+include+'\n')
+    if include not in p.read_text(encoding='utf-8'):p.write_text(p.read_text(encoding='utf-8')+'\n'+include+'\n', encoding='utf-8')
     result=subprocess.run([str(root/'apache/Apache24/bin/httpd.exe'),'-t','-f',str(p)],capture_output=True,text=True)
     if result.returncode:raise RuntimeError('Owned TLS configuration syntax failed')
     db=qa.start_db(root,state,lts=port==3313)
@@ -85,12 +85,12 @@ console.log(JSON.stringify({passed:true,protocol:good.protocol,checks}));
         result=subprocess.run([str(root/'node/node-v24.22.2-win-x64/node.exe'),'-e',script,str(root/'tls/ca.pem')],
             capture_output=True,text=True,timeout=30)
         if result.returncode:raise RuntimeError('TLS verification failed: '+result.stderr)
-        (root/'logs/native-tls-result.json').write_text(result.stdout)
+        (root/'logs/native-tls-result.json').write_text(result.stdout, encoding='utf-8')
         print(result.stdout,flush=True)
         # Preserve only non-sensitive native module identities; no certificate private keys.
         command="Get-Process -Id "+str(apache.pid)+" | ForEach-Object { $_.Modules | Where-Object { $_.ModuleName -match 'libcrypto|libssl|vcruntime' } | ForEach-Object { [pscustomobject]@{Name=$_.ModuleName;Path=$_.FileName;Version=$_.FileVersionInfo.FileVersion} } } | ConvertTo-Json"
         metadata=subprocess.check_output(['powershell','-NoProfile','-Command',command]).decode()
-        (root/'logs/tls-native-modules.json').write_text(metadata)
+        (root/'logs/tls-native-modules.json').write_text(metadata, encoding='utf-8')
         print(metadata,flush=True)
     finally:
         if apache and apache.poll() is None:

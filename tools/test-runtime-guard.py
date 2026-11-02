@@ -38,8 +38,8 @@ class NativeIdentityTests(unittest.TestCase):
     def check(self, config=None, marker=None, env=None, full=False):
         c = self.config | (config or {})
         encoded = base64.b64encode(json.dumps(c).encode()).decode()
-        (self.target/'app/config.local.php').write_text("<?php return json_decode(base64_decode('"+encoded+"'),true);")
-        (self.qa/'.refind-runtime-qa.json').write_text(json.dumps(self.marker | (marker or {})))
+        (self.target/'app/config.local.php').write_text("<?php return json_decode(base64_decode('"+encoded+"'),true);", encoding='utf-8')
+        (self.qa/'.refind-runtime-qa.json').write_text(json.dumps(self.marker | (marker or {})), encoding='utf-8')
         code = 'require $argv[1]."/app/config.php"; require $argv[2]."/tools/qa-guard.php"; require $argv[2]."/tools/runtime-qa-guard.php"; ' + ('assert_runtime_upgrade_installation' if full else 'runtime_qa_identity') + '($argv[1]); echo "accepted";'
         return subprocess.run([PHP,'-r',code,str(self.target),str(ROOT)],env=self.env | (env or {}),capture_output=True)
 
@@ -70,10 +70,10 @@ class NativeIdentityTests(unittest.TestCase):
         legacy=self.parent/'ReFind_0.2.0_Test'
         (legacy/'app').mkdir(parents=True)
         shutil.copy2(ROOT/'app/config.php',legacy/'app/config.php')
-        (legacy/'.refind-b02-test.json').write_text(json.dumps({'source':str(self.source)}))
+        (legacy/'.refind-b02-test.json').write_text(json.dumps({'source':str(self.source)}), encoding='utf-8')
         c=self.config | {'base_path':'/ReFind_0.2.0_Test/','session_name':'refind_020_test'}
         encoded=base64.b64encode(json.dumps(c).encode()).decode()
-        (legacy/'app/config.local.php').write_text("<?php return json_decode(base64_decode('"+encoded+"'),true);")
+        (legacy/'app/config.local.php').write_text("<?php return json_decode(base64_decode('"+encoded+"'),true);", encoding='utf-8')
         code='require $argv[1]."/app/config.php";require $argv[2]."/tools/qa-guard.php";assert_qa_installation($argv[1]);'
         for profile,accepted in [('',True),('runtime-upgarde',False)]:
             result=subprocess.run([PHP,'-r',code,str(legacy),str(ROOT)],env=self.env|{'REFIND_TEST_PROFILE':profile},capture_output=True)

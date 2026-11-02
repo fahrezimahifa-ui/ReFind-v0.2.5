@@ -38,7 +38,7 @@ def main():
         result={'passed':True,'legacy_bcrypt_cost10_verified':True,'legacy_hash_unchanged':True,
                 'legacy_session_id_length':len(sid),'strict_session_reader_preserved_id':True,
                 'session_payload_unicode_null_and_auth_identical':True,'real_sessions_or_hashes_read':False}
-    (root/'logs/php-legacy-compatibility.json').write_text(json.dumps(result,indent=2)+'\n')
+    (root/'logs/php-legacy-compatibility.json').write_text(json.dumps(result,indent=2)+'\n', encoding='utf-8')
     print(json.dumps(result))
 
 if __name__=='__main__':main()

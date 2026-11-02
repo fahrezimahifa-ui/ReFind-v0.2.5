@@ -23,7 +23,7 @@ def row_digest(rows):
 
 
 def fingerprints(root,state,lts=False):
-    contract=json.loads((root/'www/ReFind_0.2.3/docs/schema-contract.json').read_text())
+    contract=json.loads((root/'www/ReFind_0.2.3/docs/schema-contract.json').read_text(encoding='utf-8'))
     result={}
     for table, definition in contract['tables'].items():
         if not table.replace('_','').isalnum():raise RuntimeError('Unexpected table identifier')
@@ -46,7 +46,7 @@ def checks(root,source,target):
 
 def capture(root,marker,source,target):
     qa.free_port(8086)  # All HTTP writers must be stopped during the matched snapshot.
-    state=json.loads((root/'.native-state.local.json').read_text())
+    state=json.loads((root/'.native-state.local.json').read_text(encoding='utf-8'))
     qa.configure(root,3312,state['password']);qa.sync_harness(root,marker,source,target)
     process=qa.start_db(root,state)
     try:
@@ -78,7 +78,7 @@ def capture(root,marker,source,target):
             'database':qa.DB_NAME,'source_sha256':marker['source_sha256'],
             'artifacts':{p.name:qa.prep.sha256(p) for p in [dump,archive]},
             'runtime_files':files,'tables':fingerprints(root,state)}
-        (directory/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+        (directory/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n', encoding='utf-8')
         print(json.dumps({'backup':str(directory),'tables':len(receipt['tables']),
             'rows':sum(v['rows'] for v in receipt['tables'].values()),'runtime_files':len(files)}),flush=True)
         return directory
@@ -90,7 +90,7 @@ def verified_backup(root,directory):
     directory=directory.resolve()
     if directory.parent!=root/'backups':raise RuntimeError('Only this owned synthetic backup is accepted')
     qa.prep.reject_redirects(directory/'receipt.json')
-    receipt=json.loads((directory/'receipt.json').read_text())
+    receipt=json.loads((directory/'receipt.json').read_text(encoding='utf-8'))
     if receipt.get('synthetic_only') is not True or receipt.get('source_root')!=str(root) or receipt.get('writers_paused') is not True or receipt.get('database')!=qa.DB_NAME:
         raise RuntimeError('Foreign backup refused')
     if set(receipt['artifacts'])!={'database.sql','storage-config.zip'}:raise RuntimeError('Unexpected backup artifact set')
@@ -115,7 +115,7 @@ def import_dump(root,state,directory,lts=False):
 def migrate_lts(root,marker,source,target,directory,verify_only=False):
     receipt=verified_backup(root,directory)
     if not (root/'db-lts/data').exists():qa.initialize(root,marker,source,target,lts=True)
-    state=json.loads((root/'.native-state.local.json').read_text())
+    state=json.loads((root/'.native-state.local.json').read_text(encoding='utf-8'))
     qa.configure(root,3313,state['password'])
     process=qa.start_db(root,state,lts=True)
     try:
@@ -123,7 +123,7 @@ def migrate_lts(root,marker,source,target,directory,verify_only=False):
         if fingerprints(root,state,True)!=receipt['tables']:raise RuntimeError('LTS logical data fingerprint mismatch')
         checks(root,source,target)
         (directory/'lts-import-receipt.json').write_text(json.dumps({'synthetic_only':True,'port':3313,
-            'logical_data_identical':True,'schema_and_workflow_passed':True},indent=2)+'\n')
+            'logical_data_identical':True,'schema_and_workflow_passed':True},indent=2)+'\n', encoding='utf-8')
         print('MariaDB 11.4 logical import, all table values/hashes and invariants PASS',flush=True)
     finally:qa.stop_db(root,state,process,True)
 
@@ -135,11 +135,11 @@ def restore_old(root,marker,source,target,directory):
     fresh,newmarker,newsource,newtarget=qa.load(Path(created['root']))
     if newmarker['source_sha256']!=receipt['source_sha256']:raise RuntimeError('Source drift during restore preparation')
     shutil.copytree(root/'php',fresh/'php')
-    state=json.loads((root/'.native-state.local.json').read_text())
-    (fresh/'.native-state.local.json').write_text(json.dumps({'password':state['password'],'root_password':secrets.token_hex(24)}))
-    for name,content in qa.prep.render_configs(fresh).items():(fresh/'conf'/name).write_text(content)
+    state=json.loads((root/'.native-state.local.json').read_text(encoding='utf-8'))
+    (fresh/'.native-state.local.json').write_text(json.dumps({'password':state['password'],'root_password':secrets.token_hex(24)}), encoding='utf-8')
+    for name,content in qa.prep.render_configs(fresh).items():(fresh/'conf'/name).write_text(content, encoding='utf-8')
     qa.initialize(fresh,newmarker,newsource,newtarget,setup_application=False)
-    newstate=json.loads((fresh/'.native-state.local.json').read_text())
+    newstate=json.loads((fresh/'.native-state.local.json').read_text(encoding='utf-8'))
     with zipfile.ZipFile(directory/'storage-config.zip') as bundle:
         if set(bundle.namelist())!=set(receipt['runtime_files']):raise RuntimeError('Archive/receipt manifest mismatch')
     stage=fresh/'restore-archive'
@@ -159,13 +159,13 @@ def restore_old(root,marker,source,target,directory):
         result={'synthetic_only':True,'restore_root':str(fresh),'old_version':'10.4.32',
             'logical_data_identical':True,'all_runtime_files_identical':True,'schema_and_workflow_passed':True,
             'no_raw_datadir_copy':True}
-        (directory/'old-restore-receipt.json').write_text(json.dumps(result,indent=2)+'\n')
+        (directory/'old-restore-receipt.json').write_text(json.dumps(result,indent=2)+'\n', encoding='utf-8')
         print(json.dumps(result),flush=True)
     finally:qa.stop_db(fresh,newstate,process)
 
 
 def provision_runtime_principal(root,marker,source,target):
-    state=json.loads((root/'.native-state.local.json').read_text())
+    state=json.loads((root/'.native-state.local.json').read_text(encoding='utf-8'))
     process=qa.start_db(root,state,lts=True)
     try:
         qa.verify_server(root,state,True)
@@ -173,7 +173,7 @@ def provision_runtime_principal(root,marker,source,target):
         if existing and 'runtime_password' not in state:raise RuntimeError('Refuse unowned existing runtime principal')
         if 'runtime_password' not in state:
             state['runtime_password']=secrets.token_hex(24)
-            (root/'.native-state.local.json').write_text(json.dumps(state))
+            (root/'.native-state.local.json').write_text(json.dumps(state), encoding='utf-8')
         if not existing:
             qa.sql(root,state,"CREATE USER 'refind_runtime_dml'@'127.0.0.1' IDENTIFIED BY '"+state['runtime_password']+"'; GRANT SELECT, INSERT, UPDATE, DELETE ON "+qa.DB_NAME+".* TO 'refind_runtime_dml'@'127.0.0.1';",True)
         grantee="CONCAT(CHAR(39),'refind_runtime_dml',CHAR(39),'@',CHAR(39),'127.0.0.1',CHAR(39))"
@@ -189,7 +189,7 @@ def provision_runtime_principal(root,marker,source,target):
         qa.configure(root,3313,state['password'],state['runtime_password'])
         checks(root,source,target)
         receipt={'synthetic_only':True,'port':3313,'runtime_user':'refind_runtime_dml','web_privileges':sorted(privileges),'global_privileges':global_privileges,'create_table_denied':True,'fixture_principal_separate':True}
-        (root/'logs/native-principal-result.json').write_text(json.dumps(receipt,indent=2)+'\n')
+        (root/'logs/native-principal-result.json').write_text(json.dumps(receipt,indent=2)+'\n', encoding='utf-8')
         print(json.dumps(receipt),flush=True)
     finally:qa.stop_db(root,state,process,True)
 

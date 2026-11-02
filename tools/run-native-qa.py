@@ -29,7 +29,7 @@ def load(root):
     if root.parent != parent or not re.fullmatch('security-modernization-[a-f0-9]{16}',root.name):
         raise RuntimeError('Unexpected native QA root')
     prep.reject_redirects(root/'.refind-runtime-qa.json')
-    marker = json.loads((root/'.refind-runtime-qa.json').read_text())
+    marker = json.loads((root/'.refind-runtime-qa.json').read_text(encoding='utf-8'))
     if Path(marker['root']).resolve() != root or marker['profile'] != 'runtime-upgrade':
         raise RuntimeError('Native QA ownership mismatch')
     marker.setdefault('logical_root',str(logical))
@@ -68,20 +68,20 @@ def configure(root, port, password,web_password=None):
     if web_password:
         if not re.fullmatch('[a-f0-9]{48}',web_password):raise RuntimeError('Unexpected synthetic web password shape')
         code+=" if(PHP_SAPI !== 'cli'){$c['db_user']='refind_runtime_dml';$c['db_password']='"+web_password+"';}"
-    (target/'app/config.local.php').write_text(code+" return $c;\n")
+    (target/'app/config.local.php').write_text(code+" return $c;\n", encoding='utf-8')
     code = "<?php\nif (PHP_SAPI === 'cli' && isset($_SERVER['SCRIPT_FILENAME'])) {\n"
     code += "$file = realpath($_SERVER['SCRIPT_FILENAME']); $tools = " + json.dumps((target/'tools').as_posix()) + ";\n"
     code += "if ($file && str_starts_with(str_replace('\\\\','/',$file), $tools.'/') && !in_array(basename($file), ['qa-guard.php','runtime-qa-guard.php'],true)) {\n"
     code += "require_once "+json.dumps((target/'app/config.php').as_posix())+";\nrequire_once "+json.dumps((target/'tools/qa-guard.php').as_posix())+";\n"
     code += "try { assert_qa_installation(app_root()); } catch (Throwable $e) { fwrite(STDERR, 'QA target must be the real isolated test directory. No fixture mutation performed.'.PHP_EOL); exit(1); }\n}}\n"
-    (root/'conf/cli-guard.php').write_text(code)
+    (root/'conf/cli-guard.php').write_text(code, encoding='utf-8')
     ini = root/'conf/php.ini'
-    text = '\n'.join(line for line in ini.read_text().splitlines() if not line.startswith('auto_prepend_file='))
-    ini.write_text(text+'\nauto_prepend_file="'+(root/'conf/cli-guard.php').as_posix()+'"\n')
+    text = '\n'.join(line for line in ini.read_text(encoding='utf-8').splitlines() if not line.startswith('auto_prepend_file='))
+    ini.write_text(text+'\nauto_prepend_file="'+(root/'conf/cli-guard.php').as_posix()+'"\n', encoding='utf-8')
 
 
 def save_marker(root, marker):
-    (root/'.refind-runtime-qa.json').write_text(json.dumps(marker,indent=2)+'\n')
+    (root/'.refind-runtime-qa.json').write_text(json.dumps(marker,indent=2)+'\n', encoding='utf-8')
 
 
 def sync_harness(root, marker, source, target):
@@ -103,11 +103,11 @@ def sync_harness(root, marker, source, target):
         shutil.copy2(HARNESS/'tools'/name,target/'tools'/name)
     for name in ['test-projection.php','profile-queries.php']:
         p=target/'tools'/name
-        text=p.read_text()
+        text=p.read_text(encoding='utf-8')
         first=text.index('require $target')
         text=text[:first]+"if (getenv('REFIND_TEST_PROFILE') === 'runtime-upgrade') { $target = (getenv('REFIND_RUNTIME_QA_ROOT') ?: '') . '/www/ReFind_0.2.3'; }\n"+text[first:]
         text=text.replace("require __DIR__ . '/qa-guard.php';", "require_once __DIR__ . '/qa-guard.php';")
-        p.write_text(text)
+        p.write_text(text, encoding='utf-8')
     marker['harness_source_manifest']=copied
     marker['harness_overlays']={name:prep.sha256(target/'tools'/name) for name in
         ['qa-guard.php','runtime-qa-guard.php','qa-runtime.cjs','setup-db.php','prepare-test.py','test-projection.php','profile-queries.php']}
@@ -147,19 +147,28 @@ def verify_server(root,state,lts=False,initial=False):
         raise RuntimeError('Foreign server refused before mutation: port='+values[0]+'; datadir='+repr(values[1])+'; expected='+str(expected))
 
 
-def start_db(root,state,lts=False,initial=False):
+def start_db(root,state,lts=False,initial=False,tls=False):
     port=3313 if lts else 3312
     free_port(port)
     bin_path=database_binary(root,lts)
     data=root/('db-lts/data' if lts else 'db/data')
     prep.reject_redirects(data)
     if not data.is_dir(): raise RuntimeError('Owned initialized datadir required')
+    tls_args=[]
+    if tls:
+        if not lts:raise RuntimeError('Explicit TLS qualification uses only the owned LTS server')
+        for name in ['ca.pem','server.pem','server.key']:
+            path=root/'tls'/name
+            prep.reject_redirects(path)
+            if not path.is_file():raise RuntimeError('Owned TLS material required')
+        tls_args=['--ssl-ca='+str(root/'tls/ca.pem'),'--ssl-cert='+str(root/'tls/server.pem'),
+                  '--ssl-key='+str(root/'tls/server.key'),'--tls-version=TLSv1.2,TLSv1.3']
     log=(root/'logs'/('lts-process.log' if lts else 'current-process.log')).open('ab')
     process=subprocess.Popen([str(bin_path/'mysqld.exe'),'--no-defaults','--basedir='+str(bin_path.parent),
         '--datadir='+str(data),'--port='+str(port),'--bind-address=127.0.0.1',
         '--pid-file='+str(root/'run'/('lts.pid' if lts else 'current.pid')),
         '--tmpdir='+str(root/'tmp'),'--skip-log-bin','--innodb-buffer-pool-size=64M',
-        '--aria-pagecache-buffer-size=16M','--console'],stdout=log,stderr=subprocess.STDOUT,
+        '--aria-pagecache-buffer-size=16M','--console',*tls_args],stdout=log,stderr=subprocess.STDOUT,
         cwd=root,creationflags=subprocess.CREATE_NO_WINDOW)
     log.close()
     try:
@@ -187,12 +196,12 @@ def stop_db(root,state,process,lts=False):
 def initialize(root,marker,source,target,lts=False,bootstrap=True,setup_application=True):
     state_path=root/'.native-state.local.json'
     if not state_path.exists():
-        encoded=re.search("base64_decode\\('([^']+)'\\)",(target/'app/config.local.php').read_text())[1]
+        encoded=re.search("base64_decode\\('([^']+)'\\)",(target/'app/config.local.php').read_text(encoding='utf-8'))[1]
         c=json.loads(base64.b64decode(encoded))
         if c['db_port']!=3312 or c['db_user']!='refind_runtime_qa':raise RuntimeError('Unexpected synthetic configuration')
         state={'password':c['db_password'],'root_password':secrets.token_hex(24)}
-        state_path.write_text(json.dumps(state))
-    state=json.loads(state_path.read_text())
+        state_path.write_text(json.dumps(state), encoding='utf-8')
+    state=json.loads(state_path.read_text(encoding='utf-8'))
     if not all(re.fullmatch('[a-f0-9]{48}',state[k]) for k in ['password','root_password']):raise RuntimeError('Synthetic credential shape mismatch')
     data=root/('db-lts/data' if lts else 'db/data')
     prep.reject_redirects(data)
@@ -232,7 +241,7 @@ def initialize(root,marker,source,target,lts=False,bootstrap=True,setup_applicat
 
 
 def full_test(root,marker,source,target,lts=False,remainder=False,appearance_only=False):
-    state=json.loads((root/'.native-state.local.json').read_text())
+    state=json.loads((root/'.native-state.local.json').read_text(encoding='utf-8'))
     configure(root,3313 if lts else 3312,state['password'],state.get('runtime_password') if lts else None)
     sync_harness(root,marker,source,target)
     env=environment(root,source)

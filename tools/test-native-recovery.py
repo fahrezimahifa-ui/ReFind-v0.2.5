@@ -25,7 +25,7 @@ class RecoveryBoundaryTests(unittest.TestCase):
         self.save()
 
     def tearDown(self):self.temp.cleanup()
-    def save(self):(self.backup/'receipt.json').write_text(json.dumps(self.receipt))
+    def save(self):(self.backup/'receipt.json').write_text(json.dumps(self.receipt), encoding='utf-8')
 
     def test_row_digest_normalizes_transport_only(self):
         first='[1,"synthetic\\nvalue",null]\n'
