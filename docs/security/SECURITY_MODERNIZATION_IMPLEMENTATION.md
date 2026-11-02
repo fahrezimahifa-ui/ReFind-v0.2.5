@@ -103,3 +103,11 @@ No Apache web SAPI, DLL compatibility, TLS negotiation or network denial claim i
 - WP01 operational rollback is in the exact change proposal; containment must remain during recovery.
 - No original database dump/raw datadir, media, credentials, hashes or sessions are copied or restored in this package.
 - Proposed review units: (1) audit/proposal documentation; (2) inert QA preparer/negative tests; (3) later fixture-profile integration and isolated regression evidence; (4) separately approved operational application/cutover. Keep unrelated follow-up refactors and UI changes out of the security branch.
+
+## Final review checkpoint
+
+The proposal/evidence and inert tooling were committed separately as fd4c7f7 and b499942 and pushed only to codex/security-wp01-wp02-preparation. Commits use a command-scoped Codex agent identity because no author was configured; existing Git settings were not changed.
+
+GitHub main was re-resolved after the push and remains a610b1a0cb7ebb2b911f3468388076948a65b238. Draft PR creation through the GitHub integration returned HTTP 403, Resource not accessible by integration. No GitHub CLI is installed. No PR was created or merged. The branch is available for [comparison/review](https://github.com/fahrezimahifa-ui/ReFind-v0.2.5/compare/main...codex/security-wp01-wp02-preparation).
+
+Final preservation checks again returned the same installed/follow-up source fingerprints, zero installed status entries and the original 80 follow-up entries. All four main configuration SHA256 values match the pre-change table. No XAMPP or new QA listeners/processes were present. The owned QA receipt remains prepared-incomplete with fixture mutations disabled, no db/data directory and no Apache package. The new native web environment is not ready to run regression yet.

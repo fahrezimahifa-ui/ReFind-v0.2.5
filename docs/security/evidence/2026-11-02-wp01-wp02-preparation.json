@@ -65,5 +65,22 @@
     "PHP OpenSSL support/advisory issue unresolved",
     "No new fixture profile or mutation capability",
     "No off-host reachability test"
-  ]
+  ],
+  "final_preservation": {
+    "checked_utc": "2026-11-02T04:02:05.689175+00:00",
+    "installed_status_entries": 0,
+    "followup_status_entries": 80,
+    "source_fingerprints_unchanged": true,
+    "main_configuration_hashes_unchanged": true,
+    "github_main_unchanged": true,
+    "qa_servers_started": false,
+    "qa_datadir_initialized": false
+  },
+  "review": {
+    "branch": "codex/security-wp01-wp02-preparation",
+    "documentation_commit": "fd4c7f7",
+    "tooling_commit": "b499942",
+    "pull_request_created": false,
+    "pull_request_blocker": "GitHub integration HTTP 403: Resource not accessible by integration; GitHub CLI unavailable"
+  }
 }
