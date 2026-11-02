@@ -9,6 +9,7 @@ function app_defaults(): array
         'base_path' => '/ReFind_0.2.0/', 'session_name' => 'refind_020',
         'idle_seconds' => 1800, 'absolute_seconds' => 28800,
         'login_window_seconds' => 900, 'login_pair_limit' => 5, 'login_ip_limit' => 30,
+        'registration_enabled' => false, 'registration_window_seconds' => 900, 'registration_ip_limit' => 10,
         // Shown to students after approval. Demo values; override them in config.local.php for a real desk.
         'pickup_desk_name' => 'Building Management service desk', 'pickup_desk_location' => 'Gedung A lobby, ground floor',
         'pickup_desk_hours' => 'Monday–Friday, 08:00–16:00 WIB', 'pickup_desk_contact' => 'bm@refind.test',
@@ -37,7 +38,8 @@ function validate_app_config(array $config): array
         !is_string($config['session_name']) || !preg_match('/^[A-Za-z0-9_]+$/D', $config['session_name'])) {
         throw new RuntimeException('Invalid application path/session configuration.');
     }
-    foreach (['idle_seconds', 'absolute_seconds', 'login_window_seconds', 'login_pair_limit', 'login_ip_limit'] as $key) {
+    if (!is_bool($config['registration_enabled'])) throw new RuntimeException('Invalid registration availability.');
+    foreach (['idle_seconds', 'absolute_seconds', 'login_window_seconds', 'login_pair_limit', 'login_ip_limit', 'registration_window_seconds', 'registration_ip_limit'] as $key) {
         if (!is_int($config[$key]) || $config[$key] < 1) throw new RuntimeException('Invalid timeout/limit.');
     }
     foreach (['pickup_desk_name', 'pickup_desk_location', 'pickup_desk_hours', 'pickup_desk_contact'] as $key) {

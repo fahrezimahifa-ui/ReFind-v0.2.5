@@ -133,13 +133,22 @@ function login_account(string $email, string $password): array
         rewind($file); ftruncate($file, 0);
         if (fwrite($file, json_encode($buckets, JSON_THROW_ON_ERROR)) === false || !fflush($file)) throw new RuntimeException('Cannot persist limiter state.');
         if (!$accepted) fail('Email or password could not be verified.', 401, 'invalid_credentials');
-        $_SESSION = ['csrf' => bin2hex(random_bytes(32)), 'auth' => ['user_id' => (int) $record['user_id'],
-            'issued_at' => $now, 'last_seen' => $now, 'fingerprint' => credential_fingerprint($record['password_hash'])]];
-        session_regenerate_id(true);
-        unset($record['password_hash'], $record['is_active']);
-        $record['user_id'] = (string) $record['user_id'];
-        return $record;
+        return authenticate_account($record);
     } finally { flock($file, LOCK_UN); fclose($file); }
+}
+function authenticate_account(array $record): array
+{
+    start_app_session();
+    $now = time();
+    $identity = ['user_id' => (int) $record['user_id'], 'issued_at' => $now, 'last_seen' => $now,
+        'fingerprint' => credential_fingerprint($record['password_hash'])];
+    $csrf = bin2hex(random_bytes(32));
+    // Publish identity only after rotation succeeds; a committed registration can still log in later.
+    if (!session_regenerate_id(true)) throw new RuntimeException('Cannot rotate authentication session.');
+    $_SESSION = ['csrf' => $csrf, 'auth' => $identity];
+    unset($record['password_hash'], $record['is_active']);
+    $record['user_id'] = (string) $record['user_id'];
+    return $record;
 }
 function logout_account(): void
 {

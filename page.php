@@ -28,6 +28,10 @@ try {
     $definition = page_routes()[$route] ?? null;
     if (!$definition) fail('Page not found.', 404, 'not_found');
     $user = auth_user();
+    if ($route === 'register.html' && ($user || !app_config()['registration_enabled'])) {
+        $url = $user ? landing_url($user) : $base . 'login.html';
+        session_write_close(); header('Location: ' . $url, true, 302); exit;
+    }
     if ($definition['roles'] && !$user) {
         $return = safe_return($base . $route . (($_SERVER['QUERY_STRING'] ?? '') ? '?' . $_SERVER['QUERY_STRING'] : ''));
         session_write_close(); header('Location: ' . $base . 'login.html?return=' . rawurlencode($return), true, 302); exit;
