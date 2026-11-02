@@ -1,6 +1,6 @@
 {
   "checked_at": "2026-11-02",
-  "purpose": "Preparation only; no main runtime replacement or service installation.",
+  "purpose": "Pinned portable synthetic QA candidates only; no main runtime replacement, service installation or blanket native-library clearance.",
   "php": {
     "version": "8.4.27-1",
     "architecture": "x64",
@@ -18,6 +18,36 @@
     "sha256": "77d715d0d9cee731e2251e7ddc2090a7a8e6d41fedef2e9827cd918593c5a652",
     "metadata": "https://www.apachelounge.com/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip.txt",
     "minimum_provider_crt": "14.51.36247",
-    "caveat": "Provider BOM lists Brotli 1.2.0. Do not load optional Brotli/cURL/proxy modules or claim the complete distribution has no outstanding advisories."
+    "caveat": "Provider BOM lists Brotli 1.2.0. Do not load optional Brotli/cURL/proxy modules or claim the complete distribution has no outstanding advisories.",
+    "download_resolution": "HTTPS 200 using explicit ReFindRuntimeQA/1.0 User-Agent; pinned hash verified. Off-origin and HTTP redirects remain refused."
+  },
+  "crt": {
+    "version": "14.51.36247.0",
+    "architecture": "x64",
+    "url": "https://aka.ms/vc14/vc_redist.x64.exe",
+    "final_url": "https://download.visualstudio.microsoft.com/download/pr/ebdab8e5-1d7b-4d9f-a11b-cbb1720c3b12/843068991DAAA1F73AD9F6239BCE4D0F6A07A51F18C37EA2A867E9BECA71295C/VC_redist.x64.exe",
+    "sha256": "843068991daaa1f73ad9f6239bce4d0f6a07a51f18c37ea2a867e9beca71295c",
+    "verification": "Valid Microsoft Authenticode on bundle and every extracted minimum-runtime DLL; complete 12-DLL minimum set placed app-locally only; installer never executed",
+    "guidance": "https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files?view=msvc-170"
+  },
+  "node": {
+    "version": "24.22.2",
+    "architecture": "x64",
+    "url": "https://nodejs.org/dist/v24.22.2/node-v24.22.2-win-x64.zip",
+    "sha256": "ca1bff5d8ead13c9f2ea404a176db46bd430704d5b5113734049fa365e7799e2",
+    "metadata": "https://nodejs.org/dist/v24.22.2/SHASUMS256.txt"
+  },
+  "mariadb": {
+    "version": "11.4.13",
+    "architecture": "x64",
+    "url": "https://archive.mariadb.org/mariadb-11.4.13/winx64-packages/mariadb-11.4.13-winx64.zip",
+    "sha256": "d62986d433eeebfde218560b276103831604a61e929e87f1a17f5aebd80257e2",
+    "metadata": "https://archive.mariadb.org/mariadb-11.4.13/sha256sums.txt",
+    "restriction": "New private synthetic datadir only. Logical import of application database, never raw datadir or mysql privilege-table copying."
+  },
+  "native_qualification": {
+    "php_openssl": "Packaged OpenSSL 3.0.22 remains inactive; PHP openssl/curl extensions are not loaded. No arbitrary DLL replacement. Re-review before enabling either extension.",
+    "apache_tls": "Loaded bundled OpenSSL 3.5.9; Brotli/Zstd disabled in this OpenSSL build; unused mod_brotli/curl/proxy omitted. Complete archive still contains optional components requiring review.",
+    "remaining": "PCRE reports 10.44 and libxml 2.11.9; vendor backport/support qualification remains open. Exact bundled JPEG-turbo/WebP versions are unverified. No new image normalization or XML/regex features approved."
   }
 }

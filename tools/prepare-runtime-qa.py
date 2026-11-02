@@ -175,7 +175,7 @@ extension=mysqli
 extension=mbstring
 extension=fileinfo
 extension=gd
-extension=openssl
+; OpenSSL is not required by ReFind; leave the extension unloaded.
 date.timezone=Asia/Jakarta
 display_errors=Off
 display_startup_errors=Off
@@ -280,7 +280,7 @@ def prepare(source, download=False):
                 archive = root / 'downloads' / url.rsplit('/', 1)[1]
                 print('Downloading pinned ' + name + ' package', flush=True)
                 opener = urllib.request.build_opener(PackageRedirectPolicy(allowed_host))
-                with opener.open(url, timeout=60) as response, archive.open('xb') as handle:
+                with opener.open(urllib.request.Request(url, headers={'User-Agent':'ReFindRuntimeQA/1.0'}), timeout=60) as response, archive.open('xb') as handle:
                     shutil.copyfileobj(response, handle)
                 check_digest(archive, package['sha256'])
                 safe_extract(archive, root / name)

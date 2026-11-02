@@ -3,8 +3,9 @@ declare(strict_types=1);
 if (PHP_SAPI !== 'cli') { http_response_code(403); exit; }
 if (basename(dirname(__DIR__)) === 'refind-dev' && !in_array(getenv('REFIND_TEST_PROFILE'), ['ui-ux-dev','xampp-stage'], true)) throw new RuntimeException('Explicit development test profile required; legacy QA discovery refused.');
 $target = (getenv('REFIND_TEST_PROFILE') === 'xampp-stage' ? dirname(dirname(__DIR__)) . '/refind-xampp-stage' : (getenv('REFIND_TEST_PROFILE') === 'ui-ux-dev' ? dirname(__DIR__) : dirname(dirname(__DIR__)) . '/ReFind_0.2.0_Test'));
+if (getenv('REFIND_TEST_PROFILE') === 'runtime-upgrade') { $target = (getenv('REFIND_RUNTIME_QA_ROOT') ?: '') . '/www/ReFind_0.2.3'; }
 require $target . '/app/repository.php';
-require __DIR__ . '/qa-guard.php';
+require_once __DIR__ . '/qa-guard.php';
 assert_qa_installation($target);
 // Exact prior projection from 8331d90: compatibility oracle for batching/privacy flags.
 function baseline_safe_item(array $record, array $user): array

@@ -17,6 +17,7 @@ function run_statements(string $file, bool $views = false): void
 
 try {
     $config = app_config();
+    if (getenv('REFIND_TEST_PROFILE') === 'runtime-upgrade' || in_array($config['db_port'], [3312,3313], true)) { require_once __DIR__ . '/qa-guard.php'; require_once __DIR__ . '/runtime-qa-guard.php'; assert_runtime_upgrade_installation(app_root()); }
     if ($config['db_name'] === 'refind_db_ui_ux_dev') { require_once __DIR__ . '/qa-guard.php'; assert_dev_installation(app_root()); }
     if (basename(app_root()) === 'refind-xampp-stage' || $config['db_port'] === 3311) { require_once __DIR__ . '/qa-guard.php'; assert_xampp_stage_installation(app_root()); }
     $manifest = json_decode(file_get_contents(app_root() . '/database/manifest.json'), true, 64, JSON_THROW_ON_ERROR);

@@ -49,6 +49,8 @@ function assert_xampp_stage_installation(string $target): void
 
 function assert_qa_installation(string $target): void
 {
+    if (!in_array(getenv('REFIND_TEST_PROFILE') ?: '', ['', 'ui-ux-dev', 'xampp-stage', 'runtime-upgrade'], true)) throw new RuntimeException('Unknown QA profile.');
+    if (getenv('REFIND_TEST_PROFILE') === 'runtime-upgrade') { require_once __DIR__ . '/runtime-qa-guard.php'; assert_runtime_upgrade_installation($target); return; }
     if (getenv('REFIND_TEST_PROFILE') === 'ui-ux-dev') { assert_dev_installation($target); return; }
     if (getenv('REFIND_TEST_PROFILE') === 'xampp-stage') { assert_xampp_stage_installation($target); return; }
     $resolved = realpath($target);
