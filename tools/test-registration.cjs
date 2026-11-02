@@ -110,6 +110,7 @@ async function cleanupUsers() {
 (async () => {
   try {
     begun = true; control('begin');
+    await availability(true);
     const accounts = Object.values(JSON.parse(fs.readFileSync(path.join(qa.target,'storage/setup/demo-accounts.json'),'utf8')).accounts);
     browser = await qa.playwright().chromium.launch({headless:true,executablePath:qa.chromePath()});
     await check('Registration commits an active Student with NULL Student ID and rotates identity', async () => {

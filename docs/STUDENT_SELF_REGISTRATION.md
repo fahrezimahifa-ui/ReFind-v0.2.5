@@ -6,6 +6,8 @@ The feature branch starts from remote `main` at `a610b1a0cb7ebb2b911f34683880769
 
 Registration defaults to disabled. When enabled it creates immediately active **STUDENT** accounts and signs them in. Student ID and avatar remain SQL NULL. No schema migration, dependency/runtime upgrade, new role, email sending, OTP, MFA, OAuth, SSO, deletion or public password recovery is included.
 
+PHP may cache included configuration according to its normal OPcache settings. After an operator changes an owned demonstration's override, ensure the server has observed the new configuration before declaring the gate changed. QA waits for the public availability boolean after each configuration flip and before each theme run; it does not alter PHP/OPcache configuration.
+
 An address is syntactically validated but unverified; it proves neither mailbox ownership nor UMN enrollment. Any valid email domain is permitted. An unverified address must not become a trusted password-recovery destination. Campus identity proof, verified contact changes, recovery and deployment operations require separate product/security work; no future verification system is preemptively added.
 
 ## Configuration and routes
