@@ -1,0 +1,69 @@
+{
+  "recorded_utc": "2026-11-02T03:56:22.150501+00:00",
+  "scope": "WP01 read-only revalidation; inert WP02/WP03 preparation; no main changes",
+  "remote_main": "a610b1a0cb7ebb2b911f3468388076948a65b238",
+  "installed_head": "4d74e9872b3afa5fa1ab09c081b30d1a3437a2b5",
+  "installed_source_sha256": "d9475b06037997c8f5a2b8d1c72b589477f79e7b5b57ebec626774580d49cabc",
+  "followup_source_sha256": "7baac5e0857ed460905a32a7b010ed57ab77bf6ef8b2ac88b28c29bc975c5033",
+  "followup_status_entries": 80,
+  "active_network_category": "Public",
+  "effective_firewall_default": {
+    "inbound": "Block",
+    "outbound": "Allow"
+  },
+  "xampp_processes_observed": [],
+  "xampp_listeners_observed": [],
+  "qa": {
+    "root": "C:\\Users\\LENOVO\\AppData\\Local\\ReFindRuntimeQA\\security-modernization-a2d82264c5570f0b",
+    "phase": "prepared-incomplete",
+    "source_files": 84,
+    "source_sha256": "b797e36fd87c53e37e6f8a77fe491f6357486064ce6cd020b512087d67e529e3",
+    "ports": [
+      8086,
+      8446,
+      3312
+    ],
+    "packages": {
+      "php": {
+        "url": "https://downloads.php.net/~windows/releases/php-8.4.27-1-Win32-vs17-x64.zip",
+        "sha256": "53db2047139bdfb8e6c7c7d5860a0a6a2a4f1dcac49fcf18ae610a14d8ccdf5b"
+      }
+    },
+    "blockers": [
+      "Apache provider URL returns an off-origin HTTP localhost redirect; rejected",
+      "Apache provider CRT prerequisite 14.51.36247 not satisfied",
+      "PHP package loads OpenSSL 3.0.22; upstream 3.0 unsupported and relevant 3.0.23 advisories require resolution",
+      "runtime-upgrade fixture/server-identity guard must be implemented and negatively tested before mutation",
+      "New synthetic datadir, CLI/web SAPI and full regression gates remain pending"
+    ]
+  },
+  "tests": {
+    "preparer_safety": {
+      "passed": 10,
+      "skipped": 0
+    },
+    "php_lint": {
+      "passed_files": 30,
+      "failed_files": 0
+    },
+    "existing_offline_release": {
+      "baseline": "a610b1a security worktree",
+      "passed": 15
+    },
+    "php_cli": "8.4.27 ZTS x64",
+    "openssl_library": "3.0.22",
+    "browser_api_regression": "not executed",
+    "synthetic_database_initialized": false
+  },
+  "secret_scan": {
+    "mode": "redacted pattern scan of new tracked artifacts only",
+    "hits": 0
+  },
+  "limitations": [
+    "No Apache download or web-SAPI validation",
+    "Provider CRT 14.51 prerequisite unresolved",
+    "PHP OpenSSL support/advisory issue unresolved",
+    "No new fixture profile or mutation capability",
+    "No off-host reachability test"
+  ]
+}
