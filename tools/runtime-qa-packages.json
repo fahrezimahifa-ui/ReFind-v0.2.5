@@ -1,0 +1,23 @@
+{
+  "checked_at": "2026-11-02",
+  "purpose": "Preparation only; no main runtime replacement or service installation.",
+  "php": {
+    "version": "8.4.27-1",
+    "architecture": "x64",
+    "thread_safety": "TS",
+    "toolset": "VS17",
+    "url": "https://downloads.php.net/~windows/releases/php-8.4.27-1-Win32-vs17-x64.zip",
+    "sha256": "53db2047139bdfb8e6c7c7d5860a0a6a2a4f1dcac49fcf18ae610a14d8ccdf5b",
+    "metadata": "https://downloads.php.net/~windows/releases/releases.json"
+  },
+  "apache": {
+    "version": "2.4.69-261002",
+    "architecture": "x64",
+    "toolset": "VS18",
+    "url": "https://www.apachelounge.com/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip",
+    "sha256": "77d715d0d9cee731e2251e7ddc2090a7a8e6d41fedef2e9827cd918593c5a652",
+    "metadata": "https://www.apachelounge.com/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip.txt",
+    "minimum_provider_crt": "14.51.36247",
+    "caveat": "Provider BOM lists Brotli 1.2.0. Do not load optional Brotli/cURL/proxy modules or claim the complete distribution has no outstanding advisories."
+  }
+}
