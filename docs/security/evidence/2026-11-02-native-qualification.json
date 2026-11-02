@@ -1,0 +1,868 @@
+{
+  "recorded_utc": "2026-11-02T09:18:00.319477+00:00",
+  "scope": "Isolated native QA qualification and synthetic logical recovery; no main cutover or live firewall change",
+  "remote_main": "a610b1a0cb7ebb2b911f3468388076948a65b238",
+  "installed": {
+    "head": "4d74e9872b3afa5fa1ab09c081b30d1a3437a2b5",
+    "source_files": 605,
+    "source_sha256": "d9475b06037997c8f5a2b8d1c72b589477f79e7b5b57ebec626774580d49cabc",
+    "status_entries": 0
+  },
+  "followup": {
+    "head": "a610b1a0cb7ebb2b911f3468388076948a65b238",
+    "source_files": 609,
+    "source_sha256": "7baac5e0857ed460905a32a7b010ed57ab77bf6ef8b2ac88b28c29bc975c5033",
+    "status_entries": 80,
+    "status_sha256": "53f24adf857c1afbfd219e365cb7b18644521db7c87f4480a937e16611048761"
+  },
+  "original_audit_sha256": "372eb6a46f2eaa29cc761b47dfb1e6adb66133e60bdad41e28676a6c8040ad0a",
+  "runtime_commit": "7905500a5531b077d9b0d56f623a03638de2a940",
+  "recovery_commit": "e8671df2353ac61bb9d1c1ef1d6a8ff1375a6ff4",
+  "qa_root": "C:\\Users\\LENOVO\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\LocalCache\\Local\\ReFindRuntimeQA\\security-modernization-a2d82264c5570f0b",
+  "packages": {
+    "checked_at": "2026-11-02",
+    "purpose": "Pinned portable synthetic QA candidates only; no main runtime replacement, service installation or blanket native-library clearance.",
+    "php": {
+      "version": "8.4.27-1",
+      "architecture": "x64",
+      "thread_safety": "TS",
+      "toolset": "VS17",
+      "url": "https://downloads.php.net/~windows/releases/php-8.4.27-1-Win32-vs17-x64.zip",
+      "sha256": "53db2047139bdfb8e6c7c7d5860a0a6a2a4f1dcac49fcf18ae610a14d8ccdf5b",
+      "metadata": "https://downloads.php.net/~windows/releases/releases.json"
+    },
+    "apache": {
+      "version": "2.4.69-261002",
+      "architecture": "x64",
+      "toolset": "VS18",
+      "url": "https://www.apachelounge.com/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip",
+      "sha256": "77d715d0d9cee731e2251e7ddc2090a7a8e6d41fedef2e9827cd918593c5a652",
+      "metadata": "https://www.apachelounge.com/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip.txt",
+      "minimum_provider_crt": "14.51.36247",
+      "caveat": "Provider BOM lists Brotli 1.2.0. Do not load optional Brotli/cURL/proxy modules or claim the complete distribution has no outstanding advisories.",
+      "download_resolution": "HTTPS 200 using explicit ReFindRuntimeQA/1.0 User-Agent; pinned hash verified. Off-origin and HTTP redirects remain refused."
+    },
+    "crt": {
+      "version": "14.51.36247.0",
+      "architecture": "x64",
+      "url": "https://aka.ms/vc14/vc_redist.x64.exe",
+      "final_url": "https://download.visualstudio.microsoft.com/download/pr/ebdab8e5-1d7b-4d9f-a11b-cbb1720c3b12/843068991DAAA1F73AD9F6239BCE4D0F6A07A51F18C37EA2A867E9BECA71295C/VC_redist.x64.exe",
+      "sha256": "843068991daaa1f73ad9f6239bce4d0f6a07a51f18c37ea2a867e9beca71295c",
+      "verification": "Valid Microsoft Authenticode on bundle and every extracted minimum-runtime DLL; complete 12-DLL minimum set placed app-locally only; installer never executed",
+      "guidance": "https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files?view=msvc-170"
+    },
+    "node": {
+      "version": "24.22.2",
+      "architecture": "x64",
+      "url": "https://nodejs.org/dist/v24.22.2/node-v24.22.2-win-x64.zip",
+      "sha256": "ca1bff5d8ead13c9f2ea404a176db46bd430704d5b5113734049fa365e7799e2",
+      "metadata": "https://nodejs.org/dist/v24.22.2/SHASUMS256.txt",
+      "brotli_backport": "process.versions.brotli stays 1.2.0; Node 24.22.1 vendor security release explicitly cherry-picks CVE-2026-111497 fix 0ed4268a4401abcb44720963, inherited by selected 24.22.2"
+    },
+    "mariadb": {
+      "version": "11.4.13",
+      "architecture": "x64",
+      "url": "https://archive.mariadb.org/mariadb-11.4.13/winx64-packages/mariadb-11.4.13-winx64.zip",
+      "sha256": "d62986d433eeebfde218560b276103831604a61e929e87f1a17f5aebd80257e2",
+      "metadata": "https://archive.mariadb.org/mariadb-11.4.13/winx64-packages/sha256sums.txt",
+      "restriction": "New private synthetic datadir only. Logical import of application database, never raw datadir or mysql privilege-table copying.",
+      "native_caveat": "Actual server reports WolfSSL 5.9.1; newer upstream 5.9.4 fixes include conditional CVE-2026-93302/89102. MariaDB backports/build prerequisites unverified. Compatibility and explicit-CA TLS passed; package not declared fully security-cleared."
+    },
+    "native_qualification": {
+      "php_openssl": "Packaged OpenSSL 3.0.22 remains inactive; PHP openssl/curl extensions are not loaded. No arbitrary DLL replacement. Re-review before enabling either extension.",
+      "apache_tls": "Loaded bundled OpenSSL 3.5.9; Brotli/Zstd disabled in this OpenSSL build; unused mod_brotli/curl/proxy omitted. Complete archive still contains optional components requiring review.",
+      "remaining": "PCRE reports 10.44 and libxml 2.11.9; vendor backport/support qualification remains open. GD binary identifies libjpeg-turbo 3.2.0 (build 20260804); WebP exact version remains unverified. No new image normalization or XML/regex features approved."
+    }
+  },
+  "offline_checks": {
+    "preparer": 10,
+    "guard": 7,
+    "recovery": 6,
+    "existing_release": 15,
+    "skipped": 0,
+    "php_lint_files": 30,
+    "changed_php_tools_lint": 5,
+    "python_node_syntax": "PASS"
+  },
+  "http_boundaries": [
+    {
+      "host": "127.0.0.1",
+      "status": 200,
+      "runtime": {
+        "sapi": "apache2handler",
+        "php": "8.4.27",
+        "ini": "C:\\Users\\LENOVO\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\LocalCache\\Local\\ReFindRuntimeQA\\security-modernization-a2d82264c5570f0b\\conf\\php.ini",
+        "openssl": false,
+        "curl": false
+      }
+    },
+    {
+      "host": "[::1]",
+      "status": 200,
+      "runtime": {
+        "sapi": "apache2handler",
+        "php": "8.4.27",
+        "ini": "C:\\Users\\LENOVO\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\LocalCache\\Local\\ReFindRuntimeQA\\security-modernization-a2d82264c5570f0b\\conf\\php.ini",
+        "openssl": false,
+        "curl": false
+      }
+    },
+    {
+      "path": "/ReFind_0.2.3/storage/setup/demo-accounts.json",
+      "status": 403
+    },
+    {
+      "path": "/ReFind_0.2.3/app/config.local.php",
+      "status": 403
+    },
+    {
+      "path": "/ReFind_0.2.3/tools/b02-fixture.php",
+      "status": 403
+    },
+    {
+      "path": "/ReFind_0.2.3/api/bootstrap.php",
+      "status": 403
+    },
+    {
+      "path": "/php-cgi/php-cgi.exe",
+      "status": 403
+    },
+    {
+      "path": "/cgi-bin/",
+      "status": 403
+    },
+    {
+      "path": "/examples",
+      "status": 403
+    }
+  ],
+  "tls": {
+    "passed": true,
+    "protocol": "TLSv1.3",
+    "checks": [
+      "Explicit CA chain, localhost hostname, TLS1.2+/Secure HttpOnly Lax cookie",
+      "Untrusted CA rejected",
+      "Wrong hostname rejected",
+      "Server rejects TLS1.1"
+    ]
+  },
+  "legacy_formats": {
+    "passed": true,
+    "legacy_bcrypt_cost10_verified": true,
+    "legacy_hash_unchanged": true,
+    "legacy_session_id_length": 26,
+    "strict_session_reader_preserved_id": true,
+    "session_payload_unicode_null_and_auth_identical": true,
+    "real_sessions_or_hashes_read": false
+  },
+  "principal": {
+    "synthetic_only": true,
+    "port": 3313,
+    "runtime_user": "refind_runtime_dml",
+    "web_privileges": [
+      "DELETE",
+      "INSERT",
+      "SELECT",
+      "UPDATE"
+    ],
+    "global_privileges": [
+      "USAGE"
+    ],
+    "create_table_denied": true,
+    "fixture_principal_separate": true
+  },
+  "web_principal": {
+    "principal": "refind_runtime_dml@127.0.0.1",
+    "port": "3313",
+    "database_name": "refind_db_0_2_0_test"
+  },
+  "server_boundary_negative": {
+    "synthetic_only": true,
+    "php_guard_actual_foreign_datadir_rejected": true,
+    "python_identity_check_actual_foreign_datadir_rejected": true,
+    "python_probe_uses_verified_lts_client_path": true,
+    "query_only_no_fixture_write": true,
+    "prior_probe_missing_client_cleanup_completed": true
+  },
+  "followup_lts_full": {
+    "testedSha": "b797e36fd87c53e37e6f8a77fe491f6357486064ce6cd020b512087d67e529e3",
+    "run": "20261102-124742-lts",
+    "scope": "Owned QA full matrix; no main application requests",
+    "checks": [
+      {
+        "name": "schema-before",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "invariants-before",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "projection",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "security",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-auth",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-account",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-student",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-workflow",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-v025",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-ux",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-auth",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-account",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-student",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-workflow",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-v025",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-ux",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "layout",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "ui-profile",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "glass-titles",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "menu-polish",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "maintainability",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "theme",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "appearance",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "smoke",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "schema-after",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "invariants-after",
+        "status": "PASS",
+        "exitCode": 0
+      }
+    ]
+  },
+  "followup_old_db_coverage": {
+    "clean_full_run": false,
+    "retained_runs": [
+      "20261102-115243-current",
+      "20261102-120713-current",
+      "20261102-121037-current",
+      "20261102-122950-current"
+    ],
+    "failures_and_corrections": "See implementation record; assertions unchanged"
+  },
+  "installed_qa": {
+    "root": "C:\\Users\\LENOVO\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\LocalCache\\Local\\ReFindRuntimeQA\\security-modernization-a458ebb05c3f239c",
+    "source": "C:\\xampp\\htdocs\\ReFind_0.2.3",
+    "source_sha256": "59d7a5aeb331cb7fbafd3c215625f3722d06d8a2f16af9f4bd979be4357bf3a2",
+    "source_files": 82
+  },
+  "synthetic_backup": {
+    "name": "synthetic-20261102-121017",
+    "writers_paused": true,
+    "artifacts_sha256": {
+      "database.sql": "118d2d063ce396e3d22c0c15d65f10711fa48f74615fb2357a929d747f2aaa83",
+      "storage-config.zip": "f14078f941ab9f12598c8f1378402333c5c4a09aa81a4bedb43ac9e72eb0b0b8"
+    },
+    "tables": 14,
+    "rows": 591,
+    "runtime_files": 436
+  },
+  "synthetic_lts_import": {
+    "synthetic_only": true,
+    "port": 3313,
+    "logical_data_identical": true,
+    "schema_and_workflow_passed": true
+  },
+  "synthetic_old_restore": {
+    "synthetic_only": true,
+    "restore_root": "C:\\Users\\LENOVO\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\LocalCache\\Local\\ReFindRuntimeQA\\security-modernization-083d45badec12fb4",
+    "old_version": "10.4.32",
+    "logical_data_identical": true,
+    "all_runtime_files_identical": true,
+    "schema_and_workflow_passed": true,
+    "no_raw_datadir_copy": true
+  },
+  "dependency_review": {
+    "commit": "b82cb530c038f3e609db65a0cb8e9b0c40a805c9",
+    "locked_pairs": 115,
+    "exception": "minimatch@10.2.6 GHSA-g3hv-75wg-m249 / CVE-2026-118764",
+    "exception_expiry": "2026-11-16",
+    "offline_tests": 5,
+    "github_actions": "https://github.com/fahrezimahifa-ui/ReFind-v0.2.5/actions/runs/41393370461",
+    "result": "success",
+    "lockfiles_changed": false
+  },
+  "wp01": {
+    "applied": false,
+    "rule_count": 4,
+    "both_policy_stores_verified": true,
+    "rule_programs": [
+      "C:\\xampp\\apache\\bin\\httpd.exe",
+      "C:\\xampp\\mysql\\bin\\mysqld.exe"
+    ],
+    "matching_windows_services": [],
+    "rule_service_filter": "Any",
+    "manual_shared_binary_lan_dependencies": "unverified"
+  },
+  "approval_gates": {
+    "live_firewall_service_config": "not approved",
+    "main_runtime_cutover": "not approved",
+    "main_database_migration": "not approved",
+    "public_deployment": "not approved",
+    "merge_main": "not approved"
+  },
+  "limitations": [
+    "No real backup/data/grants qualification",
+    "Native PCRE/libxml backports/support and WebP exact version unverified; JPEG 3.2.0 is identified through binary metadata, not a full vendor SBOM",
+    "Inactive PHP OpenSSL and unused Apache Brotli package caveats retained",
+    "No router/off-host reachability or production-load proof",
+    "PR integration 403; browser signed out; manual comparisons supplied",
+    "MariaDB WolfSSL 5.9.1 vendor backport/build/prerequisite qualification remains open; ordinary explicit-CA TLS tests do not clear specialized advisories"
+  ],
+  "installed_current_full": {
+    "testedSha": "59d7a5aeb331cb7fbafd3c215625f3722d06d8a2f16af9f4bd979be4357bf3a2",
+    "run": "20261102-132957-current",
+    "scope": "Owned QA full matrix; no main application requests",
+    "checks": [
+      {
+        "name": "schema-before",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "invariants-before",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "projection",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "security",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-auth",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-account",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-student",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-workflow",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-v025",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-ux",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-auth",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-account",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-student",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-workflow",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-v025",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-ux",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "layout",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "ui-profile",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "glass-titles",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "menu-polish",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "theme",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "appearance",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "smoke",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "schema-after",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "invariants-after",
+        "status": "PASS",
+        "exitCode": 0
+      }
+    ]
+  },
+  "installed_synthetic_backup": {
+    "name": "synthetic-20261102-135430",
+    "writers_paused": true,
+    "tables": 14,
+    "rows": 601,
+    "runtime_files": 463,
+    "artifacts_sha256": {
+      "database.sql": "92147112d80da2ba36a07074c3735c0f95e8c1af32ee225ef2bc779f718f123c",
+      "storage-config.zip": "a681689f4c6878e5a4e87c87b229c03fa0a4746daf0f6b0cad3974b7ed95893a"
+    }
+  },
+  "installed_lts_import": {
+    "synthetic_only": true,
+    "port": 3313,
+    "logical_data_identical": true,
+    "schema_and_workflow_passed": true
+  },
+  "runtime_fingerprints": {
+    "php": {
+      "files": 92,
+      "sha256": "5c8ffa605a3c7eb48aba577d5b2aff91f33da1cb7990a559af0fb13b10f5a8ae"
+    },
+    "apache": {
+      "files": 1011,
+      "sha256": "e4136c0f7f2dd6c28552482e82ab5592985a750e787f01793e32784a912aa830"
+    },
+    "node": {
+      "files": 1994,
+      "sha256": "954a55a7ea6290988a36bad8a3d80d64c29cf3390118aa5a75986700240fc50a",
+      "algorithm": "sorted Windows Path relative POSIX path + NUL + file SHA256 + LF; extended paths include all files",
+      "prior_partial_sha256": "df346db31f62cb86b4cf2f917e5043508a3b73a18004c17024e1ff5d9b6fcbd3",
+      "prior_partial_files": 1986
+    },
+    "mariadb": {
+      "files": 616,
+      "sha256": "d7e78ba1d49dc417330133e50400feccfe2ffcff3a124e71094824abc466def0"
+    }
+  },
+  "native_gd_identifier": {
+    "evidence": "embedded ASCII build string in verified php_gd.dll",
+    "libjpeg_turbo": "3.2.0 (build 20260804)",
+    "webp_exact": "unverified"
+  },
+  "installed_lts_full": {
+    "testedSha": "59d7a5aeb331cb7fbafd3c215625f3722d06d8a2f16af9f4bd979be4357bf3a2",
+    "run": "20261102-135458-lts",
+    "scope": "Owned QA full matrix; no main application requests",
+    "checks": [
+      {
+        "name": "schema-before",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "invariants-before",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "projection",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "security",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-auth",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-account",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-student",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-workflow",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-v025",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "light-ux",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-auth",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-account",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-student",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-workflow",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-v025",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dark-ux",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "layout",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "ui-profile",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "glass-titles",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "menu-polish",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "theme",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "appearance",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "smoke",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "schema-after",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "invariants-after",
+        "status": "PASS",
+        "exitCode": 0
+      }
+    ]
+  },
+  "installed_tls": {
+    "passed": true,
+    "protocol": "TLSv1.3",
+    "checks": [
+      "Explicit CA chain, localhost hostname, TLS1.2+/Secure HttpOnly Lax cookie",
+      "Untrusted CA rejected",
+      "Wrong hostname rejected",
+      "Server rejects TLS1.1"
+    ]
+  },
+  "database_tls": {
+    "synthetic_only": true,
+    "passed": true,
+    "explicit_private_ca": true,
+    "server_certificate_verification_enabled": true,
+    "encrypted_session_status": [
+      "Ssl_version\tTLSv1.3",
+      "Ssl_cipher\tTLS_AES_256_GCM_SHA384",
+      "refind_runtime_dml@127.0.0.1"
+    ],
+    "untrusted_ca_denied_2026": true,
+    "os_trust_changed": false,
+    "application_db_tls_not_changed": true,
+    "limitation": "Ordinary CA/TLS behavior does not establish WolfSSL advisory backport or build-flag status"
+  },
+  "candidate_node_mariadb_native": {
+    "mariadb": {
+      "version": "11.4.13-MariaDB",
+      "character_set_server": "latin1",
+      "collation_server": "latin1_swedish_ci",
+      "sql_mode": "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION",
+      "time_zone": "SYSTEM",
+      "ssl_metadata": "version_ssl_library\tWolfSSL 5.9.1\nhave_ssl\tYES"
+    },
+    "node": {
+      "node": "24.22.2",
+      "openssl": "3.5.9",
+      "brotli": "1.2.0",
+      "ares": "1.34.9",
+      "uv": "1.52.1",
+      "undici": "7.30.1",
+      "zlib": "1.3.2.1-motley-285e94b",
+      "v8": "13.6.233.17-node.63",
+      "bundled_npm": "11.19.1"
+    },
+    "auth_negatives": [
+      {
+        "user": "root",
+        "credential": "empty",
+        "denied_1045": true
+      },
+      {
+        "user": "root",
+        "credential": "wrong",
+        "denied_1045": true
+      },
+      {
+        "user": "refind_runtime_dml",
+        "credential": "empty",
+        "denied_1045": true
+      },
+      {
+        "user": "refind_runtime_dml",
+        "credential": "wrong",
+        "denied_1045": true
+      }
+    ],
+    "mysql_pwd_not_printed": true
+  },
+  "native_advisory_qualifications": {
+    "node_brotli": {
+      "displayed": "1.2.0",
+      "status": "patched by vendor backport",
+      "vendor": "https://nodejs.org/en/blog/release/v24.22.1",
+      "upstream_cherry_pick": "0ed4268a4401abcb44720963"
+    },
+    "mariadb_wolfssl": {
+      "displayed": "5.9.1",
+      "status": "potentially affected; backports/build prerequisites unverified",
+      "advisories": [
+        "CVE-2026-93302",
+        "CVE-2026-89102"
+      ],
+      "fixed_upstream": "5.9.4",
+      "independent_cna_record": "unavailable in this inspection",
+      "vendor": "https://www.wolfssl.com/docs/security-vulnerabilities/"
+    }
+  },
+  "verification_notes": [
+    "Explicit SQL TLS positive/untrusted-CA checks passed, followed by no-overwrite refusal check",
+    "Native text I/O explicitly UTF-8 after localized review-prose encoding artifacts were corrected",
+    "The tested I/W projection/profile harness files contain ASCII only; UTF-8 change preserves their bytes",
+    "Offline safety checks rerun after UTF-8 portability change"
+  ],
+  "tls_utf8_commit": "1d8b6adfb3f962d39d9726cfa7488002c9d681cd",
+  "final_preservation": {
+    "installed_status_entries": 0,
+    "installed_source_unchanged": true,
+    "followup_status_entries": 80,
+    "followup_status_sha256": "53f24adf857c1afbfd219e365cb7b18644521db7c87f4480a937e16611048761",
+    "followup_source_unchanged": true,
+    "original_audit_unchanged": true,
+    "main_four_configuration_hashes_unchanged": true,
+    "four_firewall_rules_and_filters_unchanged": true,
+    "matching_windows_services": [],
+    "owned_qa_processes": [],
+    "owned_qa_listeners": [],
+    "main_processes": [
+      {
+        "name": "httpd.exe",
+        "pid": 17468,
+        "created_local": "2026-11-02T12:40:52+07:00",
+        "parent": "xampp-control.exe"
+      },
+      {
+        "name": "httpd.exe",
+        "pid": 19732,
+        "created_local": "2026-11-02T12:40:54+07:00",
+        "parent_pid": 17468
+      },
+      {
+        "name": "mysqld.exe",
+        "pid": 19572,
+        "created_local": "2026-11-02T12:40:57+07:00",
+        "parent": "xampp-control.exe"
+      }
+    ],
+    "main_listeners": [
+      {
+        "address": "0.0.0.0",
+        "ports": [
+          80,
+          443
+        ]
+      },
+      {
+        "address": "::",
+        "ports": [
+          80,
+          443,
+          3306
+        ]
+      }
+    ],
+    "main_started_by_qa_tools": false,
+    "main_http_or_database_requests": false,
+    "note": "Initial preparation found main stopped; final privileged inventory found externally launched main instances. No main state was reverted or reconfigured.",
+    "active_network_category": "Public",
+    "effective_profiles": {
+      "enabled": [
+        "Domain",
+        "Private",
+        "Public"
+      ],
+      "inbound": "Block",
+      "outbound": "Allow"
+    }
+  }
+}

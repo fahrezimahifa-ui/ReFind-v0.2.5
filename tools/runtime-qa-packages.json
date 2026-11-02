@@ -35,19 +35,21 @@
     "architecture": "x64",
     "url": "https://nodejs.org/dist/v24.22.2/node-v24.22.2-win-x64.zip",
     "sha256": "ca1bff5d8ead13c9f2ea404a176db46bd430704d5b5113734049fa365e7799e2",
-    "metadata": "https://nodejs.org/dist/v24.22.2/SHASUMS256.txt"
+    "metadata": "https://nodejs.org/dist/v24.22.2/SHASUMS256.txt",
+    "brotli_backport": "process.versions.brotli stays 1.2.0; Node 24.22.1 vendor security release explicitly cherry-picks CVE-2026-111497 fix 0ed4268a4401abcb44720963, inherited by selected 24.22.2"
   },
   "mariadb": {
     "version": "11.4.13",
     "architecture": "x64",
     "url": "https://archive.mariadb.org/mariadb-11.4.13/winx64-packages/mariadb-11.4.13-winx64.zip",
     "sha256": "d62986d433eeebfde218560b276103831604a61e929e87f1a17f5aebd80257e2",
-    "metadata": "https://archive.mariadb.org/mariadb-11.4.13/sha256sums.txt",
-    "restriction": "New private synthetic datadir only. Logical import of application database, never raw datadir or mysql privilege-table copying."
+    "metadata": "https://archive.mariadb.org/mariadb-11.4.13/winx64-packages/sha256sums.txt",
+    "restriction": "New private synthetic datadir only. Logical import of application database, never raw datadir or mysql privilege-table copying.",
+    "native_caveat": "Actual server reports WolfSSL 5.9.1; newer upstream 5.9.4 fixes include conditional CVE-2026-93302/89102. MariaDB backports/build prerequisites unverified. Compatibility and explicit-CA TLS passed; package not declared fully security-cleared."
   },
   "native_qualification": {
     "php_openssl": "Packaged OpenSSL 3.0.22 remains inactive; PHP openssl/curl extensions are not loaded. No arbitrary DLL replacement. Re-review before enabling either extension.",
     "apache_tls": "Loaded bundled OpenSSL 3.5.9; Brotli/Zstd disabled in this OpenSSL build; unused mod_brotli/curl/proxy omitted. Complete archive still contains optional components requiring review.",
-    "remaining": "PCRE reports 10.44 and libxml 2.11.9; vendor backport/support qualification remains open. Exact bundled JPEG-turbo/WebP versions are unverified. No new image normalization or XML/regex features approved."
+    "remaining": "PCRE reports 10.44 and libxml 2.11.9; vendor backport/support qualification remains open. GD binary identifies libjpeg-turbo 3.2.0 (build 20260804); WebP exact version remains unverified. No new image normalization or XML/regex features approved."
   }
 }

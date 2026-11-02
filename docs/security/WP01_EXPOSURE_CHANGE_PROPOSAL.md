@@ -9,13 +9,21 @@ The user's implementation authorization requires this exact proposal and rollbac
 - Installed source: 4d74e9872b3afa5fa1ab09c081b30d1a3437a2b5, clean.
 - GitHub main: a610b1a0cb7ebb2b911f3468388076948a65b238, independently re-resolved on 2026-11-02.
 - Latest follow-up: the existing dirty maintainability worktree, same 609-file fingerprint as the audit. Its 80 pre-existing status entries, including the approved report, remain untouched.
-- **Apache and MariaDB are stopped at this checkpoint.** No listeners on 80/443/3306; no XAMPP Windows services were returned by the service inventory. This supersedes the audit's earlier running-process observation. It does not prove future or Internet exposure absent.
+- **Final privileged inventory: main Apache and MariaDB are running with their original wildcard listeners.** HTTP/HTTPS bind 0.0.0.0 and :: on 80/443; MariaDB binds :: on 3306. Parent/process timestamps identify launch through xampp-control.exe around 12:40 +07 on 2026-11-02. This was external to the QA tools. No matching Windows service is registered. The earlier stopped-state observation applies only to the initial preparation checkpoint; LAN/Internet reachability is still unverified.
 - Active network category: Public. Effective firewall profiles: enabled, inbound Block, outbound Allow.
 - Four Public inbound allow rules remain enabled for the XAMPP executables, all addresses and ports. Both TCP and UDP rules exist; TCP is the relevant current server protocol.
 - Main Apache configuration still contains wildcard HTTP/HTTPS listeners, CGI aliases and the AJP examples include. MariaDB has no active bind-address directive in its inspected allowlist.
 - Existing phpMyAdmin/webalizer/status/info restrictions already use local authorization. Retain those boundaries.
 
 The proposed end state is local-only access. It removes LAN access for **all applications using these XAMPP instances**, including other worktrees. No ReFind public route, API, role, session name, database name or application file changes. Confirm any intentional LAN/CGI/Tomcat use before approval; none was demonstrated by this inspection.
+
+## Ownership verification completed on 2026-11-02
+
+Both PersistentStore and ActiveStore returned exactly the four listed local rules: Enabled True, Inbound Allow, Public; Service Any; local/remote addresses and ports Any; the listed TCP/UDP protocol and exact Program path. No matching Windows service uses either executable. The program filters scope these rules to the intended XAMPP installation rather than other Apache/MySQL executable paths; disabling them does not edit another program's rule.
+
+Service Any is not evidence that a rule is required by an unrelated service. There is no direct unrelated Windows service dependency in this inventory. Manual applications sharing these two binaries, future service registration, intentional LAN clients, and other XAMPP sites' CGI/AJP requirements are not exhaustively provable from a service snapshot. The proposed binding affects all such XAMPP consumers. Preserve that operational review point rather than asserting no possible dependency.
+
+The cgi-bin directory proposal now also changes AllowOverride All to None so an .htaccess file cannot restore the denied access. Main files and rules remain unchanged; all four configuration precondition hashes were rechecked and match below.
 
 ## Exact proposed firewall change
 
@@ -62,7 +70,8 @@ C:\xampp\apache\conf\httpd.conf:
 +    # ScriptAlias /cgi-bin/ "C:/xampp/cgi-bin/"
 @@ lines 387-391 (only this Directory block)
  <Directory "C:/xampp/cgi-bin">
-     AllowOverride All
+-    AllowOverride All
++    AllowOverride None
      Options None
 -    Require all granted
 +    Require all denied
@@ -115,8 +124,8 @@ Keep datadir, credentials, SQL modes, collations, schema, binaries and accounts 
 ## Application sequence and acceptance gate
 
 1. Review this proposal; obtain the user's main-configuration/firewall authorization. Verify any other intended XAMPP consumers.
-2. Finish the separate native QA prerequisites. Apply equivalent loopback bindings and missing CGI/AJP aliases there first. **This gate is pending:** Apache download, CRT, BOM and fixture guard are unresolved; no QA web test is claimed.
-3. With main services stopped and writers paused, save private byte-for-byte copies of the four files, their hashes, exact rule/filter snapshots and prior process/service state. Do not export the entire host firewall policy or include credentials in a tracked receipt. Preserve XAMPP's stopped state until an approved verification window.
+2. Review the completed isolated equivalent: Apache 2.4.69/PHP 8.4.27-1 on IPv4/IPv6 loopback, seven private/alias paths denied, TLS chain/hostname/protocol tests, and the clean 26-stage MariaDB 11.4 synthetic matrix passed. This verifies the candidate boundary, not the syntax or effect of editing the existing XAMPP files. Native BOM qualifications remain in the implementation record.
+3. Main is currently running. Coordinate a brief pause for all XAMPP HTTP/SQL writers, record the current running/process state, and stop only these identified instances using the normal Control Panel controls. With services stopped and writers paused, save private byte-for-byte copies of the four files, their hashes, exact rule/filter snapshots and prior process/service state. Do not export the entire host firewall policy or include credentials in a tracked receipt. Keep XAMPP stopped until the approved verification/restart step. This pause affects every site/database consumer on these shared instances; the user must approve that impact.
 4. Disable the four exact rules. Apply only the reviewed diff; abort on source/config drift.
 5. Run existing Apache configuration syntax checks against the edited configuration before starting it. If invalid, remain stopped and restore the affected file.
 6. In the approved verification window start the existing instances normally. Inspect executable paths and listeners: Apache only 127.0.0.1/::1 on 80/443, MariaDB only 127.0.0.1:3306. Recheck effective rule state.
