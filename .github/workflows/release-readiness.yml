@@ -3,7 +3,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, codex/release-readiness, codex/maintainability-refactor]
+    branches: [main, codex/release-readiness, codex/maintainability-refactor, codex/student-self-registration]
   workflow_dispatch:
 permissions:
   contents: read
@@ -40,6 +40,7 @@ jobs:
       - run: npm run lint
       - run: composer analyse
       - run: python tools/test-release.py
+      - run: python tools/test-registration.py
       - name: Whitespace
         run: git diff-tree --check HEAD^ HEAD
       - name: Redacted history secret scan

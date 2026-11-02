@@ -4,6 +4,8 @@ v0.2.5 needs no database migration. Clone the repository into a folder whose nam
 
 ## Fresh XAMPP installation
 
+For Student self-registration, read [the enable/disable procedure and isolated QA contract](STUDENT_SELF_REGISTRATION.md) first. `registration_enabled` defaults to false; do not change the existing live installation for this feature. Run registration mutation/browser integration checks only in the owned disposable environment. Offline checks are `python tools/test-registration.py` and `node tools/test-registration-ui.cjs`; the latter uses mocked responses and proves no database integration.
+
 1. Extract latest `ReFind_0.2.0_UX01.zip` so the application is at `C:\xampp\htdocs\ReFind_0.2.0`. Historical B06 ZIP remains a separately verified checkpoint.
 2. Start Apache (HTTP80) and MySQL/MariaDB (3306). PHP8.2 needs mysqli/mysqlnd, mbstring, fileinfo, GD (JPEG/PNG/WebP) and sessions. No Node/Python is required to run the website or create the demo dataset.
 3. If host/port/user/password/path differs, create protected `app/config.local.php` returning only supported keys from `app/config.php`. For another folder set `base_path` to that folder's `/name/`. The app only allows its own main/test DB names. Schema remains 14 tables/2 views.

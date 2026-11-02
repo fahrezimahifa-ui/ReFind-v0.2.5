@@ -18,6 +18,8 @@ The latest `codex/mvp-visual-finish` checkpoint builds on published checkpoint `
 
 ## Current release v0.2.5 / folder ReFind_0.2.3
 
+Student self-registration is implemented behind **`registration_enabled=false` by default**. Enabled demonstrations offer a Create account link, immediate Student sign-in, and no required Student ID. Email is unverified and does not establish UMN enrollment. See [registration scope, API, isolated QA and current verification](docs/STUDENT_SELF_REGISTRATION.md). No migration, runtime upgrade or live enablement is included.
+
 v0.2.5 fixes all 49 findings of the full QA pass (15 bugs, 10 flows, 9 redundancies, 15 copy issues) in four tiers. Highlights: no self-matches and a stricter match score; one active claim per Lost report; withdraw a claim; rejection is final; only active claims lock reports; a configurable Building Management pickup desk plus claimant contact for BM; "I found this item"; a `release` pickup operation for no-shows; History as the closed-report archive; quieter notifications with mark-all-read; confirmation only for final BM decisions; plain-language copy and the 0.2.5 label. No database change. Details, tests and gaps: [v0.2.5 report](docs/V025_REPORT.md). Repository: `https://github.com/fahrezimahifa-ui/ReFind-v0.2.5`.
 
 Pickup desk text comes from `pickup_desk_name`, `pickup_desk_location`, `pickup_desk_hours` and `pickup_desk_contact` in `app/config.php` (override them in `app/config.local.php`). To recompute stored suggestions in an existing demo with the new rules, back up first and run `C:\xampp\php\php.exe tools/refresh-matches.php --dry-run`, then without `--dry-run`.

@@ -4,6 +4,8 @@ This guide describes the source reviewed at `857acea`, with the existing local p
 
 ## 1. Identity and quick start
 
+Student registration adds the guest-only `register.html` gateway route and `api/register.php`. Availability comes from validated configuration and defaults to disabled; the session bootstrap advertises only the availability boolean. Registration shares login session creation, reserves a separate per-IP attempt before validation, and inserts active Students with nullable Student ID/avatar. No schema migration is required. See [the registration contract and verification report](STUDENT_SELF_REGISTRATION.md).
+
 | Setting | Existing local installation |
 |---|---|
 | App version | **0.2.5** |
@@ -35,7 +37,7 @@ Paths below are relative to the project root.
 
 | Location | Responsibility |
 |---|---|
-| `.htaccess` | Rewrite the root and twelve `.html` routes to `page.php`; deny internal directories/dotfiles; asset cache revalidation |
+| `.htaccess` | Rewrite the root and thirteen `.html` routes to `page.php`; deny internal directories/dotfiles; asset cache revalidation |
 | `page.php`, `app/routes.php` | Allowlisted page routing, session/role guards, template rendering and safe return URLs |
 | `app/pages/` | Actual HTML templates, BM page and shared navigation partial |
 | `css/` | Shared, auth, Student and BM styling |
@@ -83,6 +85,7 @@ Browser state is not the authority for role, ownership or persisted business rec
 |---|---|
 | `api/session.php` | Guest/auth state and CSRF bootstrap |
 | `api/auth.php` | Login/logout |
+| `api/register.php` | Enabled, guest-only Student creation and immediate sign-in; CSRF and separate rate limit |
 | `api/account.php` | Own profile, avatar and password changes |
 | `api/avatar.php` | Authenticated current-avatar delivery |
 | `api/references.php` | Categories, locations, status labels and configurable pickup-desk details |
@@ -102,6 +105,7 @@ The actual route allowlist is [app/routes.php](../app/routes.php). `admin.html` 
 | Route | Access/use |
 |---|---|
 | `index.html`, `login.html` | Guest landing/login; authenticated role-specific landing/redirects |
+| `register.html` | Guest registration when enabled; otherwise login redirect; authenticated users go to their role landing |
 | `browse.html`, `item.html` | Signed-in Student/BM discovery and report details |
 | `report.html`, `claim.html`, `my-reports.html` | Student reports, ownership claims and personal activity |
 | `admin.html?tab=claims`, `?tab=reports`, `?tab=handover` | BM operational queues and decisions |
