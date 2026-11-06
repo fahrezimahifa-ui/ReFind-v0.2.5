@@ -144,7 +144,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(self.php(code, self.target / 'app/config.php'), '13')
 
     def install_fake_app(self):
-        for name in ['http.php', 'auth.php', 'db.php', 'routes.php']:
+        for name in ['http.php', 'auth.php', 'db.php', 'routes.php', 'registration-policy.php']:
             shutil.copy2(ROOT / 'app' / name, self.target / 'app' / name)
         shutil.copy2(ROOT / 'page.php', self.target / 'page.php')
         (self.target / 'api').mkdir()

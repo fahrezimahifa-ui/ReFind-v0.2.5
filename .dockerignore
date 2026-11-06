@@ -4,8 +4,7 @@ output
 app/config.local.php
 api/config.local.php
 .env
-.dev.env
-.refind-dev.json
+.env.*
 storage/**
 !storage/.htaccess
 !storage/README.md
@@ -14,7 +13,12 @@ docs/references
 docs/verification
 **/__pycache__
 
+.dev.env
+
+.refind-dev.json
+
 .dev-npm-cache
+
 .dev-php-vendor
 
 .xampp-stage.local.json

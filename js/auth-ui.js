@@ -8,6 +8,7 @@ $(async function () {
     if (document.body.dataset.requiresAuth === 'true' && !session.authenticated) { window.location.replace(app.loginUrl()); return; }
     if (page === 'login' && session.authenticated) { window.location.replace(app.base + (session.user.role === 'BUILDING_MANAGEMENT' ? 'admin.html' : 'index.html')); return; }
     $('[data-user-name]').text(session.user?.name || '');
+    $('#registration-link').prop('hidden', !session.registration_enabled);
     $('#guest-home').prop('hidden', session.authenticated);
     $('#member-home').prop('hidden', !session.authenticated);
     $('#login-submit').prop('disabled', false).text('Log in');
@@ -38,4 +39,5 @@ $(async function () {
       feedback.trigger('focus');
     }
   });
+
 });

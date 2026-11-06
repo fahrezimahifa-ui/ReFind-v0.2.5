@@ -14,7 +14,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .ambient-layer--cool{background:radial-gradient(ellipse 28% 32% at 24% 70%,rgb(var(--cyan-rgb) / calc(var(--wash-alpha) * var(--pool-strength) * .5)),transparent 100%),radial-gradient(ellipse 28% 34% at 78% 20%,rgb(var(--blue-rgb) / calc(var(--wash-alpha) * var(--pool-strength) * .55)),transparent 100%);animation-name:ambient-cool;animation-duration:47s}
 .ambient-layer--warm{background:radial-gradient(ellipse 27% 32% at 75% 72%,rgb(var(--orange-rgb) / calc(var(--wash-alpha) * var(--pool-strength) * .65)),transparent 100%),radial-gradient(ellipse 28% 30% at 25% 23%,rgb(var(--pink-rgb) / calc(var(--wash-alpha) * var(--pool-strength) * .7)),transparent 100%);animation-name:ambient-warm;animation-duration:71s}
 [data-motion="running"] .ambient-layer{animation-play-state:running;will-change:transform}
-body[data-page="login"]{--wash-alpha:.64}
+body[data-page="login"],body[data-page="register"]{--wash-alpha:.64}
 body[data-page="home"]{--wash-alpha:.56}
 @keyframes ambient-cool{from{transform:translate3d(-5vw,-3vh,0) rotate(-6deg) scale(1.02)}to{transform:translate3d(6vw,5vh,0) rotate(7deg) scale(1.08)}}
 @keyframes ambient-warm{from{transform:translate3d(5vw,4vh,0) rotate(6deg) scale(1.06)}to{transform:translate3d(-6vw,-4vh,0) rotate(-7deg) scale(1.02)}}
@@ -127,3 +127,10 @@ dialog::backdrop{background:var(--scrim)}
 @media(prefers-reduced-motion:reduce){.btn,.type-tab,.nav-link,.account-toggle,.menu-toggle,.appearance-toggle,.account-link{transition:none}}
 
 .btn:has(.ui-icon){gap:8px}
+.auth-switch{margin:18px 0 0;font-size:14px;color:var(--muted)}
+.password-control{display:flex;align-items:stretch;gap:8px;min-width:0}
+.password-control .form-control{min-width:0;flex:1}
+.password-toggle{flex:none;min-width:60px;min-height:48px;padding:8px;border:1px solid var(--control);border-radius:10px;background:var(--glass-control);color:var(--link);font-size:14px;font-weight:600}
+.password-toggle:hover{background:var(--primary-soft);border-color:var(--primary)}
+.password-toggle:disabled{opacity:.65;cursor:not-allowed}
+.auth-card [aria-invalid="true"]{border-color:var(--danger)}

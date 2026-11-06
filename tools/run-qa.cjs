@@ -24,7 +24,10 @@ try{
  command('invariants-before',qa.php,[path.join(qa.target,'tools/check-workflow.php')]);
  if(!appearanceOnly){
  command('projection',qa.php,[path.join(qa.root,'tools/test-projection.php')]);
+ command('registration-ui',process.execPath,['tools/test-registration-ui.cjs']);
  command('security',process.execPath,['tools/test-release-security.cjs']);
+ for(const theme of ['light','dark'])command(theme+'-registration',process.execPath,['tools/test-registration.cjs'],{REFIND_THEME:theme});
+ command('local-access',process.execPath,['tools/test-local-access.cjs']);
  for(const theme of ['light','dark'])for(const suite of ['auth','account','student','workflow','v025','ux']){
   command(theme+'-'+suite,process.execPath,['tools/test-'+suite+'.cjs',...(suite==='ux'?['--v025']:[])],{REFIND_THEME:theme});
  }

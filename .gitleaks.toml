@@ -12,3 +12,10 @@ condition = "AND"
 paths = ['''^releases/ReFind_0\.2\.0_(B06|UX01)\.manifest\.json$''']
 regexTarget = "line"
 regexes = ['''^\s*"[^"]+":\s*"[a-f0-9]{64}",?\s*$''']
+
+[[rules.allowlists]]
+description = "Exact public synthetic registration validation fixture"
+condition = "AND"
+paths = ['''^tools/test-registration\.py$''']
+regexTarget = "line"
+regexes = ['''^\s*\$base=\['name'=>'Student','email'=>'student@example\.test','password'=>'synthetic-1234','confirm_password'=>'synthetic-1234'\];\s*$''']

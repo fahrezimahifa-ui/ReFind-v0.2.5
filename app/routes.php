@@ -7,6 +7,7 @@ function page_routes(): array
     return [
         'index.html' => ['roles' => [], 'page' => 'home.html', 'batch' => 'B02'],
         'login.html' => ['roles' => [], 'page' => 'login.html', 'batch' => 'B02'],
+        'register.html' => ['roles' => [], 'page' => 'register.html', 'batch' => 'v0.2.5'],
         'browse.html' => ['roles' => ['STUDENT', 'BUILDING_MANAGEMENT'], 'page' => 'browse.html', 'batch' => 'B04'],
         'item.html' => ['roles' => ['STUDENT', 'BUILDING_MANAGEMENT'], 'page' => 'item.html', 'batch' => 'B04'],
         'report.html' => ['roles' => ['STUDENT'], 'page' => 'report.html', 'batch' => 'B04'],
@@ -34,7 +35,7 @@ function safe_return(mixed $value, ?array $user = null): string
     if (str_starts_with($path, $base)) $path = substr($path, strlen($base));
     $path = strtolower($path);
     $route = page_routes()[$path] ?? null;
-    if (!$route || in_array($path, ['login.html'], true) || ($user && $route['roles'] && !in_array($user['role'], $route['roles'], true))) return $fallback;
+    if (!$route || in_array($path, ['login.html', 'register.html'], true) || ($user && $route['roles'] && !in_array($user['role'], $route['roles'], true))) return $fallback;
     parse_str($parts['query'] ?? '', $query);
     $clean = [];
     foreach ($query as $key => $v) {
