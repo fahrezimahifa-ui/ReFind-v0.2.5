@@ -1,4 +1,6 @@
 Options -Indexes
+# ReFind is a local academic prototype. Check the socket peer, never proxy headers.
+Require expr "%{CONN_REMOTE_ADDR} -ipmatch '127.0.0.0/8' || %{CONN_REMOTE_ADDR} -ipmatch '::1/128'"
 DirectoryIndex index.html
 RewriteEngine On
 RewriteRule (^|/)\. - [F,END]
@@ -8,7 +10,7 @@ RewriteRule ^(?:app|database|storage|tools|releases|output|node_modules)(?:/|$) 
 </FilesMatch>
 RewriteRule ^api/bootstrap\.php(?:/|$) - [F,END,NC]
 RewriteRule ^$ page.php [END]
-RewriteRule ^(?:index|login|browse|item|report|claim|my-reports|admin|history|notifications|profile|settings)\.html$ page.php [END,NC]
+RewriteRule ^(?:index|login|register|browse|item|report|claim|my-reports|admin|history|notifications|profile|settings)\.html$ page.php [END,NC]
 # Scripts and styles revalidate on every load (cheap 304 via ETag), so an upgrade reaches browsers immediately.
 <IfModule mod_headers.c>
   <FilesMatch "\.(?:js|css)$">

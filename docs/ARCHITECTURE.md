@@ -1,8 +1,13 @@
 # ReFind v0.2.5: architecture and local operation
 
-This guide describes the source reviewed at `857acea`, with the existing local path override, on 27 October 2026. Read [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for the WDD/UX product story and [REQUIREMENTS_AND_ROADMAP.md](REQUIREMENTS_AND_ROADMAP.md) for implemented/proposed boundaries.
+Application topology was reviewed at `857acea`; `8331d90` adds the preserved visual finish. The release-readiness branch adds validated configuration, QA isolation and disposable CI without changing the schema or workflow contracts. Read [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for the WDD/UX product story and [REQUIREMENTS_AND_ROADMAP.md](REQUIREMENTS_AND_ROADMAP.md) for implemented/proposed boundaries.
 
 ## 1. Identity and quick start
+
+[Normal local signup](LOCAL_SIGNUP.md) uses the existing localhost URL and database. The entire ReFind directory is loopback-only; Create account appears directly below Log in without a key, launcher or expiry.
+
+Student registration adds guest-only `register.html` and `api/register.php`. It defaults to disabled and local-only; session bootstrap reports effective availability for the current requester. See [registration](STUDENT_SELF_REGISTRATION.md) and [local activation safeguards](XAMPP_REGISTRATION_INTEGRATION.md).
+
 
 | Setting | Existing local installation |
 |---|---|
@@ -35,7 +40,7 @@ Paths below are relative to the project root.
 
 | Location | Responsibility |
 |---|---|
-| `.htaccess` | Rewrite the root and twelve `.html` routes to `page.php`; deny internal directories/dotfiles; asset cache revalidation |
+| `.htaccess` | Rewrite the root and thirteen `.html` routes to `page.php`; deny internal/runtime/evidence/dependency directories and dotfiles; asset cache revalidation |
 | `page.php`, `app/routes.php` | Allowlisted page routing, session/role guards, template rendering and safe return URLs |
 | `app/pages/` | Actual HTML templates, BM page and shared navigation partial |
 | `css/` | Shared, auth, Student and BM styling |
@@ -83,6 +88,7 @@ Browser state is not the authority for role, ownership or persisted business rec
 |---|---|
 | `api/session.php` | Guest/auth state and CSRF bootstrap |
 | `api/auth.php` | Login/logout |
+| `api/register.php` | Enabled/local guest Student creation; CSRF and independent rate limit |
 | `api/account.php` | Own profile, avatar and password changes |
 | `api/avatar.php` | Authenticated current-avatar delivery |
 | `api/references.php` | Categories, locations, status labels and configurable pickup-desk details |
@@ -102,6 +108,7 @@ The actual route allowlist is [app/routes.php](../app/routes.php). `admin.html` 
 | Route | Access/use |
 |---|---|
 | `index.html`, `login.html` | Guest landing/login; authenticated role-specific landing/redirects |
+| `register.html` | Enabled/local guests register; otherwise login redirect; authenticated users return to their role landing |
 | `browse.html`, `item.html` | Signed-in Student/BM discovery and report details |
 | `report.html`, `claim.html`, `my-reports.html` | Student reports, ownership claims and personal activity |
 | `admin.html?tab=claims`, `?tab=reports`, `?tab=handover` | BM operational queues and decisions |
@@ -174,40 +181,19 @@ Campus event/schedule presentation uses `Asia/Jakarta`. Audit and scheduled time
 
 ## Verification and tooling
 
-Run commands from the project root. For a documentation-only change, check links, referenced files and source consistency; application mutation suites are not necessary.
+The authoritative commands and safety boundaries are in [INSTALLATION_AND_RELEASE.md](INSTALLATION_AND_RELEASE.md#local-qa-and-ci); actual run outcomes are in [RELEASE_READINESS_AUDIT.md](RELEASE_READINESS_AUDIT.md). Historical checkpoint PASS totals are not release-readiness results.
 
-For relevant PHP/JS edits, focused syntax checks can be run without Apache/MySQL, for example:
+Offline PHP/JS syntax, focused ESLint, PHPStan level 5 and `python tools/test-release.py` require no running website/database. Development dependencies are locked in package/composer lockfiles; no Node/Python/Composer dependency is introduced into the application's HTTP request path.
 
-```powershell
-& "C:\xampp\php\php.exe" -l "app/claims.php"
-node --check "js/student.js"
-```
+`python tools/prepare-test.py` first validates the existing sibling's ownership marker, resolved paths, `_test` configuration and session isolation. It preserves existing configuration and runtime files, synchronizes source, then runs setup only on the isolated test database. New fixture commands and all current regression runners repeat a fail-closed isolation check. Never run preparation/setup against the main installation.
 
-With the database running, these existing CLI checks inspect schema/workflow data; review their source before extending them:
+With Apache/MariaDB running, `node tools/run-qa.cjs` runs focused security coverage, the six workflow regression suites sequentially in both themes, then layout/theme/Appearance and a QA-only login smoke. A fresh pending claim covers BM draft/confirmation preservation without using a populated main account. Release theme/Appearance tools reject `--main`; the smoke defaults to owned QA. New evidence directories preserve earlier attempts and remain ignored/protected through tracked Apache rules.
 
-```powershell
-& "C:\xampp\php\php.exe" "tools/check-database.php"
-& "C:\xampp\php\php.exe" "tools/check-workflow.php"
-```
+`tools/fingerprint.php` performs read-only data/schema/config/secret/media hashing and emits no raw records or secret contents. It can establish and compare main fingerprints without main-app HTTP login or session writes. A failed database connection is NOT RUN, never an unchanged-data proof.
 
-For behavioral changes, use the isolated QA installation. **Preparation and browser suites modify test/runtime state and write evidence.** The preparation script validates the existing ownership marker, syncs the sibling copy and runs its setup tools. Browser suites require Node, an available Playwright Core module/browser and running Apache/MariaDB. `test-v025.cjs` supports `REFIND_PLAYWRIGHT_MODULE`; tooling includes machine-specific paths.
+`tools/profile-queries.php` measures list-projection statement counts using owned QA records; matching's database-specific advisory lock and ascending parent locks remain unchanged unless separately verified. Browser QA needs Playwright, Sharp and axe; recording requires Playwright FFmpeg. Existing `REFIND_*` overrides remain supported alongside shared runtime discovery.
 
-```powershell
-python "tools/prepare-test.py"
-node "tools/test-v025.cjs"
-```
-
-Choose additional suites for the affected surface: `tools/test-auth.cjs`, `test-account.cjs`, `test-student.cjs`, `test-workflow.cjs`, or `test-ux.cjs --v025`. The regression evidence batch can be set with `$env:REFIND_EVIDENCE_BATCH = "v025"`. `smoke-auth.cjs --v025` targets the main app and writes session/auth state, although it is intended to preserve business records.
-
-Historical engineering results are in [ACCEPTANCE_TESTS.md](ACCEPTANCE_TESTS.md), [V025_REPORT.md](V025_REPORT.md) and `docs/verification/v025/`. Historical data counts and PASS results should be attributed to those runs, not stated as a fresh live audit.
-
-All six regression suites accept `REFIND_THEME=light` or `dark` and `REFIND_EVIDENCE_DIR` for a separate receipt directory. Run mutation suites sequentially. `tools/test-theme.cjs` performs read-only responsive/theme/accessibility review on the owned QA app; `--main` explicitly selects this local main installation and checks business-table fingerprints before/after. It needs Playwright, Sharp, and `@axe-core/playwright` (module paths can be supplied with `REFIND_PLAYWRIGHT_MODULE`, `REFIND_SHARP_MODULE`, and `REFIND_AXE_MODULE`). Keep review dependencies and screenshots under ignored `output/playwright/`. See [GLASS_DARK_MODE_REPORT.md](GLASS_DARK_MODE_REPORT.md) for the current run and its limits.
-
-The subsequent [layout/glass refinement](LAYOUT_GLASS_REPORT.md) records the current shared widths, notification feed, and surface roles. `tools/test-layout.cjs` adds focused feed/spacing/read-state/reflow checks with fresh actors in the owned QA installation; do not run it alongside other mutation suites. The theme suite also checks rendered focus-ring contrast over black/white header backdrops. Use a new `REFIND_EVIDENCE_DIR` to preserve previous results. This installation's ignored `output/playwright/.htaccess` denies captures through HTTP; open them as local files and retain that guard when generating review evidence.
-
-The latest [MVP visual finish report](MVP_VISUAL_FINISH_REPORT.md) describes the local Manrope font, ambient layers, and browser-only Appearance preferences. `js/theme.js` applies `refind-theme` before paint and stores motion separately as `refind-motion`; neither setting changes account records. The shared header and Settings stay synchronized through the same controller and storage events. Font provenance/license live in `assets/fonts/`.
-
-`tools/test-appearance.cjs` adds read-only controls, independent background-phase contrast, font fallback/layout-shift, draft/upload/BM-confirmation preservation, and motion-on/off performance checks. Like the theme suite it defaults to owned QA; `--main` explicitly selects this local main app and compares business-table fingerprints. It needs Playwright and Sharp. Recording also needs Playwright's FFmpeg; keep its download in ignored review artifacts and set `PLAYWRIGHT_BROWSERS_PATH` to that directory. `tools/qa-contrast.cjs` samples composited backgrounds under visible text ranges, excluding adjacent icons/inputs and content occluded by dialogs or sticky actions. Choose a fresh `REFIND_EVIDENCE_DIR` to retain earlier runs. Run the six mutation suites sequentially in each theme.
+Disposable Compose CI uses Apache/PHP 8.2, MariaDB 10.11, browser automation, synthetic accounts/media and a second empty database service for recovery. It publishes no ports and mounts no host runtime/database data. Private runtime files and SQL backups are excluded from artifacts. Physical-device, native tab suspension, screen-reader and battery/thermal checks remain manual. Existing [MVP visual evidence](MVP_VISUAL_FINISH_REPORT.md) retains its historical scope.
 
 ## 8. Existing documentation and known drift
 

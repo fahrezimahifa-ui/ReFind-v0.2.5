@@ -11,6 +11,8 @@ RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && docker-php-ext-configure gd --with-jpeg --with-webp \
     && docker-php-ext-install mysqli mbstring zip gd \
     && a2enmod rewrite headers \
+    && printf 'Listen [::1]:80\n' > /etc/apache2/conf-available/refind-qa-loopback.conf \
+    && a2enconf refind-qa-loopback \
     && printf '<Directory /var/www/html>\nAllowOverride All\nRequire all granted\n</Directory>\n' > /etc/apache2/conf-available/refind-qa.conf \
     && a2enconf refind-qa
 ARG REFIND_APP_ROOT=/var/www/html/ReFind_0.2.3

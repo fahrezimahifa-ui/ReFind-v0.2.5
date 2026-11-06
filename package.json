@@ -6,7 +6,7 @@
   "scripts": {
     "check:js": "node tools/check-js.cjs",
     "lint": "eslint js tools",
-    "test:unit": "python tools/test-release.py",
+    "test:unit": "python tools/test-release.py && python tools/test-registration.py && python tools/test-registration-source.py",
     "test:qa": "node tools/run-qa.cjs"
   },
   "devDependencies": {

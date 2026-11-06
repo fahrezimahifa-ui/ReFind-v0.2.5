@@ -1,5 +1,10 @@
 # Role, routes, API, dan auth — As-built B06
 
+Current local boundary: every ReFind page/API/asset rejects non-loopback peers at Apache before PHP. The retired key API is removed.
+
+Current v0.2.5 addition: [Student registration](STUDENT_SELF_REGISTRATION.md) is disabled by default and restricted to loopback peers in local-only mode. Availability is requester-specific. Historical statements retain their checkpoint scope.
+
+
 **Current checkpoint: B06.** Seluruh12 routes dan MVP operations pada matriks berikut aktif. Bagian B02–B05 mencatat kondisi pada batch terkait; final regression/fresh-install evidence berada di [B06_REPORT.md](B06_REPORT.md). Dua role: STUDENT dan BUILDING_MANAGEMENT; main memiliki2 Student +1 BM.
 
 ## Status setelah B02
@@ -34,6 +39,7 @@ Role/ownership/API contract berikut direverifikasi lewat regression dan fresh-in
 |---|---|---|---|
 | index.html | Landing | Student Home | Redirect Review Queue |
 | login.html | Login | Redirect Home | Redirect Review Queue |
+| register.html | Enabled/local guest signup; otherwise redirect Login | Redirect Home | Redirect Review Queue |
 | browse.html, item.html | Login + safe return | Public report content | Public report content |
 | report.html, claim.html, my-reports.html | Login + safe return | Allowed; object eligibility still checked | 403 / link kembali Queue |
 | admin.html, seluruh tab/deep link | Login + safe return | 403 / link kembali Home | Allowed; stale state still checked |
@@ -52,6 +58,7 @@ UX01 read models add `notification_type`, `item_title`, authorized `handover_id`
 |---|---|---|
 | api/session.php | Guest/auth state + CSRF token; own minimal identity when authenticated | Tidak menyediakan account switch |
 | api/auth.php | — | Login untuk guest; logout untuk session sendiri; CSRF |
+| api/register.php | 405 | Enabled/local guests only; active STUDENT assigned on server; CSRF/origin and independent limiter; 201 authenticates |
 | api/account.php | Own profile; requires login | Edit display name / change password / update or remove avatar; own session ID, CSRF |
 | api/references.php | Reference labels/categories/locations; v0.2.5 filters list active categories and 6 areas, UI status names, `pickup_desk` | — |
 | api/items.php | Authenticated public list/detail/matches; mine from session; editable private metadata only own eligible report; v0.2.5 `active=1` / `closed=1` | Create/update/delete: Student; ownership + status + transaction |

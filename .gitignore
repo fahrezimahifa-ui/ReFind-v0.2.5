@@ -4,6 +4,8 @@ app/config.local.php
 .dev.env
 api/config.local.php
 .env
+.env.*
+!.env.example
 
 # Runtime uploads, auth-throttle records and local backups
 storage/**

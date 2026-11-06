@@ -15,6 +15,7 @@ FOLDERS = ['app', 'api', 'css', 'js', 'assets', 'vendor', 'database', 'tools/dem
 FILES = ['.htaccess', 'page.php', 'tools/.htaccess', 'tools/setup-db.php', 'tools/setup-demo.php', 'tools/b02-fixture.php', 'tools/qa-guard.php', 'tools/fingerprint.php', 'docs/schema-contract.json', 'tools/check-database.php', 'tools/check-workflow.php', 'tools/seed-student-demo.php', 'tools/seed-expanded-demo.php', 'tools/demo-summary.php', 'tools/refresh-matches.php']
 
 validate_target(ROOT, TARGET)  # Check existing paths/configuration before any writes.
+FILES.append('tools/registration-fixture.php')
 if not TARGET.exists():
     TARGET.mkdir()
     MARKER.write_text(json.dumps({'source': str(ROOT), 'scope': 'owned isolated QA'}) + '\n')

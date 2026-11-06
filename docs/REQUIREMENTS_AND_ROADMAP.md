@@ -6,6 +6,8 @@ Read [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for evidence/roles and [ARCHITECTU
 
 ## 1. How to interpret status
 
+Approved implementation addition (2 November 2026): [Student self-registration](STUDENT_SELF_REGISTRATION.md) is implemented behind a disabled-by-default configuration gate. It uses unverified email, immediately active Student accounts and nullable Student IDs. This does not implement the proposed campus identity/SSO capability. Current execution evidence and remaining integration blockers are recorded separately in that guide.
+
 | Status | Meaning |
 |---|---|
 | **Implemented** | Supported by the current source/schema and documented workflow; historical runtime tests are separately referenced |
