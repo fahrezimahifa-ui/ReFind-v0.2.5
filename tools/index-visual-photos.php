@@ -115,11 +115,17 @@ function visual_write_worker_receipt(array $result): void
 
 try {
     assert_qa_installation(app_root());
-    if (!visual_enabled()) throw new RuntimeException('Visual Search is disabled for this QA installation.');
     $mode = $argv[1] ?? '--status';
     $argument = $argv[2] ?? null;
     if (count($argv) > 3 || (in_array($mode, ['--drain','--status'], true) && $argument !== null)) {
         throw new InvalidArgumentException('Invalid worker arguments.');
+    }
+    if (!visual_enabled()) {
+        if ($mode === '--drain') {
+            echo '{"paused":"disabled"}' . PHP_EOL;
+            exit(0);
+        }
+        throw new RuntimeException('Visual Search is disabled for this QA installation.');
     }
     if ($mode === '--drain') {
         try {

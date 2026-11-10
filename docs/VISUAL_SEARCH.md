@@ -42,15 +42,27 @@ Restrict the key file to the QA operator and the Apache runtime identity as need
 
 ## Automatic indexing and recovery
 
-Qualify one launcher in the running QA installation. First try Task Scheduler under the existing signed-in QA operator. In Task Scheduler, use **Run only when user is logged on**, a once trigger that repeats every minute indefinitely, and the action below. Enable **Run task as soon as possible after a scheduled start is missed**, cap runtime at 55 seconds using the task settings, and set **Do not start a new instance**.
+Use one launcher in the running QA installation. The native task is **ReFind Visual Search QA** in the Task Scheduler Library. Run it under the signed-in QA operator with a once trigger that repeats every minute indefinitely. Enable **Run task as soon as possible after a scheduled start is missed**, set a 55-second runtime limit, and select **Do not start a new instance**.
+
+Build the GUI launcher from the feature worktree after the QA guard passes.
+
+~~~powershell
+$csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+$launcher = Join-Path $qa 'storage\setup\visual-index-task-quiet.exe'
+& $csc /nologo /target:winexe "/out:$launcher" (Resolve-Path 'tools/visual-index-task-launcher.cs').Path
+~~~
 
 ~~~text
-Program   C:\xampp\php\php.exe
-Arguments "C:\xampp\htdocs\ReFind_0.2.0_Test\tools\index-visual-photos.php" --drain
+Program   C:\xampp\htdocs\ReFind_0.2.0_Test\storage\setup\visual-index-task-quiet.exe
+Arguments (leave empty)
 Start in  C:\xampp\htdocs\ReFind_0.2.0_Test
 ~~~
 
-If Scheduler cannot register or run reliably, start the included fallback once during each signed-in QA session.
+The launcher starts the original PHP CLI with Windows' CREATE_NO_WINDOW flag. A job object ties the PHP process to the launcher, and the worker exit code is reported to Task Scheduler. Its latest output and existing worker status are in private QA storage. The task's **Hidden** setting affects its listing in Task Scheduler.
+
+Use **Disable** on this task to prevent new ticks. Let an active tick finish within its 55-second limit. If you used the fallback, run its stop command and wait for it to return. To resume, stop the fallback first, confirm the task uses visual-index-task-quiet.exe, then select **Enable**. Turning off the QA feature flag makes scheduled drains exit before indexing and makes the fallback loop exit on its next tick.
+
+If Scheduler cannot register or run reliably, disable the task if it exists and run the fallback in an existing PowerShell session. Its PHP children start without a console. Use a second existing session for the stop command.
 
 ~~~powershell
 & "$qa\tools\visual-index-loop.ps1"
