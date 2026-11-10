@@ -31,7 +31,7 @@ try {
     $checks['foreign_key_columns'] = $expectedFks === $actualFks;
     $checks['unique_constraints'] = $expectedUnique === $actualUnique;
     $counts = array_column(rows('SELECT CONSTRAINT_TYPE,COUNT(*) AS n FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=DATABASE() GROUP BY CONSTRAINT_TYPE'), 'n', 'CONSTRAINT_TYPE');
-    $checks['constraint_counts'] = (int) ($counts['PRIMARY KEY'] ?? 0) === 14 && (int) ($counts['UNIQUE'] ?? 0) === 13 && (int) ($counts['FOREIGN KEY'] ?? 0) === 25 && (int) ($counts['CHECK'] ?? 0) === 9;
+    $checks['constraint_counts'] = (int) ($counts['PRIMARY KEY'] ?? 0) === 15 && (int) ($counts['UNIQUE'] ?? 0) === 13 && (int) ($counts['FOREIGN KEY'] ?? 0) === 26 && (int) ($counts['CHECK'] ?? 0) === 10;
     $checks['hashed_accounts'] = !array_filter(rows('SELECT password_hash FROM users'), fn($u) => !password_get_info($u['password_hash'])['algo']);
     $checks['no_implicit_profile_table'] = !in_array('user_profiles', $names, true);
     $checks['schema_fingerprint'] = ($contract['actual_sql_sha256'] ?? '') === hash_file('sha256', app_root() . '/database/schema.sql');

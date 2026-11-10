@@ -119,7 +119,7 @@ There are two stored roles: `STUDENT` and `BUILDING_MANAGEMENT`. Security, Stude
 
 ## 5. Database and filesystem
 
-The schema has **14 tables, 2 views and 25 foreign keys**. Canonical schema is [database/schema.sql](../database/schema.sql); [DATA_DICTIONARY.md](DATA_DICTIONARY.md) and [schema-contract.json](schema-contract.json) describe its contract.
+The v0.2.5 baseline schema has **14 tables, 2 views and 25 foreign keys**. The isolated [Visual Search feature](VISUAL_SEARCH.md) adds one derived photo-index table and one foreign key. Canonical schema is [database/schema.sql](../database/schema.sql); [DATA_DICTIONARY.md](DATA_DICTIONARY.md) and [schema-contract.json](schema-contract.json) describe its contract.
 
 | Domain | Tables |
 |---|---|

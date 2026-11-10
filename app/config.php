@@ -11,6 +11,8 @@ function app_defaults(): array
         'login_window_seconds' => 900, 'login_pair_limit' => 5, 'login_ip_limit' => 30,
         'registration_enabled' => false, 'registration_window_seconds' => 900, 'registration_ip_limit' => 10,
         'registration_local_only' => true,
+        'visual_search_enabled' => false, 'visual_search_students' => [], 'visual_search_key_file' => '',
+        'visual_search_student_per_minute' => 6, 'visual_search_calls_per_minute' => 20,
         // Shown to students after approval. Demo values; override them in config.local.php for a real desk.
         'pickup_desk_name' => 'Building Management service desk', 'pickup_desk_location' => 'Gedung A lobby, ground floor',
         'pickup_desk_hours' => 'Monday–Friday, 08:00–16:00 WIB', 'pickup_desk_contact' => 'bm@refind.test',
@@ -43,6 +45,17 @@ function validate_app_config(array $config): array
     if (!is_bool($config['registration_local_only'])) throw new RuntimeException('Invalid registration scope.');
     foreach (['idle_seconds', 'absolute_seconds', 'login_window_seconds', 'login_pair_limit', 'login_ip_limit', 'registration_window_seconds', 'registration_ip_limit'] as $key) {
         if (!is_int($config[$key]) || $config[$key] < 1) throw new RuntimeException('Invalid timeout/limit.');
+    }
+    if (!is_bool($config['visual_search_enabled']) || !is_string($config['visual_search_key_file']) ||
+        !is_array($config['visual_search_students']) || !array_is_list($config['visual_search_students']) ||
+        count($config['visual_search_students']) > 50 ||
+        array_filter($config['visual_search_students'], fn($id) => !is_int($id) || $id < 1 || $id > 4294967295)) {
+        throw new RuntimeException('Invalid Visual Search configuration.');
+    }
+    foreach (['visual_search_student_per_minute', 'visual_search_calls_per_minute'] as $key) {
+        if (!is_int($config[$key]) || $config[$key] < 1 || $config[$key] > 60) {
+            throw new RuntimeException('Invalid Visual Search call limit.');
+        }
     }
     foreach (['pickup_desk_name', 'pickup_desk_location', 'pickup_desk_hours', 'pickup_desk_contact'] as $key) {
         if (!is_string($config[$key]) || !mb_check_encoding($config[$key], 'UTF-8') || trim($config[$key]) === '' || mb_strlen($config[$key], 'UTF-8') > 160) {

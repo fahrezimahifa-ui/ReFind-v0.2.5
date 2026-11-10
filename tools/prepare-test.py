@@ -1,21 +1,29 @@
 """Create/update this project's isolated _Test copy, without copying runtime secrets."""
+import argparse
 import json
 from pathlib import Path
 import shutil
 import subprocess
 import os
-from qa_safety import php_binary, validate_target
+from qa_safety import php_binary, qa_owner, validate_target
 
 ROOT = Path(__file__).resolve().parents[1]
 if ROOT.name == 'refind-dev' or os.environ.get('REFIND_TEST_PROFILE') in ['ui-ux-dev', 'xampp-stage']:
     raise RuntimeError('Use the dedicated development services; legacy QA preparation is refused from refind-dev')
-TARGET = ROOT.with_name('ReFind_0.2.0_Test')
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--sync-only', action='store_true', help='Do not run setup or demo seeding')
+args = parser.parse_args()
+OWNER = qa_owner(ROOT, os.environ.get('REFIND_QA_OWNER_ROOT'))
+TARGET = OWNER.with_name('ReFind_0.2.0_Test')
 MARKER = TARGET / '.refind-b02-test.json'
 FOLDERS = ['app', 'api', 'css', 'js', 'assets', 'vendor', 'database', 'tools/demo-photos']
 FILES = ['.htaccess', 'page.php', 'tools/.htaccess', 'tools/setup-db.php', 'tools/setup-demo.php', 'tools/b02-fixture.php', 'tools/qa-guard.php', 'tools/fingerprint.php', 'docs/schema-contract.json', 'tools/check-database.php', 'tools/check-workflow.php', 'tools/seed-student-demo.php', 'tools/seed-expanded-demo.php', 'tools/demo-summary.php', 'tools/refresh-matches.php']
 
-validate_target(ROOT, TARGET)  # Check existing paths/configuration before any writes.
-FILES.append('tools/registration-fixture.php')
+validate_target(OWNER, TARGET)  # Check existing paths/configuration before any writes.
+FILES.extend(['tools/registration-fixture.php', 'tools/migrate-visual-search.php',
+              'tools/index-visual-photos.php', 'tools/calibrate-visual-search.php', 'tools/visual-index-loop.ps1'])
+if OWNER != ROOT and not TARGET.is_dir():
+    raise RuntimeError('Linked-source sync requires an existing owned QA installation')
 if not TARGET.exists():
     TARGET.mkdir()
     MARKER.write_text(json.dumps({'source': str(ROOT), 'scope': 'owned isolated QA'}) + '\n')
@@ -44,7 +52,8 @@ if not local.exists():
     import base64
     encoded = base64.b64encode(json.dumps(overrides).encode()).decode()
     local.write_text("<?php\nreturn json_decode(base64_decode('" + encoded + "'), true, 32, JSON_THROW_ON_ERROR);\n", encoding='utf-8')
-validate_target(ROOT, TARGET)
-for tool in ['setup-db.php', 'setup-demo.php']:
-    subprocess.run([php_binary(), str(TARGET / 'tools' / tool)], check=True)
+validate_target(OWNER, TARGET)
+if not args.sync_only:
+    for tool in ['setup-db.php', 'setup-demo.php']:
+        subprocess.run([php_binary(), str(TARGET / 'tools' / tool)], check=True)
 print('Isolated QA ready; existing configuration and runtime files preserved.')

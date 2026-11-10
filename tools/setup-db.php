@@ -32,7 +32,9 @@ try {
     $receiptPath = storage_dir('setup') . '/database-receipt.json';
     $receipt = is_file($receiptPath) ? json_decode(file_get_contents($receiptPath), true, 64, JSON_THROW_ON_ERROR) : null;
     $previous = json_decode((string) file_get_contents(app_root() . '/database/migrations/avatars-previous-files.json'), true, 32, JSON_THROW_ON_ERROR);
-    if ($receipt && ($receipt['database'] !== $config['db_name'] || !in_array($receipt['sql_hashes'], [$manifest['files'], $previous], true))) throw new RuntimeException('Setup receipt/configuration mismatch.');
+    require_once __DIR__ . '/../app/visual-schema.php';
+    $beforeVisual = visual_previous_schema_files();
+    if ($receipt && ($receipt['database'] !== $config['db_name'] || !in_array($receipt['sql_hashes'], [$manifest['files'], $previous, $beforeVisual], true))) throw new RuntimeException('Setup receipt/configuration mismatch.');
     $admin = new mysqli($config['db_host'], $config['db_user'], $config['db_password'], '', $config['db_port']);
     $stmt = $admin->prepare('SELECT COUNT(*) AS n FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?');
     $stmt->bind_param('s', $config['db_name']); $stmt->execute();
@@ -40,9 +42,10 @@ try {
     // Name is allowlisted by app_config(), never taken from HTTP input.
     $admin->query('CREATE DATABASE IF NOT EXISTS `' . $config['db_name'] . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
     $admin->close();
-    if ($receipt) { require_once __DIR__ . '/../app/avatar-migration.php'; migrate_avatar_schema($receipt, $manifest); }
+    if ($receipt) { require_once __DIR__ . '/../app/avatar-migration.php'; migrate_avatar_schema($receipt, $manifest, [$beforeVisual]); }
     file_put_contents($receiptPath, json_encode(['database' => $config['db_name'], 'sql_hashes' => $manifest['files'], 'status' => 'initializing'], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR), LOCK_EX);
     run_statements(app_root() . '/database/schema.sql');
+    verify_visual_schema();
     run_statements(app_root() . '/database/views.sql', true);
     $counts = [];
     foreach ($manifest['reference_counts'] as $table => $expected) $counts[$table] = (int) row('SELECT COUNT(*) AS n FROM `' . $table . '`')['n'];
@@ -58,7 +61,7 @@ try {
     $expectedTables = $manifest['tables']; sort($expectedTables);
     if ($tables !== $expectedTables) throw new RuntimeException('Schema table names differ.');
     $constraints = array_column(rows('SELECT CONSTRAINT_TYPE, COUNT(*) AS n FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = DATABASE() GROUP BY CONSTRAINT_TYPE'), 'n', 'CONSTRAINT_TYPE');
-    foreach (['PRIMARY KEY' => 14, 'UNIQUE' => 13, 'FOREIGN KEY' => 25, 'CHECK' => 9] as $kind => $expected) {
+    foreach (['PRIMARY KEY' => 15, 'UNIQUE' => 13, 'FOREIGN KEY' => 26, 'CHECK' => 10] as $kind => $expected) {
         if ((int) ($constraints[$kind] ?? 0) !== $expected) throw new RuntimeException('Schema constraint count differs.');
     }
     $views = array_column(rows('SELECT TABLE_NAME FROM information_schema.VIEWS WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME'), 'TABLE_NAME');

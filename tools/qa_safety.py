@@ -32,6 +32,19 @@ def read_identity(folder):
     return json.loads(result.stdout)
 
 
+def qa_owner(source, requested):
+    if not requested:
+        return source
+    owner = Path(requested).resolve(strict=True)
+    def common(root):
+        return Path(subprocess.check_output(
+            ['git', '-C', str(root), 'rev-parse', '--path-format=absolute', '--git-common-dir'],
+            text=True, stderr=subprocess.DEVNULL).strip()).resolve(strict=True)
+    if common(source) != common(owner):
+        raise RuntimeError('QA sync source and owner must share the Git repository')
+    return owner
+
+
 def validate_target(root, target):
     if target.name != 'ReFind_0.2.0_Test' or target.parent.resolve() != root.parent.resolve() or target.resolve() == root.resolve():
         raise RuntimeError('Unexpected QA target')
