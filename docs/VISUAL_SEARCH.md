@@ -15,6 +15,8 @@ Hosted multimodal embeddings fit the existing PHP stack. Self-hosted CLIP would 
 
 The source baseline is `5b6bcdd`. The feature defaults off and requires the owned `ReFind_0.2.0_Test` application, `_test` database, isolated session configuration, and an explicit list of synthetic Student IDs. Keep QA loopback-only. Keep the main checkout, database, uploads, and accounts separate.
 
+The [local integration procedure](VISUAL_SEARCH_INTEGRATION.md) installs source and the empty additive table in the existing main app with processing still disabled. QA data and key configuration stay separate. The published pilot limitations remain applicable.
+
 From the feature worktree, point QA tooling at the owner checkout and sync the sources. This preserves the ownership marker and local override. Check the ownership guard before any write. Use the dedicated migration on an existing QA database that has a ready pre-Visual Search receipt. On a fresh disposable installation use the existing setup and synthetic demo account tools.
 
 ~~~powershell
