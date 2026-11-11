@@ -96,3 +96,10 @@
 .form-card>h2,.detail-card>h1{margin-bottom:var(--space-2)}
 .activity-card,.discovery-body{gap:var(--space-2)}
 .claim-actions,.item-actions{gap:var(--space-2)}
+
+/* Keep photo search separate from the keyword result grid. */
+.visual-search{margin-top:16px}
+.visual-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+#visual-outcome{margin-bottom:24px}
+#visual-outcome h2{font-size:clamp(20px,2.5vw,26px)}
+@media(max-width:479px){.search-row:has(#visual-toggle:not([hidden])){flex-wrap:wrap}.search-row:has(#visual-toggle:not([hidden])) .search-field{flex-basis:100%}}

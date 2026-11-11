@@ -9,6 +9,7 @@
     "location_floors",
     "items",
     "item_photos",
+    "item_photo_embeddings",
     "item_matches",
     "claims",
     "claim_photos",
@@ -28,7 +29,7 @@
     "location_floors": 91
   },
   "files": {
-    "schema.sql": "45071de45a7a89f327a34e7112410958caebd1bfe73ec01c124ba20f70cf153f",
+    "schema.sql": "7c58fe8b35f8d635f9db04ea518afe77ea7a9a8982237a7f0f983faa343a2bfd",
     "views.sql": "f45f3e8aa53e6c4dd3fbcdb2f88da2bbebea3d3f1798ade1a109a953a58b4bc9",
     "seed-reference.sql": "7013e963e0cea3fa9ddccfdeaca6d2508a8be33ed9ac5933cb28d503375157b8"
   },

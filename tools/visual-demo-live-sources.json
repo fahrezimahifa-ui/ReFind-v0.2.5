@@ -1,0 +1,76 @@
+{
+  "dataset": "refind-professor-demo-20261111",
+  "assets": [
+    {
+      "id": "demo-reference",
+      "title": "File:Sega-Dreamcast-Controller-FL.jpg",
+      "commons_sha1": "1d7892b24a00e9cfa49ace529c264e9b5bea1dd8",
+      "subject": "Sega Dreamcast controller",
+      "split": "demo",
+      "role": "demo_reference",
+      "reviewed": true,
+      "object_id": "demo-dreamcast-controller",
+      "identity_evidence": "Evan-Amos same dated studio collection unit, separate front-left/front-right photographs.",
+      "source_metadata": {
+        "title": "File:Sega-Dreamcast-Controller-FL.jpg",
+        "page": "https://commons.wikimedia.org/wiki/File:Sega-Dreamcast-Controller-FL.jpg",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/8/8a/Sega-Dreamcast-Controller-FL.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+        "download_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8a/Sega-Dreamcast-Controller-FL.jpg/1280px-Sega-Dreamcast-Controller-FL.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "commons_sha1": "1d7892b24a00e9cfa49ace529c264e9b5bea1dd8",
+        "author": "Evan-Amos",
+        "license": "Public domain",
+        "license_url": "https://commons.wikimedia.org/wiki/Template:PD-self",
+        "description": "The controller for the Sega Dreamcast video game console.  Featuring a unique shape and design, the controller's most notable feature are the two slots built into the controller for expansions.  Most commonly, the top slot is occupied by the VMU (Visual Memory Unit), that held save data and could display simple graphics on its screen.  There was also a second slot, which could hold another memory card, rumble pack, microphone or other accessories.",
+        "capture_date": "2015-08-31"
+      },
+      "prepared_sha256": "d9adf1ff841c2931f9ce5e885d1b671c4cb6d7c6576de1f2259505e4d4e14ee9"
+    },
+    {
+      "id": "demo-positive",
+      "title": "File:Sega-Dreamcast-Controller-FR.jpg",
+      "commons_sha1": "ff66214866432f36f33549a67de4a9c072dcd779",
+      "subject": "Sega Dreamcast controller",
+      "split": "demo",
+      "role": "demo_positive",
+      "reviewed": true,
+      "object_id": "demo-dreamcast-controller",
+      "identity_evidence": "Evan-Amos same dated studio collection unit, separate front-left/front-right photographs.",
+      "source_metadata": {
+        "title": "File:Sega-Dreamcast-Controller-FR.jpg",
+        "page": "https://commons.wikimedia.org/wiki/File:Sega-Dreamcast-Controller-FR.jpg",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Sega-Dreamcast-Controller-FR.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+        "download_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1f/Sega-Dreamcast-Controller-FR.jpg/1280px-Sega-Dreamcast-Controller-FR.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "commons_sha1": "ff66214866432f36f33549a67de4a9c072dcd779",
+        "author": "Evan-Amos",
+        "license": "Public domain",
+        "license_url": "https://commons.wikimedia.org/wiki/Template:PD-self",
+        "description": "The controller for the Sega Dreamcast video game console.  Featuring a unique shape and design, the controller's most notable feature are the two slots built into the controller for expansions.  Most commonly, the top slot is occupied by the VMU (Visual Memory Unit), that held save data and could display simple graphics on its screen.  There was also a second slot, which could hold another memory card, rumble pack, microphone or other accessories.",
+        "capture_date": "2015-08-31"
+      },
+      "prepared_sha256": "09d1828ba2340159a92c0a5facd5b6394b0a5c78b809b0a43d159437fa10e9af"
+    },
+    {
+      "id": "demo-irrelevant",
+      "title": "File:Klonglan waterfall 03.jpg",
+      "commons_sha1": "8ae5fa9aad71c519219c1a954db996a974474178",
+      "subject": "Klonglan waterfall",
+      "split": "demo",
+      "role": "irrelevant",
+      "reviewed": true,
+      "object_id": "demo-waterfall",
+      "source_metadata": {
+        "title": "File:Klonglan waterfall 03.jpg",
+        "page": "https://commons.wikimedia.org/wiki/File:Klonglan_waterfall_03.jpg",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/8/8c/Klonglan_waterfall_03.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+        "download_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Klonglan_waterfall_03.jpg/1280px-Klonglan_waterfall_03.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "commons_sha1": "8ae5fa9aad71c519219c1a954db996a974474178",
+        "author": "Khunkay",
+        "license": "CC BY-SA 3.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/3.0",
+        "description": "A digitally altered photo of Khlong Lan National Park, Khlong Lan National Park, Kamphaeng Phet Province, where leaves have been retouched to add autumn colors.",
+        "capture_date": "2014-11-04 13:55:12"
+      },
+      "prepared_sha256": "6ca102fe8ee09769e06390857c03ecbd99bb3fe4bd72787c613ecdf321cd366a"
+    }
+  ]
+}

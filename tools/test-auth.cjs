@@ -89,10 +89,10 @@ function seedFixtures() {
   const student = new Session(), second = new Session(), staff = new Session();
   clearThrottle();
   try {
-    await test('Fresh schema has 14 tables, 2 views, 25 FK and correct handover enum', async () => {
+    await test('Fresh schema has 15 tables, 2 views, 26 FK and correct handover enum', async () => {
       const counts = query("SELECT TABLE_TYPE,COUNT(*) AS n FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() GROUP BY TABLE_TYPE").rows;
-      assert.equal(Number(counts.find(r => r.TABLE_TYPE === 'BASE TABLE').n), 14); assert.equal(Number(counts.find(r => r.TABLE_TYPE === 'VIEW').n), 2);
-      assert.equal(Number(query("SELECT COUNT(*) AS n FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=DATABASE() AND CONSTRAINT_TYPE='FOREIGN KEY'").rows[0].n), 25);
+      assert.equal(Number(counts.find(r => r.TABLE_TYPE === 'BASE TABLE').n), 15); assert.equal(Number(counts.find(r => r.TABLE_TYPE === 'VIEW').n), 2);
+      assert.equal(Number(query("SELECT COUNT(*) AS n FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=DATABASE() AND CONSTRAINT_TYPE='FOREIGN KEY'").rows[0].n), 26);
       assert.equal(query("SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='handovers' AND COLUMN_NAME='handover_status'").rows[0].COLUMN_TYPE, "enum('PENDING','SCHEDULED','COMPLETED')");
     });
     await test('Repeat setup preserves accounts/password hashes and reference data', async () => {
