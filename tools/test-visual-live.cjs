@@ -101,7 +101,7 @@ async function photoSearch(page, file, filters={}) {
       assert.equal(run.matching.state,'matches');
       assert.ok(run.matching.ids.includes(id),'The new report must be retrieved');
       assert.equal(await page.locator('#visual-heading').innerText(),'Possible Visual Matches');
-      await page.screenshot({path:path.join(path.dirname(receiptPath),'live-matches-'+attempt+'.png'),fullPage:true});
+      await page.screenshot({path:path.join(path.dirname(receiptPath),path.basename(receiptPath,'.json')+'-matches-'+attempt+'.png'),fullPage:true});
       await page.locator('#visual-results [data-item-id="'+id+'"] a.card-details').click();
       await page.waitForSelector('body[data-ready="true"]');
       assert.equal(new URL(page.url()).searchParams.get('id'),String(id));
