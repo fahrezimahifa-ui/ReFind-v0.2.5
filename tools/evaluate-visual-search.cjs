@@ -70,6 +70,14 @@ async function run() {
       tested_revision:execFileSync('git',['rev-parse','HEAD'],{cwd:qa.root,encoding:'utf8'}).trim(),
       working_tree_clean:execFileSync('git',['status','--porcelain'],{cwd:qa.root,encoding:'utf8'}).trim()==='',
       attempted:cases.length, planned:manifest.queries.length, successful:good.length, stopped,
+      accuracy_complete:good.length===manifest.queries.length,
+      group_counts:Object.fromEntries(['same_object','lookalike','irrelevant'].map(name=>[name,{
+        planned:manifest.queries.filter(item=>item.group===name).length,
+        attempted:cases.filter(item=>item.group===name).length,
+        successful:byGroup(name).length
+      }])),
+      all_responses_p50_ms:percentile(cases.map(item=>item.ms),0.5),
+      all_responses_p95_ms:percentile(cases.map(item=>item.ms),0.95),
       api_errors:cases.filter(item=>item.http_status>=400).map(item=>({case:item.case,code:item.state})),
       p50_ms:percentile(good.map(item=>item.ms),0.5),p95_ms:percentile(good.map(item=>item.ms),0.95),
       same_object:{total:positive.length,hit1:positive.filter(item=>item.expected_ranks[0]===1).length,

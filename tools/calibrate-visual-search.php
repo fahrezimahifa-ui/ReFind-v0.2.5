@@ -94,12 +94,20 @@ try {
         $scored[] = ['group'=>$case['group'],'expected_ids'=>$case['expected_ids'],
             'ranked'=>visual_rank($gallery, visual_embed($case['prepared']))];
         // Keep validation within the installation's rolling shared call budget.
-        if (count($scored) < count($cases)) usleep((int) ceil(62000000 / app_config()['visual_search_calls_per_minute']));
+        if (count($scored) < count($cases)) usleep((int) ceil(62000000 / min(6, app_config()['visual_search_calls_per_minute'])));
     }
     $selection = visual_calibrate($scored);
+    $scoreJson = json_encode(['validation_sha256'=>$hash,'model'=>VISUAL_MODEL,'dimensions'=>VISUAL_DIMENSIONS,
+        'preprocessing'=>VISUAL_PREPROCESSING,'scored_utc'=>gmdate('c'),'queries'=>$scored,'selection'=>$selection], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
+    $scorePath = storage_dir('setup') . '/visual-validation-' . gmdate('YmdHis') . '-' . substr($hash,0,12) . '.json';
+    $scoreFile = fopen($scorePath, 'x');
+    if (!$scoreFile) throw new RuntimeException('Cannot retain validation evidence.');
+    try { if (fwrite($scoreFile, $scoreJson) !== strlen($scoreJson)) throw new RuntimeException('Cannot retain validation evidence.'); }
+    finally { fclose($scoreFile); }
     if ($selection === null) throw new InvalidArgumentException('No validation cutoff met the irrelevant-query cap and retrieved a target.');
     $receipt = ['model'=>VISUAL_MODEL,'dimensions'=>VISUAL_DIMENSIONS,'preprocessing'=>VISUAL_PREPROCESSING,
-        'validation_sha256'=>$hash,'validation_photo_hashes'=>$hashes,'irrelevant_return_cap'=>0.1] + $selection;
+        'validation_sha256'=>$hash,'validation_photo_hashes'=>$hashes,'irrelevant_return_cap'=>0.1,
+        'validation_scores_file'=>basename($scorePath),'validation_scores_sha256'=>hash('sha256',$scoreJson)] + $selection;
     $file = @fopen($output, 'x');
     if (!$file) throw new RuntimeException('A calibration receipt already exists or could not be created.');
     try {

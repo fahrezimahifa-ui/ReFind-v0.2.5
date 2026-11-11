@@ -21,7 +21,8 @@ FILES = ['.htaccess', 'page.php', 'tools/.htaccess', 'tools/setup-db.php', 'tool
 
 validate_target(OWNER, TARGET)  # Check existing paths/configuration before any writes.
 FILES.extend(['tools/registration-fixture.php', 'tools/migrate-visual-search.php',
-              'tools/index-visual-photos.php', 'tools/calibrate-visual-search.php', 'tools/visual-index-loop.ps1'])
+              'tools/index-visual-photos.php', 'tools/calibrate-visual-search.php', 'tools/visual-index-loop.ps1',
+              'tools/seed-visual-demo.php'])
 if OWNER != ROOT and not TARGET.is_dir():
     raise RuntimeError('Linked-source sync requires an existing owned QA installation')
 if not TARGET.exists():

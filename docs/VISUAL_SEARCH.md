@@ -95,7 +95,7 @@ Run `--dry-run MANIFEST`, then `--backfill MANIFEST`. Only listed and approved p
 
 ## Calibration and held-out evaluation
 
-Prepare separate six-report pilot galleries with four targets and two distractors in each. For each gallery collect four independently photographed views of the target objects, four distinct look-alike objects, and ten visually irrelevant objects. Keep validation, held-out and demo objects disjoint. Use separate existing campus area filters to isolate each gallery. Prepare JPG or PNG queries at no more than 250 KB and 1,200 pixels per side. Keep each query photo next to its private manifest.
+The reproducible [QA corpus](VISUAL_DATASET.md) supplies separate ten-report pilot galleries with four targets and six distractors in each. Each gallery has four separately photographed source-session views, four distinct look-alike objects, and ten visually irrelevant queries. Keep validation, held-out and demo objects disjoint. Use separate existing campus area filters to isolate each gallery. Prepare JPG or PNG queries at no more than 250 KB and 1,200 pixels per side. Keep each query photo next to its private manifest. Retain the documented source-session and domain limitations when interpreting pilot accuracy.
 
 ~~~json
 {
@@ -112,7 +112,7 @@ Prepare separate six-report pilot galleries with four targets and two distractor
 }
 ~~~
 
-After gallery indexing, run `calibrate-visual-search.php --calibrate VALIDATION_MANIFEST` in the QA copy. It checks exact gallery membership, compares candidate cutoffs and freezes the winner under `storage/setup/visual-calibration.json`. It maximizes same-object Hit`5 under the 10% visually irrelevant return cap, with MRR, fewer irrelevant returns, and the lower cutoff breaking ties. Look-alikes are tracked separately. If no cutoff qualifies, search stays unavailable.
+After gallery indexing, run `calibrate-visual-search.php --calibrate VALIDATION_MANIFEST` in the QA copy. It checks exact gallery membership, compares candidate cutoffs and freezes the winner under `storage/setup/visual-calibration.json`. It maximizes same-object Hit@5 under the 10% visually irrelevant return cap, with MRR, fewer irrelevant returns, and the lower cutoff breaking ties. Look-alikes are tracked separately. If no cutoff qualifies, search stays unavailable. Calls are paced at no more than six per minute so the worker retains budget; the full validation score matrix is retained privately and linked by hash from the cutoff receipt.
 
 Use `held_out` as the split for the independent test manifest. From the feature worktree run the held-out browser evaluation twice with distinct private receipt paths.
 
@@ -121,7 +121,7 @@ node tools/evaluate-visual-search.cjs 'C:\private\held-out.json' 'C:\private\liv
 node tools/evaluate-visual-search.cjs 'C:\private\held-out.json' 'C:\private\live-run-2.json'
 ~~~
 
-The receipt records raw counts, same-object Hit`1, Hit`5 and MRR, visually irrelevant false positives, look-alike returns and ranks, browser latency, and provider errors. Repeated queries measure reliability. The 20-positive expanded gates are proposed benchmarks and require their own untouched final held-out set. After a missed gate, retain the evidence and diagnose using validation data. Preserve old receipts before recalibrating.
+The receipt records planned/attempted/successful counts by group, same-object Hit@1, Hit@5 and MRR, visually irrelevant false positives, look-alike returns and ranks, browser latency, and provider errors. Incomplete API runs do not qualify as complete accuracy evaluations. Repeated queries measure reliability. The 20-positive expanded gates are proposed benchmarks and require their own untouched final held-out set. After a missed gate, retain the evidence and diagnose using validation data. Preserve old receipts before recalibrating.
 
 For each of two live demo runs, submit a new approved report, confirm background indexing within 120 seconds with a clear queue, retrieve it using a separate capture of the object, follow the actual report link, and demonstrate rejection of an irrelevant photo. Verify login, keyword search, reports and claims separately. Disable the flag and stop the QA launcher to roll back. Leave original media and the additive table in place.
 
@@ -136,4 +136,4 @@ The 10 November 2026 rehearsal used disposable Windows Apache and MariaDB proces
 
 - `php tools/test-visual-search.php` checks cosine, ranking, rejection, validation-only calibration, image preparation, and provider error mapping without Gemini.
 - `node tools/test-visual-search.cjs` requires a disposable Apache and MariaDB stack with an explicit nonstandard database port and an empty test index. For this test stack only, point Apache `auto_prepend_file` at `tools/test-visual-http-prepend.php` and set `REFIND_VISUAL_DISPOSABLE_DB_PORT` in Apache and the test runner. This fixture exercises real browser, API, SQL and upload paths with a deterministic provider. The fixture file is excluded from ordinary QA sync.
-- The configured Gemini project and independent photo pilot remain unverified. There are no live retrieval or accuracy measurements.
+- On 11 November 2026 the configured project returned a genuine 768-value embedding and all 80 allowlisted native QA gallery photos were indexed with Gemini. Validation-only calibration completed on the frozen 4/4/10 query pilot. The new [dataset runbook](VISUAL_DATASET.md) describes provenance, reproduction, rollback, and the separate live held-out/browser checks. These checks do not establish expanded academic or campus performance.

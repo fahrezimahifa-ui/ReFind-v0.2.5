@@ -6,7 +6,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),testRoot=qaRuntime.target,base=qaRuntime.base,php=qaRuntime.php;
 const {chromium} = qaRuntime.playwright();
-const out=process.env.REFIND_EVIDENCE_DIR?path.resolve(process.env.REFIND_EVIDENCE_DIR):path.join(root,'docs','verification','v025','fixes');if(!qaRuntime.dev)assert.equal(JSON.parse(fs.readFileSync(path.join(testRoot,'.refind-b02-test.json'))).source,root);fs.mkdirSync(out,{recursive:true});
+const out=process.env.REFIND_EVIDENCE_DIR?path.resolve(process.env.REFIND_EVIDENCE_DIR):path.join(root,'docs','verification','v025','fixes');if(!qaRuntime.dev)assert.equal(fs.realpathSync(JSON.parse(fs.readFileSync(path.join(testRoot,'.refind-b02-test.json'))).source),fs.realpathSync(process.env.REFIND_QA_OWNER_ROOT||root));fs.mkdirSync(out,{recursive:true});
 const run='V025-'+Date.now().toString(36),results=[],browserErrors=[],actors=[];let browser;
 function driver(input){return JSON.parse(execFileSync(php,[path.join(testRoot,'tools','b02-fixture.php')],{input:JSON.stringify(input),encoding:'utf8'}));}
 function q(query,values=[]){return driver({action:'query',query,values});}

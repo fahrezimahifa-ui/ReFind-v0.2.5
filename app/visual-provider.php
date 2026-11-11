@@ -72,7 +72,7 @@ function visual_gemini_request(string $image, string $key): array
     $retry = 0;
     $body = '';
     curl_setopt_array($handle, [
-        CURLOPT_POST => true, CURLOPT_CONNECTTIMEOUT => 2, CURLOPT_TIMEOUT => 8,
+        CURLOPT_POST => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 8,
         CURLOPT_FOLLOWLOCATION => false, CURLOPT_SSL_VERIFYPEER => true, CURLOPT_SSL_VERIFYHOST => 2,
         CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . $key],
         CURLOPT_POSTFIELDS => json_encode([
