@@ -143,6 +143,8 @@ try {
             'pending_reasons' => rows("SELECT failure_code,COUNT(*) AS photos,MIN(next_attempt_at) AS next_utc
                 FROM item_photo_embeddings WHERE status='PENDING' AND failure_code IS NOT NULL GROUP BY failure_code"),
             'credential_configured' => visual_api_key() !== null,
+            'request_timeout_seconds' => app_config()['visual_search_timeout_seconds'],
+            'provider_status' => json_decode((string) @file_get_contents(storage_dir('setup') . '/visual-provider-last.json'), true),
             'last_tick' => json_decode((string) @file_get_contents(storage_dir('setup') . '/visual-index-last.json'), true),
         ];
     } elseif ($mode === '--retry') {

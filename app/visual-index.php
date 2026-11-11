@@ -54,7 +54,7 @@ function visual_drain(?callable $embed = null): array
             ORDER BY e.next_attempt_at,e.photo_id LIMIT 5", [VISUAL_MODEL,VISUAL_DIMENSIONS,VISUAL_PREPROCESSING]);
         $deadline = microtime(true) + 44;
         foreach ($jobs as $job) {
-            if (microtime(true) >= $deadline) break;
+            if (microtime(true) + app_config()['visual_search_timeout_seconds'] + 1 >= $deadline) break;
             $id = (int) $job['photo_id'];
             $hash = $job['source_sha256'];
             try {

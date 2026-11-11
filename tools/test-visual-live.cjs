@@ -106,8 +106,8 @@ async function photoSearch(page, file, filters={}) {
       await page.waitForSelector('body[data-ready="true"]');
       assert.equal(new URL(page.url()).searchParams.get('id'),String(id));
       assert.equal(await page.locator('#item-title').innerText(),title);run.correct_link=true;
-      const irrelevant=corpus.assets.find(item=>item.role==='irrelevant'&&item.split==='validation'&&item.subject.includes('Waterfall'));
-      assert.ok(irrelevant,'Use a cleared nature scene unrelated to the complete item catalog');
+      const irrelevant=corpus.assets.find(item=>item.role==='irrelevant'&&item.split==='demo');
+      assert.ok(irrelevant,'Use a cleared independent demo scene unrelated to the complete item catalog');
       run.no_target=await photoSearch(page,path.join(path.dirname(corpusPath),irrelevant.image));
       save();
       assert.equal(run.no_target.http,200);

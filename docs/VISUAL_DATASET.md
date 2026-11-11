@@ -4,7 +4,7 @@ This corpus is synthetic campus report data illustrated by individually licensed
 
 ## Contents and evidence boundaries
 
-`tools/visual-demo-sources.json` pins 138 source assets, their Commons source revisions, authors, licenses, prepared image hashes, object-group annotations and roles. Runtime photographs, accounts, report IDs and evaluation receipts stay in ignored private storage.
+`tools/visual-demo-sources.json` pins 138 source assets, their Commons source revisions, authors, licenses, prepared image hashes, object-group annotations and roles. `tools/visual-demo-live-sources.json` independently prepares the professor-demo pair and one additional no-target scene. Runtime photographs, accounts, report IDs and evaluation receipts stay in ignored private storage.
 
 | Cohort | Gallery reports | Separate queries | Campus-area filter |
 |---|---:|---|---|
@@ -51,7 +51,7 @@ An interrupted import resumes from its private journal. A completed rerun verifi
 
 The scheduled task **ReFind Visual Search QA** runs the existing GUI launcher every minute. Its PHP child has no console and shares the database lock and call budget with maintenance drains. Initial backfill may use bounded CLI maintenance drains, recorded separately from automatic-indexing evidence. A new normal Student report must still become searchable through the scheduled launcher without a manual drain.
 
-TLS setup on the actual QA network exceeded the original two-second connection allowance during initial backfill. The connection allowance is five seconds; the total provider request limit remains eight seconds. Initial timeouts and subsequent retries are operational evidence, not retrieval observations. Do not disable TLS verification or bypass the call budget.
+TLS setup on the actual QA network exceeded the original two-second connection allowance during initial backfill. The connection allowance is five seconds. A later browser request finished TLS promptly but received no provider response before the eight-second total deadline. A validation-only diagnostic with a 20-second QA allowance completed that request in 10.8 seconds. The source default remains eight seconds; ignored native QA configuration sets `visual_search_timeout_seconds=20`, strictly bounded to 2–20 seconds. The worker starts a job only when its full configured allowance fits inside its 44-second budget, preserving the silent launcher's 50-second process limit. Actual latency must still be reported against the proposed eight-second p95 gate. Original QA configuration was backed up privately before the change. Do not disable TLS verification or bypass the call budget.
 
 Once both pilot galleries are READY:
 
@@ -59,12 +59,13 @@ Once both pilot galleries are READY:
 & C:\xampp\php\php.exe "$qa\tools\calibrate-visual-search.php" --calibrate "$PWD\storage\visual-corpus\final\validation.json"
 node tools/evaluate-visual-search.cjs storage/visual-corpus/final/held_out.json storage/visual-corpus/held-out-run-1.json
 node tools/evaluate-visual-search.cjs storage/visual-corpus/final/held_out.json storage/visual-corpus/held-out-run-2.json
-node tools/test-visual-live.cjs storage/visual-corpus/final/corpus.json storage/visual-corpus/live-demo.json
+python tools/prepare-visual-corpus.py tools/visual-demo-live-sources.json storage/visual-corpus/live-assets
+node tools/test-visual-live.cjs storage/visual-corpus/live-assets/corpus.json storage/visual-corpus/live-demo.json
 ```
 
 Use the project's installed Playwright dependency (or set `REFIND_PLAYWRIGHT_MODULE` to its existing module directory). Calibration is paced at no more than six calls per minute, uses validation only, and retains its full score matrix separately from the small runtime threshold receipt. A missing/incompatible cutoff keeps search unavailable. Held-out verification checks frozen gallery membership and image hashes against validation before browser evaluation.
 
-Receipts report planned, attempted and successful queries by class, API errors, Hit@1/5, MRR and latency. Incomplete API runs cannot be presented as complete accuracy results. Keep failed runs. Diagnose with validation data; a new accuracy claim after recalibration needs a fresh held-out set. Numerical expanded targets are proposed gates, not guaranteed model performance.
+Receipts report planned, attempted and successful queries by class, API errors, Hit@1/5, MRR and latency. Incomplete API runs cannot be presented as complete accuracy results. Keep failed runs. The browser runner leaves budget headroom for ordinary QA use, records Retry-After and timestamps, and preserves the actual application limits. The most recent transport timing is retained privately in `storage/setup/visual-provider-last.json`, excluding headers, keys, images and response bodies. Diagnose with validation data; a new accuracy claim after recalibration needs a fresh held-out set. Numerical expanded targets are proposed gates, not guaranteed model performance.
 
 The live demonstration creates two normal opted-in reports, polls their index state for at most 120 seconds, searches with the independent view, follows the exact report link and submits an unrelated nature query. The first report is deleted normally before creating the second so it does not become a duplicate candidate. The second remains for browser inspection. Quota, timeout and unavailable UI response injections are explicitly recorded separately from live Gemini calls.
 

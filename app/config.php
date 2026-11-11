@@ -13,6 +13,7 @@ function app_defaults(): array
         'registration_local_only' => true,
         'visual_search_enabled' => false, 'visual_search_students' => [], 'visual_search_key_file' => '',
         'visual_search_student_per_minute' => 6, 'visual_search_calls_per_minute' => 20,
+        'visual_search_timeout_seconds' => 8,
         // Shown to students after approval. Demo values; override them in config.local.php for a real desk.
         'pickup_desk_name' => 'Building Management service desk', 'pickup_desk_location' => 'Gedung A lobby, ground floor',
         'pickup_desk_hours' => 'Monday–Friday, 08:00–16:00 WIB', 'pickup_desk_contact' => 'bm@refind.test',
@@ -56,6 +57,9 @@ function validate_app_config(array $config): array
         if (!is_int($config[$key]) || $config[$key] < 1 || $config[$key] > 60) {
             throw new RuntimeException('Invalid Visual Search call limit.');
         }
+    }
+    if (!is_int($config['visual_search_timeout_seconds']) || $config['visual_search_timeout_seconds'] < 2 || $config['visual_search_timeout_seconds'] > 20) {
+        throw new RuntimeException('Invalid Visual Search request timeout.');
     }
     foreach (['pickup_desk_name', 'pickup_desk_location', 'pickup_desk_hours', 'pickup_desk_contact'] as $key) {
         if (!is_string($config[$key]) || !mb_check_encoding($config[$key], 'UTF-8') || trim($config[$key]) === '' || mb_strlen($config[$key], 'UTF-8') > 160) {

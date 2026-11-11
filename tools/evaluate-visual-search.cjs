@@ -19,7 +19,8 @@ const account = demo[process.env.REFIND_VISUAL_DEMO_EMAIL || 'student-a@refind.t
 assert.ok(account?.role==='STUDENT','Select an approved synthetic Student from the QA receipt.');
 const limit = Number(execFileSync(qa.php,['-r','require $argv[1]; $c=app_config(); echo min($c["visual_search_student_per_minute"],$c["visual_search_calls_per_minute"]);',
   path.join(qa.target,'app/config.php')],{encoding:'utf8'}));
-const pace = Math.ceil(62000 / limit);
+// Leave shared budget for normal QA use; do not change application rate limits.
+const pace = Math.max(15000,Math.ceil(62000 / limit));
 const percentile = (values,q) => values.length ? [...values].sort((a,b)=>a-b)[Math.ceil(values.length*q)-1] : null;
 
 async function run() {
@@ -53,6 +54,7 @@ async function run() {
         .evaluateAll(cards=>cards.map(card=>Number(card.dataset.itemId))) : [];
       const ranks = itemIds.map((id,i)=>query.expected_ids.map(Number).includes(id)?i+1:0).filter(Boolean);
       cases.push({case:index+1,group:query.group,http_status:response.status(),state:body.state||body.code,
+        retry_after:Number(response.headers()['retry-after']||0),completed_utc:new Date().toISOString(),
         error:!response.ok()||body.state==='empty_index',ms,item_ids:itemIds,expected_ranks:ranks});
       if (index+1<manifest.queries.length) await new Promise(resolve=>setTimeout(resolve,Math.max(0,pace-ms)));
     }
@@ -69,7 +71,7 @@ async function run() {
       validation_sha256:calibration.validation_sha256, held_out_sha256:verified.verified_held_out_sha256,
       tested_revision:execFileSync('git',['rev-parse','HEAD'],{cwd:qa.root,encoding:'utf8'}).trim(),
       working_tree_clean:execFileSync('git',['status','--porcelain'],{cwd:qa.root,encoding:'utf8'}).trim()==='',
-      attempted:cases.length, planned:manifest.queries.length, successful:good.length, stopped,
+      attempted:cases.length, planned:manifest.queries.length, successful:good.length, stopped,pace_ms:pace,
       accuracy_complete:good.length===manifest.queries.length,
       group_counts:Object.fromEntries(['same_object','lookalike','irrelevant'].map(name=>[name,{
         planned:manifest.queries.filter(item=>item.group===name).length,

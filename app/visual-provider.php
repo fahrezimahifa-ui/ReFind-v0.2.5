@@ -72,7 +72,7 @@ function visual_gemini_request(string $image, string $key): array
     $retry = 0;
     $body = '';
     curl_setopt_array($handle, [
-        CURLOPT_POST => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 8,
+        CURLOPT_POST => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => app_config()['visual_search_timeout_seconds'],
         CURLOPT_FOLLOWLOCATION => false, CURLOPT_SSL_VERIFYPEER => true, CURLOPT_SSL_VERIFYHOST => 2,
         CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . $key],
         CURLOPT_POSTFIELDS => json_encode([
@@ -92,6 +92,16 @@ function visual_gemini_request(string $image, string $key): array
     try {
         $ok = curl_exec($handle);
         $status = curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+        // Operator-only transport evidence. Never retain headers, keys, images,
+        // response bodies, query hashes, local addresses or user identities.
+        if (visual_enabled()) {
+            $info = curl_getinfo($handle);
+            $timing = ['utc'=>gmdate('c'),'http_status'=>$status,'transport_errno'=>curl_errno($handle),
+                'dns_s'=>$info['namelookup_time'],'tcp_s'=>$info['connect_time'],
+                'tls_s'=>curl_getinfo($handle,CURLINFO_APPCONNECT_TIME),
+                'first_byte_s'=>$info['starttransfer_time'],'total_s'=>$info['total_time']];
+            @file_put_contents(storage_dir('setup') . '/visual-provider-last.json', json_encode($timing), LOCK_EX);
+        }
         if ($ok === false) throw new VisualProviderError(curl_errno($handle) === CURLE_OPERATION_TIMEDOUT ? 'timeout' : 'unavailable');
         return [$status, $body, $retry];
     } finally {
