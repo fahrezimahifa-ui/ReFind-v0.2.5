@@ -48,6 +48,29 @@ $(async function(){
     $('#filter-q').on('input',()=>{clearTimeout(timer);timer=setTimeout(()=>load(1),200);});$('#filter-category,#filter-location,#filter-status,#filter-date').on('change',()=>load(1));
     $('[data-filter-type]').on('click',function(){type=$(this).attr('data-filter-type');load(1);});$('#clear-filters').on('click',()=>{$('#filter-q,#filter-category,#filter-location,#filter-status,#filter-date').val('');type='';load(1);});bindRetry(load);await load();
   }
+  // Report journey: five steps derived from the status contract, plus a newest-first history log.
+  const journeySteps=[{label:'Reported',codes:['OPEN','UNDER_REVIEW']},{label:'Possible match',codes:['POTENTIAL_MATCH']},{label:'Claim review',codes:['VERIFICATION']},{label:'Ready for pickup',codes:['HANDOVER']},{label:'Returned',codes:['RESOLVED','UNCLAIMED_CLOSED']}];
+  const actorNames={you:'You',building_management:'Building Management',reporter:'Reporter',student:'A student',system:'ReFind'};
+  const stepOf=code=>Math.max(0,journeySteps.findIndex(step=>step.codes.includes(code)));
+  function relativeTime(value){const seconds=(new Date(value)-Date.now())/1000,format=new Intl.RelativeTimeFormat('en',{numeric:'auto'});if(Math.abs(seconds)<45)return 'Just now';for(const [limit,unit,size] of [[3600,'minute',60],[86400,'hour',3600],[604800,'day',86400],[2629800,'week',604800],[31557600,'month',2629800]])if(Math.abs(seconds)<limit)return format.format(Math.round(seconds/size),unit).replace(/^./,c=>c.toUpperCase());return format.format(Math.round(seconds/31557600),'year').replace(/^./,c=>c.toUpperCase());}
+  function renderJourney(item){
+    const current=stepOf(item.status_code),closed=item.status_code==='UNCLAIMED_CLOSED',visited=new Set([0,...item.history.map(event=>stepOf(event.status_code))]);
+    const steps=$('#item-journey').empty();
+    journeySteps.forEach((step,index)=>{
+      const state=index===current?'current':index<current?(visited.has(index)?'done':'skipped'):'upcoming';
+      const label=index===4&&closed?'Never retrieved':step.label;
+      const entry=$('<li>').addClass('journey-step is-'+state).toggleClass('is-closed',closed&&index===4).append($('<span>').addClass('journey-dot').attr('aria-hidden','true'),$('<span>').addClass('journey-label').text(label),$('<span>').addClass('visually-hidden').text(' · '+{current:'current step',done:'completed',skipped:'skipped',upcoming:'not reached yet'}[state]));
+      if(state==='current')entry.attr('aria-current','step').append($('<span>').addClass('journey-now').attr('aria-hidden','true').text('Now'));
+      steps.append(entry);
+    });
+    const note=item.status_code==='UNDER_REVIEW'?'Building Management is reviewing this report.':closed?'Building Management archived this report as never retrieved.':'';
+    $('#journey-note').text(note).prop('hidden',!note);
+    const log=$('#item-history').empty();
+    [...item.history].reverse().forEach(event=>{const exact=U.date(event.at,true),time=$('<time>').attr({datetime:event.at,title:exact}).text(relativeTime(event.at)).append($('<span>').addClass('visually-hidden').text(' · '+exact));
+      const meta=$('<span>').addClass('history-meta').append(time,event.actor?' · '+(actorNames[event.actor]||'ReFind'):'');
+      log.append($('<li>').addClass('history-entry').append($('<div>').addClass('history-head').append(U.stateChip(event.status_code,event.status_name),meta),event.note?$('<p>').addClass('history-note').text(event.note):null));});
+    if(!item.history.length)log.append($('<li>').addClass('history-entry').text('No history events recorded.'));
+  }
   async function itemDetail(){
     const id=params.get('id');let item,photoIndex=0;
     if(!validId(id)){showMissing();return;}
@@ -64,7 +87,7 @@ $(async function(){
       if(app.state.user?.role==='BUILDING_MANAGEMENT')actions.append(U.navAction('Open in Review Queue',app.base+'admin.html?tab=reports&report='+encodeURIComponent(id)));
       if(item.matched_item_id){notice.append($('<p>').text('Verified report pair.'),U.navAction('Open linked report',U.itemUrl(item.matched_item_id))).prop('hidden',false);}
       if(['RESOLVED','UNCLAIMED_CLOSED'].includes(item.status_code))note('This report is read-only and no longer receives claims.');
-      const timeline=$('#item-history').empty();item.history.forEach(event=>timeline.append($('<li>').append($('<strong>').text(event.status_name),$('<p>').text(U.date(event.at,true)),$('<p>').text(event.note||''))));if(!item.history.length)timeline.append($('<li>').text('No history events recorded.'));
+      renderJourney(item);
       $('#match-section').prop('hidden',!item.matches.length);$('#item-matches').empty();const sameScore=new Set(item.matches.map(match=>match.match_score)).size<=1;item.matches.forEach(match=>$('#item-matches').append(U.card(match,{showScore:!sameScore})));$('#item-content').prop('hidden',false);loading(false);document.body.dataset.ready='true';}catch(e){failed(e);}}
     $('#gallery-open').on('click',function(){if(!item?.photos.length)return;dialogTrigger=this;$('#enlarged-photo').attr({src:item.photos[photoIndex],alt:item.title});document.querySelector('#photo-dialog').showModal();});bindRetry(load);await load();
   }

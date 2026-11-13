@@ -112,3 +112,24 @@ This branch is based on `main`, which doesn't yet include the AI work. When Code
 - `js/student.js`: edits only in non-AI functions (`loading`, discovery count text, item detail, report, notifications, history, home). The home-feed line (`limit:4`) sits next to the line where the AI branch adds `visualEnabled`, so git may flag it; keep both changes. The `bindVisualSearch` block and every line containing visual code are byte-identical.
 - `app/pages/report.html`: the switch moved at the top of the form, separate from the AI consent block.
 - `css/student.css` and `app/pages/browse.html`: not edited.
+
+## Item page: report journey (branch `claude/item-timeline`)
+- **New "Report journey" section** on the item page. It replaces the old plain status list with a five-step tracker: Reported → Possible match → Claim review → Ready for pickup → Returned.
+- **How statuses map to steps** (per `docs/WORKFLOW_CONTRACT.md`):
+  - `UNDER_REVIEW` shows as Reported, with a "Building Management is reviewing this report" note.
+  - `UNCLAIMED_CLOSED` turns the last step into a muted "Never retrieved".
+- **Step states:**
+  - **Current:** a ringed dot plus "Now".
+  - **Done:** a filled dot with a check.
+  - **Skipped:** dashed outline, for steps the history never visited. For example, a Lost report recorded as Returned without a claim.
+  - **Upcoming:** hollow.
+
+  Screen-reader text names each state. On screens up to 519 px the tracker stacks vertically.
+- **History is listed newest first:** status chip, relative time (exact campus time in the tooltip and screen-reader text), who made the change, then the note.
+- **`api/items.php` history entries gained `actor`:** one of `you`, `building_management`, `reporter`, `student` or `system`. It's computed server-side; no names or user IDs are exposed.
+- **Checked on the stage:**
+  - every status (`OPEN`, `UNDER_REVIEW`, `POTENTIAL_MATCH`, `VERIFICATION`, `HANDOVER`, `RESOLVED`, `UNCLAIMED_CLOSED`), plus a Lost report returned without a claim;
+  - 1366/768/375 px in dark and light: no overflow, no script errors;
+  - `test-student` 24, `test-workflow` 27, `test-v025` 24, `test-layout` 21: all pass;
+  - check-js and ESLint pass.
+- **Screenshots:** `docs/verification/uiux/journey-*.jpg`.
