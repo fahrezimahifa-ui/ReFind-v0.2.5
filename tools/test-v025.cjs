@@ -215,8 +215,10 @@ async function go(page,route){await page.goto(base+route);await page.waitForSele
    await p.page.click('[data-bm-action="approved"]');await p.page.check('#operation-confirm');await p.page.click('#operation-submit');await p.page.waitForFunction(()=>!document.querySelector('#operation-dialog').open);
    await unreadHeld;assert.equal(await p.page.getByRole('button',{name:'Schedule pickup now'}).isDisabled(),true);releaseUnread();
    await p.page.getByRole('button',{name:'Schedule pickup now'}).click();await p.page.waitForSelector('[data-detail-handover-id]');assert.equal(new URL(p.page.url()).searchParams.get('tab'),'handover');
-   await p.page.click('[data-bm-action="schedule"]');assert.match(await p.page.inputValue('#operation-date'),/T10:00$/);await p.page.selectOption('#operation-location','36');await p.page.click('#operation-submit');await p.page.waitForFunction(()=>!document.querySelector('#operation-dialog').open);await p.page.waitForSelector('[data-bm-action="complete"]');
-   await p.page.click('[data-bm-action="complete"]');assert.match(await p.page.locator('#operation-intro').innerText(),/collected the item early/);await p.page.keyboard.press('Escape');
+   await p.page.click('[data-bm-action="schedule"]');assert.match(await p.page.inputValue('#operation-date'),/T10:00$/);await p.page.selectOption('#operation-location','36');await p.page.click('#operation-submit');await p.page.waitForFunction(()=>!document.querySelector('#operation-dialog').open);
+   // Wait for the re-rendered SCHEDULED detail so the click never lands on a button that is being replaced.
+   await p.page.waitForSelector('[data-handover-status="SCHEDULED"] [data-bm-action="complete"]');
+   await p.page.click('[data-bm-action="complete"]');await p.page.waitForFunction(()=>document.querySelector('#operation-dialog').open);assert.match(await p.page.locator('#operation-intro').innerText(),/collected the item early/);await p.page.keyboard.press('Escape');
    await p.context.close();
   });
   await test('A06 releasing a pickup in the browser lands on the closed claim with its reason',async()=>{

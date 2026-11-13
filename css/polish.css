@@ -1,0 +1,115 @@
+/* ReFind UI polish layer. page.php injects this after each page's own stylesheets, so it refines the
+   shared components without rewriting earlier layers. AI Visual Search selectors (#visual-*, .visual-*)
+   are intentionally never targeted here; they only inherit the shared button and card styles. */
+
+:root{
+  --space-5:32px;
+  --card-media-height:176px;
+  --card-surface:rgb(255 255 255 / .9);
+  --skeleton-base:#e8edf6; --skeleton-shine:#f5f7fc;
+}
+:root[data-theme="dark"]{--card-surface:rgb(19 31 53 / .9);--skeleton-base:#1a2840;--skeleton-shine:#22344f}
+@media (prefers-reduced-transparency:reduce),(forced-colors:active){:root{--card-surface:var(--panel)}:root[data-theme="dark"]{--card-surface:var(--panel)}}
+
+/* Performance: repeated cards and rows use a near-opaque surface instead of one backdrop blur each.
+   Panels, the header and dialogs keep the glass treatment. */
+.discovery-card,.activity-card{background:var(--card-surface);-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+
+/* Buttons: a disabled primary action must not look available. Busy buttons keep their colour. */
+.btn-primary:disabled:not([aria-busy="true"]),.btn-primary.disabled:not([aria-busy="true"]){
+  --bs-btn-disabled-opacity:1;--bs-btn-disabled-bg:var(--readonly);--bs-btn-disabled-border-color:var(--line);--bs-btn-disabled-color:var(--muted)}
+.btn-outline:disabled,.btn-outline.disabled{--bs-btn-disabled-opacity:.7}
+
+/* Page headings: smaller on phones so content starts sooner. */
+@media(max-width:679px){
+  .page-heading,.account-heading{margin-bottom:var(--space-3)}
+  .page-heading h1,.account-heading h1{font-size:28px;margin:4px 0 8px}
+  .page-heading p,.account-heading p{font-size:15px}
+  .page-heading{flex-direction:row;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:var(--space-2)}
+  .page-heading>div{flex:1 1 100%}
+  .page-heading>.btn,.page-heading>a.btn{min-height:44px;padding:8px 14px;font-size:15px}
+  .filter-panel{padding:14px;margin-bottom:var(--space-3)}
+  .type-tabs{margin:12px 0}
+  .results-line{margin-top:8px}
+  .advanced-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .advanced-filters .field{margin:12px 0 0}
+}
+
+/* Discovery cards: compact, one link per card (the title link stretches over the whole card). */
+.discovery-grid{gap:16px}
+@media(min-width:1280px){.discovery-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.discovery-card{position:relative;transition:border-color 120ms ease,box-shadow 120ms ease,transform 120ms ease}
+.discovery-card:hover{border-color:var(--primary);box-shadow:var(--glass-shadow)}
+.discovery-card:has(.card-details:focus-visible){outline:3px solid var(--focus);outline-offset:3px}
+.discovery-card .card-media{aspect-ratio:auto;height:var(--card-media-height)}
+.discovery-card .card-media img{background:var(--media)}
+.discovery-body{padding:14px 16px 16px;gap:6px}
+.discovery-body h2,.discovery-body h3{font-size:17px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.discovery-body .card-details{display:inline;min-height:0;margin:0;padding:0;color:var(--ink);font-weight:700;text-decoration:none}
+.discovery-body .card-details:hover{color:var(--primary-hover);text-decoration:underline}
+.discovery-body .card-details:focus-visible{outline:none}
+.discovery-body .card-details::after{content:"";position:absolute;inset:0;z-index:1;border-radius:inherit}
+.discovery-card .card-meta{font-size:14px;line-height:1.45}
+.discovery-card .card-meta+.card-meta{margin-top:-2px}
+.discovery-card .chips{gap:6px}
+.discovery-card .own-report-actions,.discovery-card .similarity-label{position:relative;z-index:2}
+.discovery-card .similarity-label{position:absolute}
+.discovery-card .own-report-actions{padding:10px 16px 14px;margin-top:auto}
+@media(max-width:679px){.discovery-card .card-media{height:auto;aspect-ratio:16/10}}
+@media(prefers-reduced-motion:reduce){.discovery-card{transition:none}}
+
+/* Loading skeletons (decorative; the status text stays available to screen readers). */
+.skeleton-card{pointer-events:none}
+.skeleton-card .card-media,.skeleton-line{background:linear-gradient(100deg,var(--skeleton-base) 30%,var(--skeleton-shine) 50%,var(--skeleton-base) 70%);background-size:300% 100%;animation:skeleton-shimmer 1.4s ease-in-out infinite}
+.skeleton-line{display:block;height:12px;border-radius:6px}
+.skeleton-line.w-40{width:40%}.skeleton-line.w-70{width:70%}.skeleton-line.w-90{width:90%;height:16px}
+@keyframes skeleton-shimmer{from{background-position:100% 0}to{background-position:0 0}}
+@media(prefers-reduced-motion:reduce){.skeleton-card .card-media,.skeleton-line{animation:none}}
+.loading-note.has-skeleton{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* Empty states: lighter, centred, one clear action. */
+.empty-state{border-style:dashed;padding:28px 20px}
+.empty-state h2{margin-bottom:4px}
+
+/* Pager: keep controls compact and readable. */
+.pager{gap:8px}
+.pager .btn{min-width:104px}
+
+/* Unread badges never grow past "99+". */
+.unread-badge{font-variant-numeric:tabular-nums;font-weight:700}
+
+/* Forms: read-only account facts read as text, not as disabled inputs. They stay focusable for copying. */
+.form-control.readonly-control{background:transparent!important;border-color:transparent;padding-left:0;padding-right:0;color:var(--ink);font-weight:600;box-shadow:none;cursor:text}
+.form-control.readonly-control:focus{border-color:transparent;box-shadow:none}
+/* The sticky Submit bar never covers a field that is scrolled to or focused. */
+html:has(.sticky-form-actions){scroll-padding-bottom:104px}
+
+/* Report form: one Lost/Found switch at the top, styled as a segmented control. */
+.report-type-switch{display:inline-grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin:0 0 var(--space-3);padding:4px;border:1px solid var(--glass-edge);border-radius:calc(var(--radius-control) + 4px);background:var(--glass-panel)}
+.report-type-switch .type-tab{border-color:transparent;background:transparent;min-width:150px}
+.report-type-switch .type-tab.active{background:var(--primary);border-color:var(--primary);color:var(--primary-text)}
+.report-type-switch .type-tab:disabled{opacity:.75}
+@media(max-width:479px){.report-type-switch{display:grid;width:100%}.report-type-switch .type-tab{min-width:0}}
+
+/* Notifications: an unread dot instead of a chip on every row (the word stays for screen readers). */
+.notification-filter{margin:0 0 var(--space-3)}
+.notification-title-line{align-items:center}
+.notification-unread{order:-1;flex:none;width:10px;height:10px;padding:0;border-radius:50%;background:var(--primary);overflow:hidden;color:transparent;text-indent:110%;white-space:nowrap;font-size:1px;line-height:1}
+@media(forced-colors:active){.notification-unread{background:Highlight}}
+
+/* BM Review Queue: compact header so the two panes fit the screen; decisions stay in view. */
+.queue-open{display:none}
+.bm-detail-actions{position:sticky;bottom:0;z-index:3;padding:12px 0;background:var(--glass-popup);border-top:1px solid var(--line)}
+@media(max-width:1099px){.bm-detail-actions{bottom:calc(8px + env(safe-area-inset-bottom));padding:10px;border:1px solid var(--line);border-radius:var(--radius-control);box-shadow:var(--glass-shadow)}}
+/* Phones stack the three decisions; a sticky stack would cover too much of the record. */
+@media(max-width:679px){.bm-detail-actions{position:static;box-shadow:none}}
+@media(min-width:1100px){
+  .bm-main{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:16px;align-items:center}
+  .bm-main>*{grid-column:1/-1}
+  .bm-main>.page-heading{margin-bottom:16px}
+  .bm-main .page-heading h1{font-size:32px;margin:2px 0 4px}
+  .bm-main .page-heading p{font-size:15px}
+  .bm-main>#bm-tabs{grid-column:1;margin:0}
+  .bm-main>.bm-filters{grid-column:2;margin:0;padding:10px}
+  .bm-main>.bm-layout{margin-top:16px}
+}

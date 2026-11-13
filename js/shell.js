@@ -1,7 +1,7 @@
 // Shared top navigation; permission always remains enforced by PHP.
 window.ReFindShell = (() => {
   const app = window.ReFind;
-  const mobile = window.matchMedia('(max-width: 1099px)');
+  const mobile = window.matchMedia('(max-width: 999px)');
   function updateViewport() {
     const viewport=window.visualViewport,height=viewport?.height||innerHeight,root=document.documentElement;
     root.style.setProperty('--usable-height',Math.floor(height)+'px');
@@ -51,7 +51,7 @@ window.ReFindShell = (() => {
   }
   function setNavigation(open, focus = false) {
     $('#nav-content').prop('hidden', mobile.matches && !open);
-    const unread = Number($('#menu-unread').text()) || 0;
+    const unread = Number($('#menu-unread').attr('data-count')) || 0;
     $('#nav-toggle').attr({'aria-expanded': String(mobile.matches && open), 'aria-label': (open ? 'Close navigation' : 'Open navigation') + (unread ? ', ' + unread + ' unread notifications' : '')});
     if (!open) setAccount(false);
     if (focus) $('#nav-toggle').trigger('focus');
@@ -91,8 +91,8 @@ window.ReFindShell = (() => {
   // The badge sits on the Notifications link; a copy on the Menu button keeps it visible on phones.
   function setUnread(count) {
     const value = Number(count) || 0;
-    $('#nav-unread').text(value).attr('aria-label', value + ' unread').prop('hidden', value === 0);
-    $('#menu-unread').text(value).prop('hidden', value === 0);
+    $('#nav-unread').text(value > 99 ? '99+' : value).attr({'aria-label': value + ' unread', 'data-count': value}).prop('hidden', value === 0);
+    $('#menu-unread').text(value > 99 ? '99+' : value).attr('data-count', value).prop('hidden', value === 0);
     $('#nav-toggle').attr('aria-label', ($('#nav-toggle').attr('aria-expanded') === 'true' ? 'Close navigation' : 'Open navigation') + (value ? ', ' + value + ' unread notifications' : ''));
   }
   async function refreshUnread() {

@@ -11,11 +11,13 @@ window.ReFind = (() => {
     }
     let response;
     try { response = await fetch(base + 'api/' + endpoint, options); }
-    catch { throw Object.assign(new Error('Could not reach ReFind. Check Apache/MySQL and try again.'), {status: 0}); }
+    catch { throw Object.assign(new Error('Could not reach ReFind. Check your connection and try again.'), {status: 0}); }
     let result;
     try { result = await response.json(); }
     catch { throw Object.assign(new Error('The server did not return a valid response.'), {status: response.status}); }
-    if (!response.ok || !result.ok) throw Object.assign(new Error(result.message || 'Request failed.'), {status: response.status, code: result.code, fields: result.fields || {}, retryAfter: Number(response.headers.get('Retry-After') || 0)});
+    // A generic server failure reads as an outage, not as a problem with what the person typed.
+    const message = response.status === 500 ? 'ReFind is temporarily unavailable. Please try again in a moment.' : result.message || 'Request failed.';
+    if (!response.ok || !result.ok) throw Object.assign(new Error(message), {status: response.status, code: result.code, fields: result.fields || {}, retryAfter: Number(response.headers.get('Retry-After') || 0)});
     return result;
   }
   async function session() {

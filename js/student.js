@@ -11,7 +11,8 @@ $(async function(){
   const backHref=fromNotifications?app.base+'notifications.html?'+new URLSearchParams({page:notificationPage,...(notificationId?{notification:notificationId}:{})}):app.base+'browse.html';
   const backLabel=fromNotifications?'Back to Notifications':'Back to Explore';
   if(page==='item')$('#item-back').attr('href',backHref).find('span').text(backLabel);
-  function loading(value){$('#page-loading').prop('hidden',!value);}
+  // First load shows skeleton cards in an empty results grid; the status text stays for screen readers.
+  function loading(value){const note=$('#page-loading').prop('hidden',!value),grid=note.nextAll('.discovery-grid').first();$('.skeleton-card').remove();note.removeClass('has-skeleton');if(value&&grid.length&&!grid.children().length){grid.append(U.skeleton(innerWidth>=1280?8:innerWidth>=680?6:2));note.addClass('has-skeleton');}}
   function bindRetry(load){$('#retry-page').off('click.student').on('click.student',()=>load());}
   // A missing or deleted record cannot be fixed by retrying, so offer a way out instead.
   function showMissing(title='Report not found',detail='It may have been deleted, or the link is incomplete.'){loading(false);$('#retry-page,#page-feedback').prop('hidden',true);$('#page-missing').remove();$('<div>').attr('id','page-missing').append(U.empty(title,detail,backHref,fromNotifications?backLabel:'Go to Explore')).insertAfter('#page-feedback');document.body.dataset.ready='true';}
@@ -42,7 +43,7 @@ $(async function(){
     async function load(next=currentPage){currentPage=next;const seq=++request;clearPage();loading(true);tabState('[data-filter-type]','data-filter-type',type);syncFilterButton();const values={q:$('#filter-q').val().trim(),type,category_id:$('#filter-category').val()||'',location_id:$('#filter-location').val()||'',status:$('#filter-status').val()||'',date:$('#filter-date').val()||'',page:currentPage};
       try{const data=await get('items.php',{...values,active:values.status?'':'1'});if(seq!==request)return;
         if(data.total&&currentPage>data.pages)return load(data.pages);
-        $('#result-count').text(data.total+' report(s) · '+(values.status?'':'active · ')+'most recently reported first');showList('#browse-results',data.items,'No matching reports',values.status?'Try another search or clear filters.':'Try another search or clear filters. Returned and closed reports are in History.');U.pager(data,next=>load(next),'#result-count');history.replaceState(null,'',app.base+'browse.html?'+query(values));loading(false);document.body.dataset.ready='true';}catch(e){if(seq===request)failed(e);}}
+        $('#result-count').text(U.plural(data.total,'report')+' · '+(values.status?'':'active · ')+'newest first');showList('#browse-results',data.items,'No matching reports',values.status?'Try another search or clear filters.':'Try another search or clear filters. Returned and closed reports are in History.');U.pager(data,next=>load(next),'#result-count');history.replaceState(null,'',app.base+'browse.html?'+query(values));loading(false);document.body.dataset.ready='true';}catch(e){if(seq===request)failed(e);}}
     $('#filter-toggle').on('click',()=>{const open=$('#advanced-filters').prop('hidden');$('#advanced-filters').prop('hidden',!open);$('#filter-toggle').attr('aria-expanded',String(open));});
     $('#filter-q').on('input',()=>{clearTimeout(timer);timer=setTimeout(()=>load(1),200);});$('#filter-category,#filter-location,#filter-status,#filter-date').on('change',()=>load(1));
     $('[data-filter-type]').on('click',function(){type=$(this).attr('data-filter-type');load(1);});$('#clear-filters').on('click',()=>{$('#filter-q,#filter-category,#filter-location,#filter-status,#filter-date').val('');type='';load(1);});bindRetry(load);await load();
@@ -52,7 +53,7 @@ $(async function(){
     if(!validId(id)){showMissing();return;}
     function showPhoto(){const photo=item.photos[photoIndex];$('#gallery-image').attr({src:photo||'',alt:item.title}).prop('hidden',!photo);$('#gallery-empty').prop('hidden',!!photo);$('#gallery-open').prop('disabled',!photo);$('#gallery-thumbs button').attr('aria-pressed','false').eq(photoIndex).attr('aria-pressed','true');}
     async function load(){clearPage();loading(true);try{item=(await get('items.php',{id})).item;document.title=U.titleParts(item.title).display+' · ReFind';$('#item-title').text(U.titleParts(item.title).display).attr('title',item.title);$('#item-description').text(item.description);$('#item-category').text(item.category_name);$('#item-location').text(U.locationText(item));$('#item-event').text(U.eventDate(item));$('#item-reporter').empty().append(shell.identity(item.reporter_name,item.reporter_avatar_url));$('#item-chips').empty().append(U.chips(item).children());
-      $('#gallery-thumbs').empty();item.photos.forEach((photo,index)=>$('#gallery-thumbs').append($('<button>').attr({type:'button','aria-label':'Public photo '+(index+1),'aria-pressed':String(index===0)}).append($('<img>').attr({src:photo,alt:'Public photo '+(index+1)})).on('click',()=>{photoIndex=index;showPhoto();})));photoIndex=0;showPhoto();
+      $('#gallery-thumbs').empty();item.photos.forEach((photo,index)=>$('#gallery-thumbs').append($('<button>').attr({type:'button','aria-label':'Public photo '+(index+1),'aria-pressed':String(index===0)}).append($('<img>').attr({src:U.thumbUrl(photo),alt:'',width:60,height:60})).on('click',()=>{photoIndex=index;showPhoto();})));photoIndex=0;showPhoto();
       const actions=$('#item-actions').empty(),notice=$('#item-notice').prop('hidden',true).empty(),note=text=>notice.append($('<p>').text(text)).prop('hidden',false);
       if(item.can_claim)actions.append($('<a>').addClass('btn btn-primary').attr('href',U.claimUrl(id)).text(item.own_claim?'Update my claim':'I think this is mine'));
       if(item.can_report_found)actions.append(U.navAction('I found this item',app.base+'report.html?type=found&from='+encodeURIComponent(id)));
@@ -64,7 +65,7 @@ $(async function(){
       if(item.matched_item_id){notice.append($('<p>').text('Verified report pair.'),U.navAction('Open linked report',U.itemUrl(item.matched_item_id))).prop('hidden',false);}
       if(['RESOLVED','UNCLAIMED_CLOSED'].includes(item.status_code))note('This report is read-only and no longer receives claims.');
       const timeline=$('#item-history').empty();item.history.forEach(event=>timeline.append($('<li>').append($('<strong>').text(event.status_name),$('<p>').text(U.date(event.at,true)),$('<p>').text(event.note||''))));if(!item.history.length)timeline.append($('<li>').text('No history events recorded.'));
-      $('#match-section').prop('hidden',!item.matches.length);$('#item-matches').empty();item.matches.forEach(match=>$('#item-matches').append(U.card(match)));$('#item-content').prop('hidden',false);loading(false);document.body.dataset.ready='true';}catch(e){failed(e);}}
+      $('#match-section').prop('hidden',!item.matches.length);$('#item-matches').empty();const sameScore=new Set(item.matches.map(match=>match.match_score)).size<=1;item.matches.forEach(match=>$('#item-matches').append(U.card(match,{showScore:!sameScore})));$('#item-content').prop('hidden',false);loading(false);document.body.dataset.ready='true';}catch(e){failed(e);}}
     $('#gallery-open').on('click',function(){if(!item?.photos.length)return;dialogTrigger=this;$('#enlarged-photo').attr({src:item.photos[photoIndex],alt:item.title});document.querySelector('#photo-dialog').showModal();});bindRetry(load);await load();
   }
   async function reportForm(){
@@ -288,7 +289,7 @@ $(async function(){
       }
       if(claim.claim_status==='REJECTED')card.append($('<p>').addClass('context-note').text('A rejected claim is final for this item.'));
       if(claim.review_note)card.append($('<details>').addClass('review-history').append($('<summary>').text('Review note'),$('<p>').text(claim.review_note)).prop('open',!returned));
-      card.append($('<p>').text(claim.ownership_photo_count+' private supporting photo(s) saved for BM.'));
+      card.append($('<p>').text(U.plural(claim.ownership_photo_count,'private supporting photo')+' saved for BM.'));
       const actions=$('<div>').addClass('claim-actions').append(
         $('<a>').addClass('btn '+(claim.can_resubmit?'btn-primary':'btn-outline'))
           .attr('href',claim.can_resubmit?U.claimUrl(claim.item_id):U.itemUrl(claim.item_id))
@@ -308,7 +309,7 @@ $(async function(){
         data.claims.forEach(claim=>{
           const pickup=handover.find(h=>h.claim_id===claim.claim_id);
           box.append(claimActivityCard(claim,pickup));
-        });if(!data.claims.length)box.append(U.empty('No claims yet','Open an eligible Found report to submit ownership details.',app.base+'browse.html?type=FOUND','Explore Found reports'));$('#activity-count').text(data.total+' own claim(s)');U.pager(data,next=>{highlight=null;return load(next);},'#activity-count');
+        });if(!data.claims.length)box.append(U.empty('No claims yet','Open an eligible Found report to submit ownership details.',app.base+'browse.html?type=FOUND','Explore Found reports'));$('#activity-count').text(U.plural(data.total,'claim'));U.pager(data,next=>{highlight=null;return load(next);},'#activity-count');
       }else{const data=await get('items.php',{mine:1,page:currentPage,limit:24,...(tab==='closed'?{closed:1}:{active:1})});
         if(data.total&&currentPage>data.pages)return load(data.pages);
         data.items.forEach(item=>{const card=U.card(item);if(item.can_edit)card.append($('<div>').addClass('own-report-actions').append(U.navAction('Edit report',app.base+'report.html?edit='+item.item_id),$('<button>').addClass('btn btn-danger-outline btn-report-delete record-delete').attr('type','button').text('Delete').on('click',function(){requestDelete(item.item_id,()=>load(currentPage),this);})));else if(item.edit_locked_reason)card.find('.discovery-body').append($('<p>').addClass('small muted').text(item.edit_locked_reason));box.append(card);});if(!data.items.length)box.append(U.empty(tab==='closed'?'No closed reports':'No active reports','Your own reports appear here.',app.base+'report.html','Report an item'));$('#activity-count').text(data.total+' '+(tab==='closed'?'closed':'active')+' report(s)');U.pager(data,next=>load(next),'#activity-count');}
@@ -318,9 +319,9 @@ $(async function(){
     $('[data-activity]').on('click',function(){tab=$(this).attr('data-activity');highlight=null;load(1);});bindRetry(load);await load();
   }
   async function notifications(){
-    let currentPage=validPage(params.get('page')),restore=validId(params.get('notification'))?params.get('notification'):null;
-    async function load(next=currentPage){currentPage=next;clearPage();loading(true);
-      try{const data=await get('notifications.php',{page:currentPage,limit:24}),box=$('#notification-results').empty();let lastGroup='';
+    let currentPage=validPage(params.get('page')),restore=validId(params.get('notification'))?params.get('notification'):null,filter=params.get('filter')==='unread'?'unread':'';
+    async function load(next=currentPage){currentPage=next;clearPage();loading(true);tabState('[data-note-filter]','data-note-filter',filter);
+      try{const data=await get('notifications.php',{page:currentPage,limit:24,...(filter?{unread:'1'}:{})}),box=$('#notification-results').empty();let lastGroup='';
         if(data.total&&currentPage>data.pages)return load(data.pages);
         $('#mark-all-read').prop('hidden',!data.unread_count);
         let groupSection=null,groupIndex=0;
@@ -353,14 +354,15 @@ $(async function(){
           if(actions.children().length)card.append(actions);
           groupSection.append(card);
         }
-        if(!data.notifications.length)box.append(U.empty('You are all caught up','Report and claim updates will appear here.'));
-        const locationQuery=new URLSearchParams({...((currentPage>1||restore)?{page:currentPage}:{}),...(restore?{notification:restore}:{})});
+        if(!data.notifications.length)box.append(filter?U.empty('No unread updates','You have read everything. Choose All to see earlier updates.'):U.empty('You are all caught up','Report and claim updates will appear here.'));
+        const locationQuery=new URLSearchParams({...(filter?{filter}:{}),...((currentPage>1||restore)?{page:currentPage}:{}),...(restore?{notification:restore}:{})});
         history.replaceState(history.state,'',app.base+'notifications.html'+(locationQuery.size?'?'+locationQuery:''));
         U.pager(data,next=>load(next),'#notification-results');loading(false);document.body.dataset.ready='true';
         if(restore){U.focusRecord(box.find('[data-notification-id="'+restore+'"] .notification-title')[0]||box[0]);restore=null;}
       }catch(e){failed(e);}
     }
     $('#mark-all-read').on('click',async function(){const button=$(this).prop('disabled',true);try{const result=await app.request('notifications.php',{action:'read_all'});shell.setUnread(result.unread_count);await load(currentPage);U.notify('All notifications are marked as read.');$('#shell-feedback').trigger('focus');}catch(e){U.showError(e);}finally{button.prop('disabled',false);}});
+    $('[data-note-filter]').on('click',function(){filter=$(this).attr('data-note-filter');restore=null;load(1);});
     bindRetry(load);await load();
   }
   async function historyPage(){
@@ -370,8 +372,8 @@ $(async function(){
     async function load(next=currentPage){currentPage=next;clearPage();loading(true);tabState('[data-history]','data-history',tab);const values={q:$('#history-q').val().trim(),view:tab==='all'?'':tab,page:currentPage};
       try{const data=await get('items.php',{q:values.q,page:currentPage,closed:'1',...(['lost','found'].includes(tab)?{type:tab.toUpperCase()}:{}),...(tab==='returned'?{status:'RESOLVED'}:{}),...(tab==='unclaimed'?{status:'UNCLAIMED_CLOSED'}:{})});
         if(data.total&&currentPage>data.pages)return load(data.pages);
-        $('#result-count').text(data.total+' closed report(s)');showList('#history-results',data.items,'No history results','Try another view or search. Active reports are in Explore.');U.pager(data,next=>load(next),'#result-count');history.replaceState(null,'',app.base+'history.html'+(query(values)?'?'+query(values):''));loading(false);document.body.dataset.ready='true';}catch(e){failed(e);}}
+        $('#result-count').text(U.plural(data.total,'closed report'));showList('#history-results',data.items,'No history results','Try another view or search. Active reports are in Explore.');U.pager(data,next=>load(next),'#result-count');history.replaceState(null,'',app.base+'history.html'+(query(values)?'?'+query(values):''));loading(false);document.body.dataset.ready='true';}catch(e){failed(e);}}
     $('[data-history]').on('click',function(){tab=$(this).attr('data-history');load(1);});$('#history-q').on('input',()=>{clearTimeout(timer);timer=setTimeout(()=>load(1),200);});bindRetry(load);await load();}
-  async function homeDiscovery(){if(app.state.user?.role!=='STUDENT')return;try{const data=await get('items.php',{limit:3,active:'1'});showList('#home-reports',data.items,'No reports yet','Create a Lost or Found report to get started.');}catch(e){$('#home-reports').empty().append(U.empty('Recent reports could not load','Refresh the page to try again.'));}$('#home-discovery').prop('hidden',false);document.body.dataset.studentReady='true';}
+  async function homeDiscovery(){if(app.state.user?.role!=='STUDENT')return;try{const data=await get('items.php',{limit:4,active:'1'});showList('#home-reports',data.items,'No reports yet','Create a Lost or Found report to get started.');}catch(e){$('#home-reports').empty().append(U.empty('Recent reports could not load','Refresh the page to try again.'));}$('#home-discovery').prop('hidden',false);document.body.dataset.studentReady='true';}
   try{const state=await shell.ready;U.showFlash();$('[data-student-only]').prop('hidden',state.user?.role!=='STUDENT');if(page==='home'){await homeDiscovery();return;}if(!state.authenticated)return;refs=await app.request('references.php');const controllers={browse:discovery,item:itemDetail,report:reportForm,claim:claimForm,'my-reports':activity,notifications,history:historyPage};if(controllers[page])await controllers[page]();}catch(e){failed(e);$('#retry-page').off('click.student').on('click.student',()=>location.reload());}
 });
