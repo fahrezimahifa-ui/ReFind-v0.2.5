@@ -36,7 +36,12 @@ if (isset($_GET['editable'])) {
 }
 if (isset($_GET['id'])) {
     $id=record_id($_GET['id']);
-    $items[0]['history']=array_map(fn($h)=>['status_code'=>$h['status_code'],'status_name'=>ui_status_name($h['status_code']),'at'=>utc_iso($h['changed_at']),'note'=>$h['note']],rows('SELECT s.status_code,s.status_name,h.changed_at,h.note FROM item_status_history h JOIN item_statuses s ON s.status_id=h.status_id WHERE h.item_id=? ORDER BY h.changed_at,h.history_id',[$id]));
+    // Actor is a role-level label only (never a name or ID): you, building_management, reporter, student or system.
+    $items[0]['history']=array_map(fn($h)=>['status_code'=>$h['status_code'],'status_name'=>ui_status_name($h['status_code']),'at'=>utc_iso($h['changed_at']),'note'=>$h['note'],'actor'=>$h['actor']],rows("SELECT s.status_code,s.status_name,h.changed_at,h.note,
+        CASE WHEN h.changed_by_user_id IS NULL THEN 'system' WHEN h.changed_by_user_id=? THEN 'you' WHEN u.role='BUILDING_MANAGEMENT' THEN 'building_management'
+             WHEN h.changed_by_user_id=i.reporter_user_id THEN 'reporter' ELSE 'student' END AS actor
+        FROM item_status_history h JOIN item_statuses s ON s.status_id=h.status_id JOIN items i ON i.item_id=h.item_id LEFT JOIN users u ON u.user_id=h.changed_by_user_id
+        WHERE h.item_id=? ORDER BY h.changed_at,h.history_id",[(int)$user['user_id'],$id]));
     $items[0]['matches']=$items[0]['matched_item_id']||in_array($items[0]['status_code'],['RESOLVED','UNCLAIMED_CLOSED'],true)?[]:possible_matches($id,$user);
     json_response(['item'=>$items[0]]);
 }
