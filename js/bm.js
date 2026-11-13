@@ -12,6 +12,13 @@ $(async function () {
   const terminalStatuses = ['RESOLVED','UNCLAIMED_CLOSED'];
   const get = (endpoint, query = {}) => app.request(endpoint + '?' + new URLSearchParams(Object.entries(query).filter(([, v]) => v !== '' && v !== null && v !== undefined)));
   const mobile = () => innerWidth < 1100;
+  $('#bm-queue-list').on('keydown', '.bm-queue-card', function (event) {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    const cards = $('#bm-queue-list .bm-queue-card:not(:disabled)'), index = cards.index(this);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? cards.length - 1 : index + (event.key === 'ArrowDown' ? 1 : -1);
+    if (next < 0 || next >= cards.length) return;
+    event.preventDefault(); cards.eq(next).trigger('focus');
+  });
   const idKey = () => tab === 'claims' ? 'claim_id' : tab === 'reports' ? 'item_id' : 'handover_id';
   const paramKey = () => tab === 'claims' ? 'claim' : tab === 'reports' ? 'report' : 'handover';
   const draftKey = snapshot => snapshot.kind + ':' + snapshot.id + ':' + snapshot.action;
@@ -179,14 +186,14 @@ $(async function () {
       if (!pinned && !records.some(record => String(record[idKey()]) === selected)) selected = records.length ? String(records[0][idKey()]) : null;
       const outside = Boolean(selected) && !records.some(record => String(record[idKey()]) === selected);
       $('#bm-selection-note').text(mobile() ? 'This linked or saved record is not in the current list. Back to queue returns to that list.' : 'This linked or saved record is not in the current list. Choose a card to return to it.').prop('hidden',!outside);
-      const box = $('#bm-queue-list').empty(); $('#queue-count').text(data.total + ' record(s)');
+      const box = $('#bm-queue-list').empty(); $('#queue-count').text(U.plural(data.total, 'record'));
       records.forEach(record => {
         const id = String(record[idKey()]), code = tab === 'claims' ? record.claim_status : tab === 'reports' ? record.status_code : record.handover_status;
         const label = tab === 'claims' ? U.claimNames[code] : tab === 'reports' ? U.statusNames[code] : U.pickupNames[code];
-        const detail = tab === 'claims' ? record.claimant_name + ' · ' + record.proof_count + ' supporting image(s)' : tab === 'reports' ? (record.item_type === 'LOST' ? 'Lost · ' : 'Found · ') + U.locationText(record) : record.claimant_name + ' · ' + (code === 'COMPLETED' ? 'Returned' : record.scheduled_at ? U.date(record.scheduled_at,true) : 'Not scheduled yet');
+        const detail = tab === 'claims' ? record.claimant_name + ' · ' + U.plural(record.proof_count, 'supporting image') : tab === 'reports' ? (record.item_type === 'LOST' ? 'Lost · ' : 'Found · ') + U.locationText(record) : record.claimant_name + ' · ' + (code === 'COMPLETED' ? 'Returned' : record.scheduled_at ? U.date(record.scheduled_at,true) : 'Not scheduled yet');
         const summary=$('<p>').text(detail);
-        if(tab!=='reports'){const extra=tab==='claims'?record.proof_count+' supporting image(s)':code==='COMPLETED'?'Returned':record.scheduled_at?U.date(record.scheduled_at,true):'Not scheduled yet';summary.empty().addClass('bm-queue-person').append(shell.identity(record.claimant_name,record.claimant_avatar_url),$('<span>').text(extra));}
-        box.append($('<button>').addClass('bm-queue-card').toggleClass('selected',id === selected).attr({type:'button','data-record-id':id,'aria-pressed':String(id === selected)}).append(U.stateChip(code,label),$('<h3>').attr('title',record.title).text(U.titleParts(record.title).display),U.demoChip(record.title),summary,$('<span>').addClass('queue-open').text('View details →')).on('click',async function () {
+        if(tab!=='reports'){const extra=tab==='claims'?U.plural(record.proof_count,'supporting image'):code==='COMPLETED'?'Returned':record.scheduled_at?U.date(record.scheduled_at,true):'Not scheduled yet';summary.empty().addClass('bm-queue-person').append(shell.identity(record.claimant_name,record.claimant_avatar_url),$('<span>').text(extra));}
+        box.append($('<button>').addClass('bm-queue-card').toggleClass('selected',id === selected).attr({type:'button','data-record-id':id,'aria-pressed':String(id === selected)}).append(U.stateChip(code,label),$('<h3>').attr('title',record.title).text(U.titleParts(record.title).display),U.demoChip(record.title),summary).on('click',async function () {
           if (saving) return; selected = id; pinned = false; $('#bm-selection-note').prop('hidden',true);
           // On phones the detail is its own step, so the system Back button returns to the list.
           if (mobile() && !history.state?.bmDetail) history.pushState({bmDetail:true}, '', app.base + 'admin.html?' + new URLSearchParams({tab, [paramKey()]: id}));

@@ -11,6 +11,8 @@ function render_page(string $file, array $values = [], int $status = 200): never
     if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
     $html = file_get_contents(__DIR__ . '/app/pages/' . $file);
     $html = str_replace('{{APP_NAVBAR}}', file_get_contents(__DIR__ . '/app/pages/partials/navbar.html'), $html);
+    // Shared UI polish layer, loaded after each page's own stylesheets.
+    $html = preg_replace('~</head>~i', '<link rel="stylesheet" href="{{BASE_PATH}}css/polish.css"></head>', $html, 1);
     $values['BASE_PATH'] = app_config()['base_path'];
     foreach ($values as $key => $value) $html = str_replace('{{' . $key . '}}', htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $html);
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'HEAD') echo $html;
