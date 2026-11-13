@@ -69,4 +69,3 @@ function visual_strong_cutoff(float $threshold): ?float
     if ((!is_int($value) && !is_float($value)) || !is_finite((float) $value) || $value < $threshold || $value > 1) return null;
     return (float) $value;
 }
-
