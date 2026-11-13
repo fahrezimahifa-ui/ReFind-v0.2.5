@@ -15,9 +15,9 @@
    Panels, the header and dialogs keep the glass treatment. */
 .discovery-card,.activity-card{background:var(--card-surface);-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 
-/* Buttons: a disabled primary action must not look available. Busy buttons keep their colour. */
-.btn-primary:disabled:not([aria-busy="true"]),.btn-primary.disabled:not([aria-busy="true"]){
-  --bs-btn-disabled-opacity:1;--bs-btn-disabled-bg:var(--readonly);--bs-btn-disabled-border-color:var(--line);--bs-btn-disabled-color:var(--muted)}
+/* Buttons: a disabled primary action must not look available. Keep its colours and fade it instead: opacity
+   changes instantly, so enabling a button never passes through a low-contrast colour transition. */
+.btn-primary:disabled:not([aria-busy="true"]),.btn-primary.disabled:not([aria-busy="true"]){--bs-btn-disabled-opacity:.45}
 .btn-outline:disabled,.btn-outline.disabled{--bs-btn-disabled-opacity:.7}
 
 /* Page headings: smaller on phones so content starts sooner. */
