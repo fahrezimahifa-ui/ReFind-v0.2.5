@@ -15,9 +15,9 @@
    Panels, the header and dialogs keep the glass treatment. */
 .discovery-card,.activity-card{background:var(--card-surface);-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 
-/* Buttons: a disabled primary action must not look available. Busy buttons keep their colour. */
-.btn-primary:disabled:not([aria-busy="true"]),.btn-primary.disabled:not([aria-busy="true"]){
-  --bs-btn-disabled-opacity:1;--bs-btn-disabled-bg:var(--readonly);--bs-btn-disabled-border-color:var(--line);--bs-btn-disabled-color:var(--muted)}
+/* Buttons: a disabled primary action must not look available. Keep its colours and fade it instead: opacity
+   changes instantly, so enabling a button never passes through a low-contrast colour transition. */
+.btn-primary:disabled:not([aria-busy="true"]),.btn-primary.disabled:not([aria-busy="true"]){--bs-btn-disabled-opacity:.45}
 .btn-outline:disabled,.btn-outline.disabled{--bs-btn-disabled-opacity:.7}
 
 /* Page headings: smaller on phones so content starts sooner. */
@@ -113,3 +113,40 @@ html:has(.sticky-form-actions){scroll-padding-bottom:104px}
   .bm-main>.bm-filters{grid-column:2;margin:0;padding:10px}
   .bm-main>.bm-layout{margin-top:16px}
 }
+
+/* Item page: report journey stepper and history log (calm, token-based, no motion). */
+.journey-steps{list-style:none;margin:0 0 var(--space-2);padding:20px 12px 16px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--glass-panel);border:1px solid var(--glass-edge);border-radius:var(--radius-panel);box-shadow:var(--panel-shadow)}
+.journey-step{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;padding:0 4px;text-align:center;font-size:14px;line-height:1.35;color:var(--muted)}
+.journey-step::before{content:"";position:absolute;top:10px;left:calc(-50% + 16px);right:calc(50% + 16px);border-top:2px dashed var(--line)}
+.journey-step:first-child::before{display:none}
+.journey-step.is-done::before,.journey-step.is-current::before{border-top-style:solid;border-top-color:var(--primary)}
+.journey-step.is-skipped::before{border-top-color:var(--control)}
+.journey-dot{position:relative;z-index:1;flex:none;width:22px;height:22px;border:2px solid var(--control);border-radius:50%;background:var(--panel)}
+.journey-step.is-done .journey-dot{background:var(--primary);border-color:var(--primary)}
+.journey-step.is-done .journey-dot::after{content:"";position:absolute;left:6px;top:3px;width:6px;height:10px;border:solid var(--primary-text);border-width:0 2px 2px 0;transform:rotate(45deg)}
+.journey-step.is-current .journey-dot{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
+.journey-step.is-current .journey-dot::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--primary)}
+.journey-step.is-skipped .journey-dot{border-style:dashed;background:transparent}
+.journey-step.is-done .journey-label{color:var(--ink)}
+.journey-step.is-current .journey-label{color:var(--ink);font-weight:700}
+.journey-now{display:inline-block;padding:1px 8px;border-radius:999px;background:var(--primary-soft);color:var(--navy);font-size:12px;font-weight:700}
+.journey-step.is-closed.is-current::before{border-top-color:var(--muted);border-left-color:var(--muted)}
+.journey-step.is-closed.is-current .journey-dot{border-color:var(--muted);box-shadow:0 0 0 4px var(--readonly)}
+.journey-step.is-closed.is-current .journey-dot::after{background:var(--muted)}
+.journey-step.is-closed.is-current .journey-now{background:var(--readonly);color:var(--muted)}
+.journey-note{margin:0 0 var(--space-3);padding:10px 14px;border:1px solid var(--info-line);border-radius:var(--radius-control);background:var(--info-bg);color:var(--info);font-size:14px}
+.history-title{margin:var(--space-4) 0 var(--space-2);font-size:18px;font-weight:700}
+.history-log{margin:0}
+.history-log .history-entry{margin-bottom:16px}
+.history-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.history-meta{color:var(--muted);font-size:14px}
+.history-note{margin:6px 0 0;color:var(--muted);font-size:14px;overflow-wrap:anywhere}
+@media(max-width:519px){
+  .journey-steps{grid-template-columns:minmax(0,1fr);padding:12px 16px;gap:0}
+  .journey-step{flex-direction:row;align-items:center;gap:12px;padding:8px 0;text-align:left}
+  .journey-step::before{top:calc(-50% + 14px);bottom:calc(50% + 14px);left:10px;right:auto;border-top:0;border-left:2px dashed var(--line)}
+  .journey-step.is-done::before,.journey-step.is-current::before{border-left-style:solid;border-left-color:var(--primary)}
+  .journey-step.is-skipped::before{border-left-color:var(--control)}
+  .journey-now{margin-left:auto}
+}
+@media(forced-colors:active){.journey-step.is-done .journey-dot,.journey-step.is-current .journey-dot::after{background:Highlight;border-color:Highlight}}
