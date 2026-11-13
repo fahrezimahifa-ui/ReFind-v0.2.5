@@ -15,11 +15,12 @@ async function material(p,selector,glass=true){const actual=await p.locator(sele
    const a=accounts.find(a=>a.role==='STUDENT');await go(p,'login.html');await p.fill('#email',a.email);await p.fill('#password',a.password);await p.click('#login-submit');await p.waitForURL('**/index.html');await p.waitForSelector('body[data-ready="true"]');assert.equal(await p.title(),'ReFind · UMN Lost & Found');
    for(const route of ['browse.html','my-reports.html','notifications.html','history.html','settings.html','profile.html','report.html','item.html?id=1'])await go(p,route);
   });
+  // Repeated cards use a near-opaque surface (no per-card blur); the surrounding panels keep the glass material.
   await check(theme+' card, empty state and editor materials across requested viewports',async()=>{
-   for(const width of [360,390,768,1099,1100,1440,720]){
+   for(const width of [360,390,768,999,1000,1099,1100,1440,720]){
     await p.setViewportSize({width,height:width===720?450:900});
     for(const [route,selector]of [['browse.html','.discovery-card'],['my-reports.html?tab=claims','.activity-card']]){
-     await go(p,route);await material(p,selector);assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'horizontal overflow');
+     await go(p,route);await material(p,selector,false);if(route==='browse.html')await material(p,'.filter-panel');assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'horizontal overflow');
      if([390,1440].includes(width)){const file=theme+'-'+route.split('.')[0]+'-'+width+'.png';await p.screenshot({path:path.join(out,file),fullPage:true});results.screens.push(file);}
     }
    }

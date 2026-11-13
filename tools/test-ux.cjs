@@ -52,7 +52,7 @@ async function group(name,fn){await fn();results.push(name);console.log('PASS UX
       const selected=await p.page.locator('[data-detail-claim-id]').getAttribute('data-detail-claim-id');assert.ok(!first.includes(selected));assert.ok(await p.page.locator('.bm-queue-card[data-record-id="'+selected+'"]').count());
     });
     await group('Late detail response cannot replace the current filtered record',async()=>{
-      await p.page.setViewportSize({width:1280,height:800});await go(p.page,'admin.html?tab=claims');await p.page.fill('#bm-search',run+' Pending');await p.page.waitForFunction(()=>document.querySelector('#queue-count').textContent==='2 record(s)');
+      await p.page.setViewportSize({width:1280,height:800});await go(p.page,'admin.html?tab=claims');await p.page.fill('#bm-search',run+' Pending');await p.page.waitForFunction(()=>document.querySelector('#queue-count').textContent==='2 records');
       let release;const gate=new Promise(resolve=>release=resolve),pattern='**/api/staff.php?resource=claims&id='+idA;
       await p.page.route(pattern,async route=>{await gate;await route.continue();});await p.page.locator('.bm-queue-card[data-record-id="'+idA+'"]').click();await p.page.waitForFunction(()=>document.querySelector('#bm-detail-content').textContent.includes('Loading selected record'));
       await p.page.fill('#bm-search',run+' Pending B');await exact(p.page,idB);const response=p.page.waitForResponse(r=>r.url().endsWith('resource=claims&id='+idA));release();await response;await p.page.waitForTimeout(80);await exact(p.page,idB);await p.page.unroute(pattern);

@@ -34,10 +34,11 @@ async function style(p,selector){return p.locator(selector).first().evaluate(e=>
   for(const role of ['STUDENT','BUILDING_MANAGEMENT']){
    const s=await login(accounts.find(a=>a.role===role),theme),p=s.p;
    await check(theme+' '+role+' menu placement, frosting, long names and viewport boundaries',async()=>{
-    for(const width of [360,390,768,1099,1100,1440,720]){
+    // Full navigation (floating account menu) starts at 1000px.
+    for(const width of [360,390,768,999,1000,1099,1100,1440,720]){
      await p.setViewportSize({width,height:width===720?450:900});await go(p,'profile.html');await open(p);
      const m=await p.locator('#account-menu').evaluate(e=>({inHeader:!!e.closest('.app-header'),blur:getComputedStyle(e).backdropFilter,background:getComputedStyle(e).backgroundColor}));
-     assert.equal(m.inHeader,width<1100);if(width>=1100){assert.equal(m.blur,'blur(16px)');await popupBounds(p);}else{assert.ok((await p.locator('#account-menu').boundingBox()).x>=0);}
+     assert.equal(m.inHeader,width<1000);if(width>=1000){assert.equal(m.blur,'blur(16px)');await popupBounds(p);}else{assert.ok((await p.locator('#account-menu').boundingBox()).x>=0);}
      assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
      if([390,1440].includes(width)){await p.locator('#account-menu [data-shell-user-name]').evaluate(e=>e.textContent='A very long campus account name with several words and anIdentifierThatMustWrapSafely');await capture(p,theme+'-'+role+'-menu-'+width);await contrast(p,theme+'-'+role+'-'+width);}
      await p.keyboard.press('Escape');
@@ -48,7 +49,7 @@ async function style(p,selector){return p.locator(selector).first().evaluate(e=>
     await p.keyboard.press('Shift+Tab');assert.equal(await p.locator('#account-toggle').evaluate(e=>e===document.activeElement),true);await p.keyboard.press('Tab');await p.keyboard.press('Tab');assert.equal(await p.locator('[data-account-nav="settings"]').evaluate(e=>e===document.activeElement),true);await p.keyboard.press('Tab');assert.equal(await p.locator('#logout').evaluate(e=>e===document.activeElement),true);await p.keyboard.press('Tab');assert.equal(await p.locator('#appearance-toggle').evaluate(e=>e===document.activeElement),true);assert.equal(await p.locator('#account-menu').isVisible(),false);
     await p.focus('#account-toggle');await p.keyboard.press('ArrowDown');await p.keyboard.press('Escape');assert.equal(await p.locator('#account-toggle').evaluate(e=>e===document.activeElement),true);
     await open(p);await p.click('h1');assert.equal(await p.locator('#account-menu').isVisible(),false);
-    await open(p);await p.evaluate(()=>scrollTo(0,180));await p.waitForTimeout(50);await popupBounds(p);await p.locator('#account-toggle').press('ArrowDown');await p.setViewportSize({width:1099,height:900});await p.waitForFunction(()=>document.querySelector('#account-menu').hidden&&document.querySelector('.app-header').contains(document.querySelector('#account-menu')));assert.equal(await p.locator('#account-menu').isVisible(),false);assert.equal(await p.locator('#nav-toggle').evaluate(e=>e===document.activeElement),true);assert.equal(await p.locator('#account-menu').evaluate(e=>!!e.closest('.app-header')),true);
+    await open(p);await p.evaluate(()=>scrollTo(0,180));await p.waitForTimeout(50);await popupBounds(p);await p.locator('#account-toggle').press('ArrowDown');await p.setViewportSize({width:999,height:900});await p.waitForFunction(()=>document.querySelector('#account-menu').hidden&&document.querySelector('.app-header').contains(document.querySelector('#account-menu')));assert.equal(await p.locator('#account-menu').isVisible(),false);assert.equal(await p.locator('#nav-toggle').evaluate(e=>e===document.activeElement),true);assert.equal(await p.locator('#account-menu').evaluate(e=>!!e.closest('.app-header')),true);
     await p.setViewportSize({width:1440,height:900});await go(p,'settings.html');assert.equal(await p.locator('.app-version').innerText(),'Version 0.2.5');await p.fill('#current-password','UNSAVED synthetic draft');await open(p);await p.click('#appearance-toggle');await p.waitForSelector('#appearance-panel[open]');assert.equal(await p.locator('#account-menu').isVisible(),false);await popupBounds(p,'#appearance-panel');await p.keyboard.press('Escape');assert.equal(await p.inputValue('#current-password'),'UNSAVED synthetic draft');
    });
    if(role==='STUDENT')await check(theme+' frosting over extreme backdrops and opaque accessibility fallbacks',async()=>{
