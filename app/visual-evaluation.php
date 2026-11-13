@@ -36,6 +36,24 @@ function visual_metrics(array $cases, float $threshold): array
         'lookalike'=>['total'=>$lookalikes,'returns'=>$lookalikeReturns,'hit5'=>$lookalikeHit5]];
 }
 
+// Strong "Very similar" cutoff from validation scores only: halfway between the highest score that is not
+// the same object (irrelevant queries, look-alikes and non-target matches) and the lowest same-object target
+// score above it. Null when no same-object score clears every other score.
+function visual_strong_threshold(array $cases, float $threshold): ?float
+{
+    $negative = -1.0;
+    $positive = [];
+    foreach ($cases as $case) {
+        foreach (array_slice($case['ranked'], 0, VISUAL_RESULT_LIMIT) as $match) {
+            if ($case['group'] === 'same_object' && in_array($match['item_id'], $case['expected_ids'], true)) $positive[] = $match['score'];
+            else $negative = max($negative, $match['score']);
+        }
+    }
+    $above = array_filter($positive, fn($score) => $score > $negative);
+    if (!$above) return null;
+    return max($threshold, ($negative + min($above)) / 2);
+}
+
 function visual_calibrate(array $cases): ?array
 {
     $scores = [-1.0, 1.0];
@@ -61,5 +79,6 @@ function visual_calibrate(array $cases): ?array
             $bestKey = $key;
         }
     }
+    if ($best !== null && ($strong = visual_strong_threshold($cases, $best['threshold'])) !== null) $best['strong_threshold'] = $strong;
     return $best;
 }

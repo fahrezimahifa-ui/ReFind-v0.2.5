@@ -141,3 +141,20 @@ The 10 November 2026 rehearsal used disposable Windows Apache and MariaDB proces
 - `node tools/test-visual-search.cjs` requires a disposable Apache and MariaDB stack with an explicit nonstandard database port and an empty test index. For this test stack only, point Apache `auto_prepend_file` at `tools/test-visual-http-prepend.php` and set `REFIND_VISUAL_DISPOSABLE_DB_PORT` in Apache and the test runner. This fixture exercises real browser, API, SQL and upload paths with a deterministic provider. The fixture file is excluded from ordinary QA sync.
 - On 11 November 2026 the configured project returned a genuine 768-value embedding and all 80 allowlisted native QA gallery photos were indexed with Gemini. Validation-only calibration completed on the frozen 4/4/10 query pilot. The new [dataset runbook](VISUAL_DATASET.md) describes provenance, reproduction, rollback, and the separate live held-out/browser checks. These checks do not establish expanded academic or campus performance.
 - The [live QA report](VISUAL_SEARCH_QA_2026-11-11.md) records two complete 18-query runs, two genuine automatic-indexing demonstrations, and retained failed runs. Same-object retrieval was 4/4 at rank 1, while irrelevant false returns were 4/10 and p95 was 15.1–17.4 seconds. Quality/latency goals are not met. Main installation/database changes, Git merges and pushes remain on hold.
+
+## Results panel and match labels (branch `claude/visual-results-ui`)
+- **Results panel:** photo search results now appear in a pinned, tinted panel above the keyword grid. It shows:
+  - the query photo, the "Possible Visual Matches" heading and a match count;
+  - labelled cards, with placeholder skeletons while the provider responds;
+  - in-panel no-match and error states with a "Search by keyword instead" action;
+  - a Clear button.
+
+  Focus moves to the panel when a search finishes, and the keyword grid gets an "All reports" heading. All existing `#visual-*` ids, status messages and `a.card-details` links are unchanged.
+- **Match labels:** each result carries only `match_label` (`very_similar` or `similar`). Raw scores are never sent to the browser, and a label is not ownership probability.
+- **"Very similar" cutoff:** the optional `strong_threshold` is computed from validation scores only. It sits halfway between the highest score that is not the same object (irrelevant, look-alike or non-target) and the lowest same-object target score above it. It's never below the main threshold. When no target clears every other score, every match shows "Similar".
+  - New `--calibrate` receipts include it.
+  - For an existing receipt, `php tools/calibrate-visual-search.php --derive-strong` derives it from that receipt's own retained validation scores (hash-checked, no provider calls, no held-out data) into the write-once `storage/setup/visual-calibration-strong.json`.
+  - On the 11 November QA calibration this would give 0.797 (main threshold 0.712). That number was computed read-only; the side file was not written.
+- **Checks:**
+  - `php tools/test-visual-search.php` covers the strong cutoff and the label.
+  - `node tools/test-visual-results-ui.cjs` runs on an owned development profile with a mocked visual-search API. It covers matches, labels, the query photo, focus, the no-match and limit states, the keyword fallback, Clear, overflow, and 1366 px dark / 375 px light.

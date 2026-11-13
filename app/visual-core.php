@@ -52,6 +52,12 @@ function visual_rank(iterable $rows, array $query): array
     return $ranked;
 }
 
+// Display label only. Scores are not ownership probability and are never sent to the browser.
+function visual_match_label(float $score, ?float $strongThreshold): string
+{
+    return $strongThreshold !== null && $score >= $strongThreshold ? 'very_similar' : 'similar';
+}
+
 function visual_above_threshold(array $ranked, float $threshold): array
 {
     return array_slice(array_filter($ranked, fn($match) => $match['score'] >= $threshold), 0, VISUAL_RESULT_LIMIT);

@@ -74,7 +74,32 @@ function visual_evaluation_input(string $manifestPath, string $split): array
 
 try {
     assert_qa_installation(app_root());
-    if (!visual_enabled() || count($argv) !== 3) throw new InvalidArgumentException('Use --calibrate MANIFEST or --verify-held-out MANIFEST in enabled QA.');
+    if (visual_enabled() && count($argv) === 2 && $argv[1] === '--derive-strong') {
+        // Older receipts lack the "Very similar" cutoff. Derive it from that receipt's own retained validation
+        // scores (no provider calls, no held-out data) into a write-once side file.
+        $receiptPath = storage_dir('setup') . '/visual-calibration.json';
+        $threshold = visual_threshold();
+        if ($threshold === null) throw new InvalidArgumentException('Freeze validation before deriving a strong cutoff.');
+        $receipt = json_decode((string) file_get_contents($receiptPath), true, 16, JSON_THROW_ON_ERROR);
+        if (isset($receipt['strong_threshold'])) throw new InvalidArgumentException('The receipt already has a strong cutoff.');
+        $scoresName = (string) ($receipt['validation_scores_file'] ?? '');
+        if (!preg_match('/^visual-validation-[0-9]{14}-[a-f0-9]{12}\.json$/D', $scoresName)) throw new InvalidArgumentException('The receipt names no retained validation scores.');
+        $scoresJson = (string) file_get_contents(storage_dir('setup') . '/' . $scoresName);
+        if (!hash_equals((string) ($receipt['validation_scores_sha256'] ?? ''), hash('sha256', $scoresJson))) throw new InvalidArgumentException('Validation scores do not match the receipt.');
+        $scores = json_decode($scoresJson, true, 64, JSON_THROW_ON_ERROR);
+        if (($scores['validation_sha256'] ?? null) !== $receipt['validation_sha256']) throw new InvalidArgumentException('Validation scores belong to another manifest.');
+        $strong = visual_strong_threshold($scores['queries'], $threshold);
+        if ($strong === null) throw new InvalidArgumentException('No same-object validation score clears every other score; all matches stay "Similar".');
+        $side = ['model'=>VISUAL_MODEL,'dimensions'=>VISUAL_DIMENSIONS,'preprocessing'=>VISUAL_PREPROCESSING,
+            'validation_scores_sha256'=>$receipt['validation_scores_sha256'],'strong_threshold'=>$strong,'derived_utc'=>gmdate('c')];
+        $file = @fopen(storage_dir('setup') . '/visual-calibration-strong.json', 'x');
+        if (!$file) throw new RuntimeException('A strong cutoff side file already exists or could not be created.');
+        try { $json = json_encode($side, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR); if (fwrite($file, $json) !== strlen($json)) throw new RuntimeException('Could not write the strong cutoff.'); }
+        finally { fclose($file); }
+        echo json_encode(['strong_threshold'=>$strong], JSON_THROW_ON_ERROR) . PHP_EOL;
+        exit;
+    }
+    if (!visual_enabled() || count($argv) !== 3) throw new InvalidArgumentException('Use --calibrate MANIFEST, --verify-held-out MANIFEST or --derive-strong in enabled QA.');
     $output = storage_dir('setup') . '/visual-calibration.json';
     if ($argv[1] === '--verify-held-out') {
         if (visual_threshold() === null) throw new InvalidArgumentException('Freeze validation before accessing held-out data.');

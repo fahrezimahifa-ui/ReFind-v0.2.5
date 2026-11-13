@@ -32,17 +32,23 @@ $(async function(){
     if(!visualEnabled)return ()=>{};
     const toggle=$('#visual-toggle').prop('hidden',false),form=$('#visual-search'),outcome=$('#visual-outcome');
     const results=$('#visual-results'),status=$('#visual-status'),submit=$('#visual-submit'),input=$('#visual-photo');
-    const heading=$('#visual-heading,#visual-hint');
+    const heading=$('#visual-heading,#visual-hint'),thumb=$('#visual-query-thumb'),count=$('#visual-count'),fallback=$('#visual-fallback'),allHeading=$('#all-reports-heading');
+    const labels={very_similar:'Very similar',similar:'Similar'};
     let sequence=0,busy=false;
     const updateButton=()=>submit.prop('disabled',busy||upload.busy||upload.files.length!==1);
     const upload=new PhotoUpload('#visual-upload',1,updateButton,true);
     function reset(message=''){
       sequence++;
       results.empty();
-      heading.prop('hidden',true);
+      heading.prop('hidden',true);count.prop('hidden',true).text('');fallback.prop('hidden',true);
       status.text(message);
       outcome.prop('hidden',!message).attr('aria-busy','false');
+      allHeading.prop('hidden',!message);
+      if(!message)thumb.prop('hidden',true).removeAttr('src');
     }
+    // Decorative placeholders while the provider responds; the status line carries the announcement.
+    function placeholders(){for(let i=0;i<3;i++)results.append($('<div>').addClass('discovery-card visual-skeleton').attr('aria-hidden','true').append($('<div>').addClass('card-media'),$('<div>').addClass('discovery-body').append($('<span>').addClass('visual-skeleton-line'),$('<span>').addClass('visual-skeleton-line short'))));}
+    function labelled(item){const card=U.card(item),label=labels[item.match_label];if(label)card.find('.card-media').append($('<span>').addClass('match-label '+item.match_label).text(label));return card;}
     toggle.on('click',()=>{
       const opening=form.prop('hidden');
       form.prop('hidden',!opening);
@@ -55,10 +61,14 @@ $(async function(){
       if(upload.busy)return;
       upload.clear();reset();updateButton();input.trigger('focus');
     });
+    $('#visual-panel-clear').on('click',()=>{if(upload.busy)return;upload.clear();reset();updateButton();toggle.trigger('focus');});
+    $('#visual-keyword').on('click',()=>{$('#filter-q').trigger('focus');});
     form.on('submit',async event=>{
       event.preventDefault();
       if(submit.prop('disabled'))return;
       reset('Searching for visually similar reports…');
+      if(upload.files[0])thumb.attr('src',upload.files[0].url).prop('hidden',false);
+      placeholders();
       const current=sequence,body=new FormData();
       upload.append(body,'photo');
       for(const [key,value] of Object.entries(filters()))if(value)body.append(key,value);
@@ -66,13 +76,16 @@ $(async function(){
       try{
         const response=await app.request('visual-search.php',body);
         if(current!==sequence)return;
+        results.empty();
         if(response.state==='matches'){
-          heading.prop('hidden',false);
-          status.text(response.items.length+' possible visual match(es).');
-          response.items.forEach(item=>results.append(U.card(item)));
-        }else status.text(response.state==='no_match'?'No sufficiently similar matches.':'No indexed photos for these filters yet.');
+          const total=response.items.length;
+          heading.prop('hidden',false);count.text(total).prop('hidden',false);
+          status.text(total+' possible visual '+(total===1?'match':'matches')+'.');
+          response.items.forEach(item=>results.append(labelled(item)));
+        }else{status.text(response.state==='no_match'?'No sufficiently similar matches.':'No indexed photos for these filters yet.');fallback.prop('hidden',false);}
+        U.focusRecord(outcome[0]);
       }catch(error){
-        if(current===sequence)status.text(error.message);
+        if(current===sequence){results.empty();status.text(error.message);fallback.prop('hidden',false);U.focusRecord(outcome[0]);}
       }finally{
         busy=false;updateButton();
         if(current===sequence)outcome.attr('aria-busy','false');

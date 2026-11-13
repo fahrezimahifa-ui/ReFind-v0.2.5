@@ -79,6 +79,20 @@ visual_check($selected !== null && $selected['threshold'] < 0.7 &&
     $selected['metrics']['irrelevant']['returns'] === 1 &&
     $selected['metrics']['lookalike']['returns'] === 1, 'calibration maximizes recall within irrelevant cap and allows look-alikes');
 visual_check(visual_calibrate(array_slice($cases, 2)) === null, 'calibration needs a retrieved validation target');
+visual_check(visual_strong_threshold($cases, $selected['threshold']) === null && !isset($selected['strong_threshold']),
+    'strong cutoff is omitted when a look-alike outscores every same-object target');
+$separated = [
+    ['group'=>'same_object','expected_ids'=>[1],'ranked'=>[['item_id'=>1,'score'=>0.9],['item_id'=>2,'score'=>0.5]]],
+    ['group'=>'same_object','expected_ids'=>[3],'ranked'=>[['item_id'=>3,'score'=>0.85]]],
+    ['group'=>'lookalike','expected_ids'=>[4],'ranked'=>[['item_id'=>4,'score'=>0.7]]],
+];
+for ($i = 0; $i < 10; $i++) $separated[] = ['group'=>'irrelevant','expected_ids'=>[],'ranked'=>[['item_id'=>5,'score'=>0.6]]];
+$strongSelection = visual_calibrate($separated);
+visual_check($strongSelection !== null && abs(($strongSelection['strong_threshold'] ?? 0) - 0.775) < 1e-9 &&
+    $strongSelection['strong_threshold'] >= $strongSelection['threshold'], 'strong cutoff sits between the best other score and the lowest target above it');
+visual_check(visual_strong_threshold($separated, 0.8) === 0.8, 'strong cutoff is never below the main threshold');
+visual_check(visual_match_label(0.8, 0.775) === 'very_similar' && visual_match_label(0.76, 0.775) === 'similar' &&
+    visual_match_label(0.99, null) === 'similar', 'match label uses only the strong cutoff');
 
 $image = imagecreatetruecolor(16, 16);
 ob_start();

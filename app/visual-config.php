@@ -46,3 +46,27 @@ function visual_threshold(): ?float
         $threshold < -1 || $threshold > 1) return null;
     return (float) $threshold;
 }
+
+// Optional "Very similar" cutoff. A new calibration stores it in the receipt; an older receipt may get a
+// side file derived from its own retained validation scores. Either must match the active calibration.
+function visual_strong_cutoff(float $threshold): ?float
+{
+    $read = static function (string $name): ?array {
+        $raw = @file_get_contents(storage_dir('setup') . '/' . $name, false, null, 0, 16384);
+        $data = $raw === false ? null : json_decode($raw, true);
+        return is_array($data) ? $data : null;
+    };
+    $receipt = $read('visual-calibration.json');
+    if (!$receipt) return null;
+    $value = $receipt['strong_threshold'] ?? null;
+    if ($value === null) {
+        $side = $read('visual-calibration-strong.json');
+        if (!$side || ($side['validation_scores_sha256'] ?? null) !== ($receipt['validation_scores_sha256'] ?? false) ||
+            ($side['model'] ?? null) !== VISUAL_MODEL || ($side['dimensions'] ?? null) !== VISUAL_DIMENSIONS ||
+            ($side['preprocessing'] ?? null) !== VISUAL_PREPROCESSING) return null;
+        $value = $side['strong_threshold'] ?? null;
+    }
+    if ((!is_int($value) && !is_float($value)) || !is_finite((float) $value) || $value < $threshold || $value > 1) return null;
+    return (float) $value;
+}
+

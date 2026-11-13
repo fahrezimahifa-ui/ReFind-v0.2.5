@@ -33,7 +33,7 @@ function visual_candidates(string $clause, array $params): Generator
     } while (count($page) === 128);
 }
 
-function visual_card_results(array $ranked, array $user): array
+function visual_card_results(array $ranked, array $user, ?float $strongThreshold = null): array
 {
     if (!$ranked) return [];
     $ids = array_column($ranked, 'item_id');
@@ -49,7 +49,7 @@ function visual_card_results(array $ranked, array $user): array
         $photo = app_config()['base_path'] . 'api/photos.php?kind=item&id=' . $match['photo_id'];
         if (!in_array($photo, $item['photos'], true)) continue;
         $item['photos'] = [$photo, ...array_values(array_diff($item['photos'], [$photo]))];
-        $result[] = array_intersect_key($item, $allowed);
+        $result[] = array_intersect_key($item, $allowed) + ['match_label' => visual_match_label((float) $match['score'], $strongThreshold)];
     }
     return $result;
 }
@@ -89,7 +89,7 @@ function visual_search_request(?callable $embed = null): never
     db()->begin_transaction(MYSQLI_TRANS_START_READ_ONLY | MYSQLI_TRANS_START_WITH_CONSISTENT_SNAPSHOT);
     try {
         $ranked = visual_rank(visual_candidates($clause, $params), $query);
-        $cards = visual_card_results(visual_above_threshold($ranked, $threshold), $user);
+        $cards = visual_card_results(visual_above_threshold($ranked, $threshold), $user, visual_strong_cutoff($threshold));
         db()->commit();
     } catch (Throwable $error) {
         db()->rollback();
