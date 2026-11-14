@@ -22,6 +22,15 @@ function command(name,exe,args,env={}){
 }
 function q(query,values=[]){return JSON.parse(execFileSync(qa.php,[path.join(qa.target,'tools/b02-fixture.php')],{input:JSON.stringify({action:'query',query,values}),encoding:'utf8'}));}
 let visualItem;
+// A Found report by the second demo Student with a pending claim by the first; returns {item, claim}.
+function pendingClaimFixture(label){
+ const accounts=JSON.parse(fs.readFileSync(path.join(qa.target,'storage/setup/demo-accounts.json'),'utf8')).accounts;
+ const students=Object.values(accounts).filter(a=>a.role==='STUDENT');
+ const status=q("SELECT status_id FROM item_statuses WHERE status_code='VERIFICATION'").rows[0].status_id;
+ const item=q("INSERT INTO items(reporter_user_id,category_id,location_id,status_id,item_type,title,description,event_date,verification_clue) VALUES (?,1,35,?,'FOUND',?,'Synthetic visual regression fixture',CURRENT_DATE(),'Synthetic private clue')",[Number(students[1].user_id),Number(status),label+' '+run]).id;
+ q("INSERT INTO item_status_history(item_id,status_id,changed_by_user_id,note) VALUES (?,?,?,'Synthetic visual fixture')",[Number(item),Number(status),Number(students[1].user_id)]);
+ return {item,claim:q("INSERT INTO claims(item_id,claimant_user_id,ownership_answer) VALUES (?,?,'Synthetic identifying answer')",[Number(item),Number(students[0].user_id)]).id};
+}
 try{
  command('schema-before',qa.php,[path.join(qa.target,'tools/check-database.php')]);
  command('invariants-before',qa.php,[path.join(qa.target,'tools/check-workflow.php')]);
@@ -40,16 +49,12 @@ try{
  }
  command('layout',process.execPath,['tools/test-layout.cjs']);
  command('ui-profile',process.execPath,['tools/test-ui-profile.cjs']);
- command('glass-titles',process.execPath,['tools/test-glass-titles.cjs']);
+ // Glass titles inspect My Activity claim cards for the first demo Student; a fresh database has none, so the suite gets its own temporary claim.
+ {const glass=pendingClaimFixture('Glass titles');try{command('glass-titles',process.execPath,['tools/test-glass-titles.cjs']);}finally{q('DELETE FROM items WHERE item_id=?',[Number(glass.item)]);}}
  command('menu-polish',process.execPath,['tools/test-menu-polish.cjs']);
  }
  // A fresh pending claim ensures BM draft preservation is exercised even on an empty QA seed.
- const accounts=JSON.parse(fs.readFileSync(path.join(qa.target,'storage/setup/demo-accounts.json'),'utf8')).accounts;
- const students=Object.values(accounts).filter(a=>a.role==='STUDENT');
- const status=q("SELECT status_id FROM item_statuses WHERE status_code='VERIFICATION'").rows[0].status_id;
- visualItem=q("INSERT INTO items(reporter_user_id,category_id,location_id,status_id,item_type,title,description,event_date,verification_clue) VALUES (?,1,35,?,'FOUND',?,'Synthetic visual regression fixture',CURRENT_DATE(),'Synthetic private clue')",[Number(students[1].user_id),Number(status),'Release visual '+run]).id;
- q("INSERT INTO item_status_history(item_id,status_id,changed_by_user_id,note) VALUES (?,?,?,'Synthetic visual fixture')",[Number(visualItem),Number(status),Number(students[1].user_id)]);
- const claim=q("INSERT INTO claims(item_id,claimant_user_id,ownership_answer) VALUES (?,?,'Synthetic identifying answer')",[Number(visualItem),Number(students[0].user_id)]).id;
+ const fixture=pendingClaimFixture('Release visual');visualItem=fixture.item;const claim=fixture.claim;
  if(!appearanceOnly)command('theme',process.execPath,['tools/test-theme.cjs']);
  command('appearance',process.execPath,['tools/test-appearance.cjs'],{REFIND_APPEARANCE_CLAIM_ID:claim});
  command('smoke',process.execPath,['tools/smoke-auth.cjs','--v025']);
