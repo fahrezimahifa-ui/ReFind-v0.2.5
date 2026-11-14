@@ -89,7 +89,7 @@ Excerpts below are copied from the baseline and refactored source, rather than r
 
 ```php
                 if($lostId){$lost=&$locked[$lostId];sql("INSERT INTO item_matches(lost_item_id,found_item_id,match_score,match_status,confirmed_by_user_id,confirmed_at) VALUES (?,?,?,'CONFIRMED',?,UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE match_score=VALUES(match_score),match_status='CONFIRMED',confirmed_by_user_id=VALUES(confirmed_by_user_id),confirmed_at=VALUES(confirmed_at)",[$lostId,$foundId,match_score($lost,$found),(int)$user['user_id']]);status_change($lost,'HANDOVER',(int)$user['user_id'],'Ownership verified; matched item is ready for pickup.',false);unset($lost);}
-                status_change($found,'HANDOVER',(int)$user['user_id'],'Ownership verified by BM. Item is ready for pickup.');
+                status_change($found,'HANDOVER',(int)$user['user_id'],'Ownership verified by Building Management. Item is ready for pickup.');
                 sql("INSERT INTO handovers(claim_id,pickup_location_id,handled_by_user_id,notes) VALUES (?,?,?,'Awaiting a pickup appointment.')",[$id,$found['location_id']?(int)$found['location_id']:null,(int)$user['user_id']]);
                 $handoverId=(string)db()->insert_id;
 ```

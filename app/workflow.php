@@ -75,7 +75,7 @@ function create_approved_pickup(array &$locked, array $claim, int $actorId): str
         status_change($lost, 'HANDOVER', $actorId, 'Ownership verified; matched item is ready for pickup.', false);
         unset($lost);
     }
-    status_change($found, 'HANDOVER', $actorId, 'Ownership verified by BM. Item is ready for pickup.');
+    status_change($found, 'HANDOVER', $actorId, 'Ownership verified by Building Management. Item is ready for pickup.');
     sql("INSERT INTO handovers(claim_id,pickup_location_id,handled_by_user_id,notes) VALUES (?,?,?,'Awaiting a pickup appointment.')", [$claimId, $found['location_id'] ? (int) $found['location_id'] : null, $actorId]);
     // Later history/notification inserts also change insert_id, so capture it immediately.
     return (string) db()->insert_id;
@@ -218,7 +218,7 @@ function staff_status(array $user, array $data): array
             if (!in_array($status, allowed_manual_statuses($item), true)) {
                 fail('Finish the active claim/handover or choose an eligible transition.', 409, 'state_conflict');
             }
-            status_change($item, $status, (int) $user['user_id'], $status === 'RESOLVED' ? 'BM recorded recovery of this Lost report.' : 'Operational status updated by BM.', false);
+            status_change($item, $status, (int) $user['user_id'], $status === 'RESOLVED' ? 'Building Management recorded recovery of this Lost report.' : 'Operational status updated by Building Management.', false);
             if (in_array($status, ['RESOLVED','UNCLAIMED_CLOSED'], true)) {
                 sql("DELETE FROM item_matches WHERE match_status='SUGGESTED' AND (lost_item_id=? OR found_item_id=?)", [$id, $id]);
                 settle_potential_states($locked, (int) $user['user_id']);
@@ -330,7 +330,7 @@ function mutate_handover(array $user, array $data): array
                 if ($action === 'complete') {
                     status_change($item, 'RESOLVED', (int) $user['user_id'], 'Verified item returned; handover completed.', $notifyFinder);
                 } elseif ($action === 'release') {
-                    settle_idle_status($item, (int) $user['user_id'], 'Pickup released by BM; the report is available again.', $notifyFinder);
+                    settle_idle_status($item, (int) $user['user_id'], 'Pickup released by Building Management; the report is available again.', $notifyFinder);
                 } else {
                     history_event($item, (int) $user['user_id'], $action === 'cancel_schedule' ? 'Pickup appointment cancelled; verified ownership retained.' : 'Pickup appointment scheduled or updated.');
                 }

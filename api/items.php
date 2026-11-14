@@ -1,6 +1,7 @@
 <?php
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/../app/reports.php';
+require __DIR__ . '/../app/search.php';
 method('GET', 'POST');
 $post = $_SERVER['REQUEST_METHOD'] === 'POST';
 $user = request_user($post ? 'STUDENT' : null, $post);
@@ -21,7 +22,8 @@ if (isset($_GET['status'])&&$_GET['status']!=='') {$status=strtoupper(text($_GET
 if (isset($_GET['date'])&&$_GET['date']!=='') {$where[]='v.event_date=?';$values[]=valid_event_date(text($_GET,'date',10));}
 if (isset($_GET['closed'])) {if ($_GET['closed']!=='1') fail('Invalid archive filter.',400);$where[]="v.status_code IN ('RESOLVED','UNCLAIMED_CLOSED')";}
 if (isset($_GET['active'])) {if ($_GET['active']!=='1'||isset($_GET['closed'])) fail('Invalid active filter.',400);$where[]="v.status_code NOT IN ('RESOLVED','UNCLAIMED_CLOSED')";}
-if (isset($_GET['q'])) {$q=text($_GET,'q',200,false);if ($q!=='') {$where[]="LOCATE(?,CONCAT_WS(' ',v.title,v.description,v.category_name,v.location_name,v.location_detail,v.floor_name))>0";$values[]=$q;}}
+// Every word must appear somewhere in the report, in any order (see app/search.php).
+if (isset($_GET['q'])) {[$search,$terms]=search_condition(search_terms(text($_GET,'q',200,false)),"CONCAT_WS(' ',v.title,v.description,v.category_name,v.location_name,v.location_detail,v.floor_name)");if ($search!=='') {$where[]=$search;array_push($values,...$terms);}}
 $clause=$where?' WHERE '.implode(' AND ',$where):'';
 [$page,$limit,$offset]=pagination($_GET);
 $total=(int)row('SELECT COUNT(*) AS n FROM v_items_overview v'.$clause,$values)['n'];

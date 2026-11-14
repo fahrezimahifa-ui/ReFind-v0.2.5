@@ -40,10 +40,19 @@ $(async function(){
     function filterCount(){return ['#filter-category','#filter-location','#filter-status','#filter-date'].filter(s=>$(s).val()).length;}
     function syncFilterButton(){const n=filterCount();$('#filter-toggle').text(n?'Filters · '+n:'Filters');}
     if(filterCount()){$('#advanced-filters').prop('hidden',false);$('#filter-toggle').attr('aria-expanded','true');}
+    // An unsuccessful search should lead somewhere: Students can report the item, keeping their words, so ReFind can notify them about later matches.
+    function noResults(values){
+      const filtered=values.category_id||values.location_id||values.status||values.date;
+      const hint=(values.q?'Check the spelling or try fewer words':'Try another search')+(filtered?', or clear filters.':'.');
+      const historyLink=values.status?null:$('<p>').append($('<a>').addClass('text-link').attr('href',app.base+'history.html'+(values.q?'?'+query({q:values.q}):'')).text('Search returned and closed reports in History'));
+      if(app.state.user?.role!=='STUDENT')return U.empty('No matching reports',hint).append(historyLink);
+      const found=values.type==='LOST';
+      return U.empty('No matching reports',hint+(found?' If you found this item, report it so its owner can find it.':' Lost it? Report it and ReFind will notify you when a possibly matching Found report is added.'),app.base+'report.html?'+query({type:found?'found':'lost',q:values.q.slice(0,120)}),found?'Report it as found':'Report it as lost').append(historyLink);
+    }
     async function load(next=currentPage){currentPage=next;const seq=++request;clearPage();loading(true);tabState('[data-filter-type]','data-filter-type',type);syncFilterButton();const values={q:$('#filter-q').val().trim(),type,category_id:$('#filter-category').val()||'',location_id:$('#filter-location').val()||'',status:$('#filter-status').val()||'',date:$('#filter-date').val()||'',page:currentPage};
       try{const data=await get('items.php',{...values,active:values.status?'':'1'});if(seq!==request)return;
         if(data.total&&currentPage>data.pages)return load(data.pages);
-        $('#result-count').text(U.plural(data.total,'report')+' · '+(values.status?'':'active · ')+'newest first');showList('#browse-results',data.items,'No matching reports',values.status?'Try another search or clear filters.':'Try another search or clear filters. Returned and closed reports are in History.');U.pager(data,next=>load(next),'#result-count');history.replaceState(null,'',app.base+'browse.html?'+query(values));loading(false);document.body.dataset.ready='true';}catch(e){if(seq===request)failed(e);}}
+        $('#result-count').text(U.plural(data.total,{LOST:'lost report',FOUND:'found report'}[type]||'report')+' · '+(values.status?'':'active · ')+'newest first');if(data.items.length)showList('#browse-results',data.items);else $('#browse-results').empty().append(noResults(values));U.pager(data,next=>load(next),'#result-count');history.replaceState(null,'',app.base+'browse.html?'+query(values));loading(false);document.body.dataset.ready='true';}catch(e){if(seq===request)failed(e);}}
     $('#filter-toggle').on('click',()=>{const open=$('#advanced-filters').prop('hidden');$('#advanced-filters').prop('hidden',!open);$('#filter-toggle').attr('aria-expanded',String(open));});
     $('#filter-q').on('input',()=>{clearTimeout(timer);timer=setTimeout(()=>load(1),200);});$('#filter-category,#filter-location,#filter-status,#filter-date').on('change',()=>load(1));
     $('[data-filter-type]').on('click',function(){type=$(this).attr('data-filter-type');load(1);});$('#clear-filters').on('click',()=>{$('#filter-q,#filter-category,#filter-location,#filter-status,#filter-date').val('');type='';load(1);});bindRetry(load);await load();
@@ -105,15 +114,17 @@ $(async function(){
     function updateReportMode(){const lost=type==='LOST';tabState('[data-report-type]','data-report-type',type);$('#lost-evidence').prop('hidden',!lost);$('#report-heading').text((existing?'Edit ':'Report a ')+(lost?'Lost':'Found')+' item');
       $('#report-intro').text(lost?'Describe the item and where you last saw it. Photos are optional; verification details stay private.':'Describe the item and where you found it. Photos are optional; verification details stay private.');
       $('#r-location-label').text(lost?'Last seen campus area *':'Found campus area *');$('#r-date-label').text(lost?'Date lost *':'Date found *');
-      $('#private-heading').text(lost?'4 · Ownership details for BM':"4 · Finder's check for BM");
-      $('#private-intro').text(lost?'This helps BM verify that you are the owner and never appears on the public report. Supporting photos are visible to BM only.':'Note one detail that only the real owner would know, such as a mark or something inside. BM uses it to check claims; it never appears publicly.');
+      $('#private-heading').text(lost?'4 · Ownership details for Building Management':"4 · Finder's check for Building Management");
+      $('#private-intro').text(lost?'This helps Building Management verify that you are the owner and never appears on the public report. Supporting photos are visible to Building Management only.':'Note one detail that only the real owner would know, such as a mark or something inside. Building Management uses it to check claims; it never appears publicly.');
       $('#r-clue-label').text(lost?'A detail only the owner would know *':'A detail the owner should be able to describe *');
       if(!existing)history.replaceState(null,'',app.base+'report.html?'+query({type:type.toLowerCase(),from:validId(from)?from:''}));}
     if(existing){$('#r-title').val(existing.title);$('#r-description').val(existing.description);$('#r-category').val(existing.category_id);$('#r-location').val(existing.location_id);$('#r-detail').val(existing.location_detail||'');$('#r-date').val(existing.event_date);$('#r-time').val(existing.event_time?existing.event_time.slice(0,5):'');$('#r-clue').val(existing.private_clue);$('#report-submit').text('Save report changes');$('[data-report-type]').prop('disabled',true);$('#report-cancel').attr('href',U.itemUrl(edit));
       if(!$('#r-category').val())$('[data-error="category_id"]').text('The previous category is no longer offered. Choose a current one.').prop('hidden',false);
       existing.photos.forEach((photo,index)=>$('#saved-public').append($('<div>').addClass('upload-preview').append($('<img>').attr({src:photo,alt:'Saved public photo '+(index+1)}),$('<button>').attr({type:'button','aria-label':'Remove saved public photo '+(index+1)}).text('Remove saved').on('click',function(){keepPublic=keepPublic.filter(id=>id!==String(existing.photo_ids[index]));$(this).parent().remove();}))));
-      $('#saved-proof-count').text(savedProof.length+' private photos are saved for BM review.').prop('hidden',!savedProof.length);$('#saved-proof-choice').prop('hidden',!savedProof.length);if(existing.photos.length)$('#public-upload').closest('details').prop('open',true);if(savedProof.length)$('#proof-upload').closest('details').prop('open',true);
+      $('#saved-proof-count').text(savedProof.length+' private photos are saved for Building Management review.').prop('hidden',!savedProof.length);$('#saved-proof-choice').prop('hidden',!savedProof.length);if(existing.photos.length)$('#public-upload').closest('details').prop('open',true);if(savedProof.length)$('#proof-upload').closest('details').prop('open',true);
     }else{$('#r-date').val(refs.campus_today);
+      // Words from an unsuccessful Explore search become the starting item name; a linked Lost report below takes precedence.
+      const searched=(params.get('q')||'').trim().slice(0,120);if(searched)$('#r-title').val(searched);
       // Prefill identifying context; the Found report keeps today's event date.
       if(validId(from)){try{const source=(await get('items.php',{id:from})).item;if(source.item_type==='LOST'&&source.can_report_found){$('#r-category').val(refs.categories.some(c=>String(c.id)===String(source.category_id))?source.category_id:'');$('#r-location').val(refs.locations.some(l=>String(l.id)===String(source.location_id))?source.location_id:'');$('#r-title').val(U.titleParts(source.title).display);$('#report-context').text('You are reporting that you found: '+U.titleParts(source.title).display+'. Describe what you actually found; the owner will be told about a possible match.').prop('hidden',false);}}catch{}}
     }
@@ -252,7 +263,7 @@ $(async function(){
     else{const best=item.matches.find(m=>lost.some(r=>r.item_id===m.item_id));if(best){$('#c-lost').val(best.item_id);$('#linked-suggestion').text('Suggested because your Lost report "'+U.titleParts(best.title).display+'" looks similar. Change it if needed.').prop('hidden',false);}}
     $('#claim-submit').text(submitLabel);
     $('#keep-claim-proof').on('change',function(){if(this.checked&&kept.length+upload.files.length>2){this.checked=false;upload.status('Remove new images before restoring saved evidence.',true);}});
-    $('#c-lost').on('change',()=>{const linked=lost.find(r=>r.item_id===$('#c-lost').val());$('#linked-evidence-note').text(linked?.ownership_photo_count?linked.ownership_photo_count+' private Lost photos are available to BM through this link.':'');}).trigger('change');
+    $('#c-lost').on('change',()=>{const linked=lost.find(r=>r.item_id===$('#c-lost').val());$('#linked-evidence-note').text(linked?.ownership_photo_count?U.plural(linked.ownership_photo_count,'private Lost photo')+' available to Building Management through this link.':'');}).trigger('change');
     $('#claim-form').on('submit',async function(event){
       event.preventDefault();
       if(sending||upload.busy)return;
@@ -312,7 +323,7 @@ $(async function(){
       }
       if(claim.claim_status==='REJECTED')card.append($('<p>').addClass('context-note').text('A rejected claim is final for this item.'));
       if(claim.review_note)card.append($('<details>').addClass('review-history').append($('<summary>').text('Review note'),$('<p>').text(claim.review_note)).prop('open',!returned));
-      card.append($('<p>').text(U.plural(claim.ownership_photo_count,'private supporting photo')+' saved for BM.'));
+      card.append($('<p>').text(U.plural(claim.ownership_photo_count,'private supporting photo')+' saved for Building Management.'));
       const actions=$('<div>').addClass('claim-actions').append(
         $('<a>').addClass('btn '+(claim.can_resubmit?'btn-primary':'btn-outline'))
           .attr('href',claim.can_resubmit?U.claimUrl(claim.item_id):U.itemUrl(claim.item_id))

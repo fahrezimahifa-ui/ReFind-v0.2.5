@@ -77,6 +77,7 @@ Browser state is not the authority for role, ownership or persisted business rec
 | `app/policies.php` | Shared identity/ownership and item-policy helpers |
 | `app/repository.php` | Public-safe records, status names, matching scores and suggestion refresh |
 | `app/reports.php` | Report create/update/delete with media and matching consistency |
+| `app/search.php` | Free-text search terms: every word matches in any order, conservative plural forms, placeholders only |
 | `app/claims.php` | Claim submit/resubmit/withdraw and evidence lifecycle |
 | `app/workflow.php` | BM review/status, fresh revisions, transaction locks and handover operations |
 | `app/staff-read.php`, `app/pickup-read.php` | Authorized BM/pickup read models and available operations |
@@ -183,7 +184,7 @@ Campus event/schedule presentation uses `Asia/Jakarta`. Audit and scheduled time
 
 The authoritative commands and safety boundaries are in [INSTALLATION_AND_RELEASE.md](INSTALLATION_AND_RELEASE.md#local-qa-and-ci); actual run outcomes are in [RELEASE_READINESS_AUDIT.md](RELEASE_READINESS_AUDIT.md). Historical checkpoint PASS totals are not release-readiness results.
 
-Offline PHP/JS syntax, focused ESLint, PHPStan level 5 and `python tools/test-release.py` require no running website/database. Development dependencies are locked in package/composer lockfiles; no Node/Python/Composer dependency is introduced into the application's HTTP request path.
+Offline PHP/JS syntax, focused ESLint, PHPStan level 5, `python tools/test-release.py` and the search-term checks in `php tools/test-search.php` require no running website/database. Development dependencies are locked in package/composer lockfiles; no Node/Python/Composer dependency is introduced into the application's HTTP request path.
 
 `python tools/prepare-test.py` first validates the existing sibling's ownership marker, resolved paths, `_test` configuration and session isolation. It preserves existing configuration and runtime files, synchronizes source, then runs setup only on the isolated test database. New fixture commands and all current regression runners repeat a fail-closed isolation check. Never run preparation/setup against the main installation.
 

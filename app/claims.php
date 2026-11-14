@@ -55,7 +55,7 @@ function mutate_claim(array $user, array $data): array
             sql("UPDATE claims SET ownership_answer=?,related_lost_item_id=?,claim_status='PENDING',reviewed_by_user_id=NULL,review_note=NULL,reviewed_at=NULL WHERE claim_id=?",[$answer,$lostId,$claimId]);
         } else {sql('INSERT INTO claims(item_id,related_lost_item_id,claimant_user_id,ownership_answer) VALUES (?,?,?,?)',[$itemId,$lostId,(int)$user['user_id'],$answer]);$claimId=(int)db()->insert_id;}
         foreach ($uploads as $image) sql('INSERT INTO claim_photos(claim_id,file_path) VALUES (?,?)',[$claimId,save_upload($image,'claims',$created)]);
-        $prior=$found['status_code'];status_change($found,'VERIFICATION',(int)$user['user_id'],'Ownership claims are awaiting manual BM review.');
+        $prior=$found['status_code'];status_change($found,'VERIFICATION',(int)$user['user_id'],'Ownership claims are awaiting manual review by Building Management.');
         if ($prior==='VERIFICATION') history_event($found,(int)$user['user_id'],$existing?'Ownership claim updated for review.':'Ownership claim submitted for review.');
         notification((int)$user['user_id'],'CLAIM_SUBMITTED',$existing?'Claim resubmitted':'Claim submitted','Your identifying detail was sent to Building Management for manual review.',$itemId,$claimId);
         foreach (rows("SELECT user_id FROM users WHERE role='BUILDING_MANAGEMENT' AND is_active=1") as $staff) notification((int)$staff['user_id'],'CLAIM_QUEUED',$existing?'Claim resubmitted for review':'New claim to review',$existing?'A claimant updated their ownership details.':'An ownership claim is waiting for review.',$itemId,$claimId);
