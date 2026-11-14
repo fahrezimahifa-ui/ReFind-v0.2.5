@@ -187,6 +187,8 @@ PR #6/#7 receipts in `docs/verification/uiux/` and the original `output/playwrig
 
 ## 8. Future cutover to `/refind/` and `/refind-test/` (informational; not executed)
 
+The step-by-step commands, verification and rollback are in [CUTOVER_RUNBOOK.md](CUTOVER_RUNBOOK.md); this section is the summary.
+
 1. **Freeze inputs.** Tag the reviewed candidate commit; record its tree hash, `schema.sql` hash and the configuration profile. Merge to GitHub main only through a reviewed PR with CI green.
 2. **Stabilise the database runtime first.** Keep MariaDB as a service; preferably move to a supported LTS (10.11 matches CI) on a separate port via logical dump/restore, verified with `check-database.php`, `check-workflow.php` and record counts before switching `db_port`.
 3. **Back up main consistently.** Pause writes (stop Apache or put the app in maintenance), take `mariadb-dump --single-transaction --routines --triggers` of `refind_db_0_2_0`, copy `storage/{items,evidence,claims,avatars,auth,setup}` and `app/config.local.php`, and record SHA-256 for every file. Store outside the web root and Git.
