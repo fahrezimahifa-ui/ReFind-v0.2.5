@@ -90,7 +90,8 @@ internal static class VisualIndexTaskLauncher
             string root = Path.GetFullPath(Path.Combine(setup, "..", ".."));
             string worker = Path.Combine(root, "tools", "index-visual-photos.php");
             const string php = @"C:\xampp\php\php.exe";
-            if (!string.Equals(Path.GetFileName(root), "ReFind_0.2.0_Test", StringComparison.OrdinalIgnoreCase) ||
+            string folder = Path.GetFileName(root);
+            if (!(string.Equals(folder, "ReFind_0.2.0_Test", StringComparison.OrdinalIgnoreCase) || string.Equals(folder, "refind-test", StringComparison.OrdinalIgnoreCase)) ||
                 !File.Exists(Path.Combine(root, ".refind-b02-test.json")) || !File.Exists(worker) || !File.Exists(php)) return 2;
 
             string capture = Path.Combine(setup, "visual-index-task-" + Guid.NewGuid().ToString("N") + ".tmp");

@@ -3,12 +3,16 @@ declare(strict_types=1);
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/visual-core.php';
 
+// The QA pilot runs only in the persistent synthetic QA corpus: today's ReFind_0.2.0_Test sibling or its
+// planned v1.0.0 home at /refind-test/. Each needs its exact URL, session, test database and ownership marker.
 function visual_enabled(): bool
 {
     $config = app_config();
-    return $config['visual_search_enabled'] && $config['db_name'] === 'refind_db_0_2_0_test' &&
-        $config['base_path'] === '/ReFind_0.2.0_Test/' && $config['session_name'] === 'refind_020_test' &&
-        basename(app_root()) === 'ReFind_0.2.0_Test' && is_file(app_root() . '/.refind-b02-test.json');
+    $identities = ['ReFind_0.2.0_Test' => ['/ReFind_0.2.0_Test/', 'refind_020_test'], 'refind-test' => ['/refind-test/', 'refind_test']];
+    $identity = $identities[basename(app_root())] ?? null;
+    return $config['visual_search_enabled'] && $identity !== null && $config['db_name'] === 'refind_db_0_2_0_test' &&
+        $config['base_path'] === $identity[0] && $config['session_name'] === $identity[1] &&
+        is_file(app_root() . '/.refind-b02-test.json');
 }
 
 function visual_student_allowed(?array $user): bool

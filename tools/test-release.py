@@ -227,6 +227,56 @@ class ReleaseTests(unittest.TestCase):
         self.assertNotEqual(rejected.returncode, 0)
         self.assertEqual(rejected.stdout, b'')
 
+    def _deployment(self, name, config, marker_source=None):
+        import base64
+        folder = self.parent / name
+        (folder / 'app').mkdir(parents=True, exist_ok=True)
+        for f in ['config.php', 'visual-config.php', 'visual-core.php']:
+            shutil.copy2(ROOT / 'app' / f, folder / 'app' / f)
+        encoded = base64.b64encode(json.dumps(config).encode()).decode()
+        (folder / 'app/config.local.php').write_text("<?php return json_decode(base64_decode('" + encoded + "'),true);")
+        marker = folder / '.refind-b02-test.json'
+        if marker_source is None:
+            marker.unlink(missing_ok=True)
+        else:
+            marker.write_text(json.dumps({'source': str(marker_source)}))
+        return folder
+
+    def test_visual_gate_accepts_only_exact_persistent_qa_identities(self):
+        source = self.parent / 'refind'
+        source.mkdir(exist_ok=True)
+        qa = {'db_name': 'refind_db_0_2_0_test', 'base_path': '/refind-test/', 'session_name': 'refind_test', 'visual_search_enabled': True}
+        code = 'require $argv[1]."/app/visual-config.php"; echo json_encode(visual_enabled());'
+        def gate(name, config, marker=source):
+            folder = self._deployment(name, config, marker)
+            return json.loads(self.php(code, folder))
+        self.assertTrue(gate('refind-test', qa))
+        self.assertTrue(gate('ReFind_0.2.0_Test', qa | {'base_path': '/ReFind_0.2.0_Test/', 'session_name': 'refind_020_test'}))
+        self.assertFalse(gate('refind-test', qa | {'visual_search_enabled': False}))
+        self.assertFalse(gate('refind-test', qa, marker=None))
+        self.assertFalse(gate('refind-test', qa | {'session_name': 'refind_020_test'}))
+        self.assertFalse(gate('refind-test', qa | {'base_path': '/refind/'}))
+        self.assertFalse(gate('refind-test', qa | {'db_name': 'refind_db_0_2_0'}))
+        # The planned stable deployment never enables the pilot, even with the flag and a stray marker.
+        self.assertFalse(gate('refind', {'db_name': 'refind_db_0_2_0', 'base_path': '/refind/', 'session_name': 'refind_v1', 'visual_search_enabled': True}))
+
+    def test_qa_guard_accepts_refind_test_only_with_its_identity_and_sibling_marker(self):
+        source = self.parent / 'refind'
+        source.mkdir(exist_ok=True)
+        qa = {'db_name': 'refind_db_0_2_0_test', 'base_path': '/refind-test/', 'session_name': 'refind_test'}
+        guard = ROOT / 'tools/qa-guard.php'
+        def check(config, marker=source, name='refind-test'):
+            folder = self._deployment(name, config, marker)
+            return subprocess.run([php_binary(), str(guard), str(folder)], capture_output=True).returncode
+        self.assertEqual(check(qa), 0)
+        self.assertNotEqual(check(qa | {'db_name': 'refind_db_0_2_0'}), 0)
+        self.assertNotEqual(check(qa | {'session_name': 'refind_020_test'}), 0)
+        self.assertNotEqual(check(qa | {'base_path': '/ReFind_0.2.0_Test/'}), 0)
+        elsewhere = self.parent / 'nested' / 'refind'
+        elsewhere.mkdir(parents=True, exist_ok=True)
+        self.assertNotEqual(check(qa, marker=elsewhere), 0)
+        self.assertNotEqual(check(qa | {'base_path': '/refind/', 'session_name': 'refind_v1'}, name='refind'), 0)
+
     def test_backup_requires_quiescence_before_reading_configuration(self):
         result = subprocess.run([os.sys.executable, str(ROOT / 'tools/backup-project.py')], capture_output=True, text=True)
         self.assertNotEqual(result.returncode, 0)

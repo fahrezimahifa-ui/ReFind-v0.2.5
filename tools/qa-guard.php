@@ -66,18 +66,27 @@ function assert_v1rc_installation(string $target): void
     }
 }
 
+/** Exact folder => URL/session identities allowed for the persistent synthetic QA corpus (refind_db_0_2_0_test). */
+function persistent_qa_identities(): array
+{
+    return ['ReFind_0.2.0_Test' => ['base_path' => '/ReFind_0.2.0_Test/', 'session_name' => 'refind_020_test'],
+        'refind-test' => ['base_path' => '/refind-test/', 'session_name' => 'refind_test']];
+}
+
 function assert_qa_installation(string $target): void
 {
     if (getenv('REFIND_TEST_PROFILE') === 'v1-rc') { assert_v1rc_installation($target); return; }
     if (getenv('REFIND_TEST_PROFILE') === 'ui-ux-dev') { assert_dev_installation($target); return; }
     if (getenv('REFIND_TEST_PROFILE') === 'xampp-stage') { assert_xampp_stage_installation($target); return; }
     $resolved = realpath($target);
-    if (!$resolved || !qa_same_path($resolved, $target) || basename($resolved) !== 'ReFind_0.2.0_Test') {
+    // The persistent synthetic QA corpus: today's sibling, or its planned v1.0.0 home at /refind-test/.
+    $identity = $resolved ? (persistent_qa_identities()[basename($resolved)] ?? null) : null;
+    if (!$resolved || !qa_same_path($resolved, $target) || !$identity) {
         throw new RuntimeException('QA target must be the real isolated test directory.');
     }
     $marker = json_decode((string) file_get_contents($resolved . '/.refind-b02-test.json'), true, 32, JSON_THROW_ON_ERROR);
     $source = is_array($marker) && is_string($marker['source'] ?? null) ? realpath($marker['source']) : false;
-    if (!$source || qa_same_path($source, $resolved) || !qa_same_path(dirname($source) . '/ReFind_0.2.0_Test', $resolved)) {
+    if (!$source || qa_same_path($source, $resolved) || !qa_same_path(dirname($source) . '/' . basename($resolved), $resolved)) {
         throw new RuntimeException('QA ownership marker does not identify a separate sibling source.');
     }
     foreach (['app', 'storage', 'storage/auth', 'storage/sessions', 'storage/setup', 'storage/items', 'storage/evidence', 'storage/claims', 'storage/avatars'] as $relative) {
@@ -87,7 +96,7 @@ function assert_qa_installation(string $target): void
         }
     }
     $config = app_config();
-    if ($config['db_name'] !== 'refind_db_0_2_0_test' || $config['base_path'] !== '/ReFind_0.2.0_Test/' || $config['session_name'] !== 'refind_020_test') {
+    if ($config['db_name'] !== 'refind_db_0_2_0_test' || $config['base_path'] !== $identity['base_path'] || $config['session_name'] !== $identity['session_name']) {
         throw new RuntimeException('QA requires its own database, URL and session name.');
     }
 }
