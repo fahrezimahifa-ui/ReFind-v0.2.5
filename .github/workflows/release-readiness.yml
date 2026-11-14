@@ -3,7 +3,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, 'release/**', codex/release-readiness, codex/maintainability-refactor, codex/student-self-registration]
+    branches: [main, codex/release-readiness, codex/maintainability-refactor, codex/student-self-registration]
   workflow_dispatch:
 permissions:
   contents: read
