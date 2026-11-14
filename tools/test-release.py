@@ -277,6 +277,16 @@ class ReleaseTests(unittest.TestCase):
         self.assertNotEqual(check(qa, marker=elsewhere), 0)
         self.assertNotEqual(check(qa | {'base_path': '/refind/', 'session_name': 'refind_v1'}, name='refind'), 0)
 
+    def test_restore_verification_refuses_dumps_that_switch_databases(self):
+        for statement in ['USE `refind_db_0_2_0`;', 'CREATE DATABASE x;', 'drop schema refind_db_0_2_0;']:
+            dump = self.parent / 'unsafe.sql'
+            dump.write_text(chr(10).join(['-- synthetic', 'CREATE TABLE t (id int);', statement, '']), encoding='utf-8')
+            # Refusal happens before any MariaDB connection, so no database is touched.
+            result = subprocess.run([os.sys.executable, '-B', str(ROOT / 'tools/verify-restore.py'), '--dump', str(dump), '--source-db', 'refind_db_v1rc_test'],
+                                    capture_output=True, text=True, env=os.environ | {'REFIND_DB_USER': 'refind-offline-test-no-login'})
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('refusing to restore', result.stderr)
+
     def test_backup_requires_quiescence_before_reading_configuration(self):
         result = subprocess.run([os.sys.executable, str(ROOT / 'tools/backup-project.py')], capture_output=True, text=True)
         self.assertNotEqual(result.returncode, 0)
