@@ -2,7 +2,7 @@ name: Security maintenance
 on:
   pull_request:
   push:
-    branches: [main, codex/security-dependency-maintenance]
+    branches: [main, 'release/**']
   workflow_dispatch:
   schedule:
     - cron: '17 3 * * 1'
