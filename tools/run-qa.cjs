@@ -11,7 +11,10 @@ const out=path.join(qa.root,'output/playwright/release-readiness/results',run);
 fs.mkdirSync(path.dirname(out),{recursive:true});fs.mkdirSync(out); // Never overwrite a previous attempt.
 const summary={testedSha:process.env.REFIND_TESTED_SHA||execFileSync('git',['rev-parse','HEAD'],{cwd:qa.root,encoding:'utf8'}).trim(),run,scope:appearanceOnly?'Owned QA Appearance/smoke subset; not a full matrix':'Owned QA full matrix; no main application requests',checks:[]};
 function save(){fs.writeFileSync(path.join(out,'summary.json'),JSON.stringify(summary,null,2)+'\n');}
+// Optional native-Windows cool-down: lets TIME_WAIT client ports from one suite's bursts drain before the next starts.
+const stagePause=Number(process.env.REFIND_QA_STAGE_PAUSE_SECONDS||0);if(!Number.isInteger(stagePause)||stagePause<0||stagePause>300)throw new Error('REFIND_QA_STAGE_PAUSE_SECONDS must be 0-300');
 function command(name,exe,args,env={}){
+ if(stagePause&&summary.checks.length)Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,stagePause*1000);
  const evidence=path.join(out,name);fs.mkdirSync(evidence,{recursive:true});
  const result=spawnSync(exe,args,{cwd:qa.root,env:{...process.env,...env,REFIND_EVIDENCE_DIR:evidence},stdio:'inherit'});
  const status=result.status===0?'PASS':'FAIL';summary.checks.push({name,status,exitCode:result.status});save();
