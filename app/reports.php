@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/repository.php';
 require_once __DIR__ . '/uploads.php';
+require_once __DIR__ . '/visual-index.php';
 
 function valid_event_date(string $value): string
 {
@@ -29,13 +30,17 @@ function mutate_report(array $user, array $data): array
     $id = $action === 'create' ? null : record_id($data['id'] ?? null);
     $original = $id ? find_item($id) : null;
     if ($original) require_editable_item($user, $original);
-    allowed_fields($data, ['action','id','type','title','description','category_id','location_id','location_detail','date','time','clue','keep_photo_ids','keep_ownership_ids','_csrf']);
+    allowed_fields($data, ['action','id','type','title','description','category_id','location_id','location_detail','date','time','clue','keep_photo_ids','keep_ownership_ids','visual_opt_in','_csrf']);
     allowed_fields($_FILES, ['photos','ownershipPhotos']);
     $type = $original['item_type'] ?? strtoupper(text($data,'type',10));
     if (!in_array($type,['LOST','FOUND'],true)) field_fail('type','Choose Lost or Found.');
     if ($original && isset($data['type']) && strtoupper(text($data,'type',10)) !== $type) fail('Report type cannot change during edit.',409);
     $values = $action === 'delete' ? null : report_values($data,$type);
     $public = $action === 'delete' ? [] : uploaded_images('photos',4);
+    $optIn = isset($data['visual_opt_in']);
+    if ($optIn && ($data['visual_opt_in'] !== '1' || !$public || !visual_student_allowed($user))) {
+        field_fail('visual_opt_in', 'Visual indexing is available for new public photos in the approved QA demo.');
+    }
     $proof = $action === 'delete' ? [] : uploaded_images('ownershipPhotos',2);
     if ($type === 'FOUND' && $proof) field_fail('ownershipPhotos','Found reports use a private clue, not Lost ownership photos.');
     $lockName = 'refind-matching-' . app_config()['db_name'];
@@ -79,7 +84,16 @@ function mutate_report(array $user, array $data): array
                     $locked[$id]=find_item($id);history_event($locked[$id],(int)$user['user_id'],'Report details updated by the reporter.');
                     foreach ($old as $photo) if (!in_array((int)$photo['photo_id'],array_merge($keepPublic,$keepProof),true)) { sql('DELETE FROM item_photos WHERE photo_id=?',[(int)$photo['photo_id']]);$removed[]=$photo['file_path']; }
                 }
-                foreach ([['ITEM',$public,'items'],['OWNERSHIP',$proof,'evidence']] as [$kind,$images,$collection]) foreach ($images as $image) sql('INSERT INTO item_photos(item_id,photo_kind,file_path) VALUES (?,?,?)',[$id,$kind,save_upload($image,$collection,$created)]);
+                foreach ([['ITEM',$public,'items'],['OWNERSHIP',$proof,'evidence']] as [$kind,$images,$collection]) {
+                    foreach ($images as $image) {
+                        $path = save_upload($image, $collection, $created);
+                        sql('INSERT INTO item_photos(item_id,photo_kind,file_path) VALUES (?,?,?)', [$id,$kind,$path]);
+                        if ($optIn && $kind === 'ITEM') {
+                            $photoId = (int) db()->insert_id;
+                            visual_enqueue($photoId, hash('sha256', visual_photo_source($path)), 'REPORT_OPT_IN');
+                        }
+                    }
+                }
                 sql("UPDATE item_photos SET is_primary=0 WHERE item_id=? AND photo_kind='ITEM'",[$id]);
                 $primary=row("SELECT photo_id FROM item_photos WHERE item_id=? AND photo_kind='ITEM' ORDER BY photo_id LIMIT 1",[$id]);
                 if ($primary) sql('UPDATE item_photos SET is_primary=1 WHERE photo_id=?',[(int)$primary['photo_id']]);

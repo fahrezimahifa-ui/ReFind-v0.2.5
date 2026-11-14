@@ -68,14 +68,15 @@ def schema_from_zip():
         cols = {c["name"]: c for c in table["columns"]}
         for fk in table["foreign_keys"]:
             fk["child"] = child
-            unique = any(set(u["columns"]) == set(fk["columns"]) for u in table["uniques"])
+            unique = set(table["primary"]) == set(fk["columns"]) or any(set(u["columns"]) == set(fk["columns"]) for u in table["uniques"])
             fk["cardinality"] = "1:0..1" if unique else "1:M"
             fk["parent_per_child"] = "0..1" if any(cols[c]["nullable"] for c in fk["columns"]) else "1"
             fk["children_per_parent"] = "0..1" if unique else "0..M"
-    assert len(tables) == 14
-    assert sum(len(t["foreign_keys"]) for t in tables.values()) == 25
+    visual_index = int("item_photo_embeddings" in tables)
+    assert len(tables) == 14 + visual_index
+    assert sum(len(t["foreign_keys"]) for t in tables.values()) == 25 + visual_index
     assert sum(len(t["uniques"]) for t in tables.values()) == 13
-    assert sum(len(t["checks"]) for t in tables.values()) == 9
+    assert sum(len(t["checks"]) for t in tables.values()) == 9 + visual_index
     return {"status": STATUS if actual_sql else "Target / To-be — proposal based on verified baseline SQL", "baseline_sql_sha256": SQL_SHA,
             "schema_implemented": bool(actual_sql), "actual_sql_sha256": hashlib.sha256(actual_sql).hexdigest() if actual_sql else None,
             "tables": tables, "views": ["v_items_overview", "v_pending_claims"],
@@ -429,6 +430,9 @@ def main():
         path.mkdir(parents=True, exist_ok=True)
     schema = schema_from_zip()
     dump_json(DOCS / "schema-contract.json", schema)
+    # Keep the historical B06 diagram inventory separate from the live schema contract.
+    schema = {**schema, "tables": {name: table for name, table in schema["tables"].items()
+                                  if name != "item_photo_embeddings"}}
     dictionary(schema)
     fks = [fk for table in schema["tables"].values() for fk in table["foreign_keys"]]
     core_fks = [fk for fk in fks if fk["parent"] in DEFS.ERD_CORE and fk["child"] in DEFS.ERD_CORE]

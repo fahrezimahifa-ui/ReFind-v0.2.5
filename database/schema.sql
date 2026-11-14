@@ -125,6 +125,26 @@ CREATE TABLE IF NOT EXISTS `item_photos` (
   CONSTRAINT `chk_item_photo_primary` CHECK (`is_primary` in (0,1) and (`photo_kind` = 'ITEM' or `is_primary` = 0))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `item_photo_embeddings` (
+  `photo_id` int(10) unsigned NOT NULL,
+  `model` varchar(64) NOT NULL,
+  `dimensions` smallint(5) unsigned NOT NULL,
+  `preprocessing` varchar(32) NOT NULL,
+  `source_sha256` char(64) NOT NULL,
+  `authorization` enum('REPORT_OPT_IN','QA_ALLOWLIST') NOT NULL,
+  `authorized_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `status` enum('PENDING','READY','FAILED') NOT NULL DEFAULT 'PENDING',
+  `attempts` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `next_attempt_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `failure_code` varchar(32) DEFAULT NULL,
+  `vector` blob DEFAULT NULL,
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`photo_id`),
+  KEY `idx_visual_pending` (`status`,`next_attempt_at`,`photo_id`),
+  CONSTRAINT `fk_embedding_photo` FOREIGN KEY (`photo_id`) REFERENCES `item_photos` (`photo_id`) ON DELETE CASCADE,
+  CONSTRAINT `chk_embedding_vector` CHECK ((`status` = 'READY' AND `vector` IS NOT NULL AND OCTET_LENGTH(`vector`) = 4 * `dimensions`) OR (`status` <> 'READY' AND `vector` IS NULL))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `item_matches` (
   `match_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `lost_item_id` int(10) unsigned NOT NULL,

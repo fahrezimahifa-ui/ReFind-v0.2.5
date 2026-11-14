@@ -39,6 +39,7 @@ jobs:
       - run: npm run check:js
       - run: npm run lint
       - run: composer analyse
+      - run: php tools/test-visual-search.php
       - run: python tools/test-release.py
       - run: python tools/test-registration.py
       - run: python tools/test-registration-source.py
