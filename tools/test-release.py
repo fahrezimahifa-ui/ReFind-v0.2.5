@@ -56,6 +56,45 @@ class ReleaseTests(unittest.TestCase):
             result = subprocess.run([php_binary(),'-r',code,str(stage),str(ROOT/'tools/qa-guard.php')],capture_output=True)
             self.assertEqual(result.returncode == 0, not overrides)
 
+    def test_release_candidate_identity_is_exact_and_fails_closed(self):
+        import base64
+        rc = self.parent / 'refind-v1-rc'
+        (rc / 'app').mkdir(parents=True)
+        shutil.copy2(ROOT / 'app/config.php', rc / 'app/config.php')
+        good_marker = {'profile': 'v1-rc', 'database': 'refind_db_v1rc_test', 'scope': 'disposable synthetic release-candidate QA'}
+        config = {'db_host': '127.0.0.1', 'db_port': 3306, 'db_name': 'refind_db_v1rc_test', 'db_user': 'refind_v1rc',
+                  'base_path': '/refind-v1-rc/', 'session_name': 'refind_v1rc_test'}
+        code = 'putenv("REFIND_TEST_PROFILE=".$argv[3]); require $argv[1]."/app/config.php"; require $argv[2]; assert_qa_installation($argv[1]);'
+
+        def guard(overrides=None, marker=good_marker, profile='v1-rc', folder=rc):
+            (folder / '.refind-v1-rc.json').write_text(json.dumps(marker))
+            encoded = base64.b64encode(json.dumps(config | (overrides or {})).encode()).decode()
+            (folder / 'app/config.local.php').write_text("<?php return json_decode(base64_decode('" + encoded + "'),true);")
+            return subprocess.run([php_binary(), '-r', code, str(folder), str(ROOT / 'tools/qa-guard.php'), profile], capture_output=True).returncode
+
+        self.assertEqual(guard(), 0)
+        # Main/QA databases, the wrong port/principal/URL/session, or a missing profile are refused by the guard or config validation.
+        for overrides in [{'db_name': 'refind_db_0_2_0'}, {'db_name': 'refind_db_0_2_0_test'}, {'db_port': 3311}, {'db_user': 'root'},
+                          {'db_host': 'localhost'}, {'base_path': '/ReFind_0.2.3/'}, {'session_name': 'refind_020'}]:
+            self.assertNotEqual(guard(overrides), 0, overrides)
+        self.assertNotEqual(guard(marker={'profile': 'v1-rc', 'database': 'refind_db_0_2_0'}), 0)
+        self.assertNotEqual(guard(profile='ui-ux-dev'), 0)
+        other = self.parent / 'ReFind_v1_copy'
+        (other / 'app').mkdir(parents=True)
+        shutil.copy2(ROOT / 'app/config.php', other / 'app/config.php')
+        self.assertNotEqual(guard(folder=other), 0)
+        # The application itself refuses the RC database under any other identity, independent of the QA guard.
+        encoded = base64.b64encode(json.dumps(config | {'db_user': 'root'}).encode()).decode()
+        (rc / 'app/config.local.php').write_text("<?php return json_decode(base64_decode('" + encoded + "'),true);")
+        refused = subprocess.run([php_binary(), '-r', 'require $argv[1]; app_config();', str(rc / 'app/config.php')], capture_output=True)
+        self.assertNotEqual(refused.returncode, 0)
+
+    def test_legacy_qa_preparation_refuses_the_release_candidate(self):
+        result = subprocess.run(['python', '-B', str(ROOT / 'tools/prepare-test.py')], capture_output=True, text=True,
+                                env=os.environ | {'REFIND_TEST_PROFILE': 'v1-rc'})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('legacy QA preparation is refused', result.stderr)
+
     def test_notification_return_context_is_typed_and_local(self):
         code = "require 'app/routes.php'; $u=['role'=>'STUDENT']; echo json_encode([safe_return('item.html?id=12&origin=notifications&notification_page=2&notification=50',$u),safe_return('https://example.com/item.html?id=12',$u),safe_return('item.html?id=12&origin=https://example.com',$u)]);"
         result = json.loads(self.php(code))

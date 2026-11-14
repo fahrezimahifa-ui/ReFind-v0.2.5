@@ -32,3 +32,6 @@ releases/*.zip
 .dev-php-vendor/
 
 .xampp-stage.local.json
+
+# Disposable v1.0.0 release-candidate QA marker
+.refind-v1-rc.json

@@ -8,7 +8,7 @@ import os
 from qa_safety import php_binary, qa_owner, validate_target
 
 ROOT = Path(__file__).resolve().parents[1]
-if ROOT.name == 'refind-dev' or os.environ.get('REFIND_TEST_PROFILE') in ['ui-ux-dev', 'xampp-stage']:
+if ROOT.name in ['refind-dev', 'refind-v1-rc'] or os.environ.get('REFIND_TEST_PROFILE') in ['ui-ux-dev', 'xampp-stage', 'v1-rc']:
     raise RuntimeError('Use the dedicated development services; legacy QA preparation is refused from refind-dev')
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--sync-only', action='store_true', help='Do not run setup or demo seeding')

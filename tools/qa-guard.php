@@ -47,8 +47,28 @@ function assert_xampp_stage_installation(string $target): void
     }
 }
 
+// Disposable v1.0.0 release-candidate worktree served at /refind-v1-rc/ with its own synthetic database and storage.
+function assert_v1rc_installation(string $target): void
+{
+    $resolved = realpath($target);
+    $markerPath = $target . '/.refind-v1-rc.json';
+    $marker = is_file($markerPath) ? json_decode((string) file_get_contents($markerPath), true) : null;
+    $c = app_config();
+    if (getenv('REFIND_TEST_PROFILE') !== 'v1-rc' || !$resolved || !qa_same_path($resolved, $target) || basename($resolved) !== 'refind-v1-rc' ||
+        ($marker['profile'] ?? '') !== 'v1-rc' || ($marker['database'] ?? '') !== 'refind_db_v1rc_test' ||
+        $c['db_host'] !== '127.0.0.1' || $c['db_port'] !== 3306 || $c['db_name'] !== 'refind_db_v1rc_test' || $c['db_user'] !== 'refind_v1rc' ||
+        $c['base_path'] !== '/refind-v1-rc/' || $c['session_name'] !== 'refind_v1rc_test') {
+        throw new RuntimeException('Release-candidate isolation check failed.');
+    }
+    foreach (['app', 'storage', 'storage/auth', 'storage/sessions', 'storage/setup', 'storage/items', 'storage/evidence', 'storage/claims', 'storage/avatars'] as $relative) {
+        $path = $target . '/' . $relative;
+        if (file_exists($path) && (!realpath($path) || !qa_same_path((string) realpath($path), $path))) throw new RuntimeException('Release-candidate paths cannot redirect to another installation.');
+    }
+}
+
 function assert_qa_installation(string $target): void
 {
+    if (getenv('REFIND_TEST_PROFILE') === 'v1-rc') { assert_v1rc_installation($target); return; }
     if (getenv('REFIND_TEST_PROFILE') === 'ui-ux-dev') { assert_dev_installation($target); return; }
     if (getenv('REFIND_TEST_PROFILE') === 'xampp-stage') { assert_xampp_stage_installation($target); return; }
     $resolved = realpath($target);

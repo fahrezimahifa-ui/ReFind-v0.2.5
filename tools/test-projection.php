@@ -2,7 +2,8 @@
 declare(strict_types=1);
 if (PHP_SAPI !== 'cli') { http_response_code(403); exit; }
 if (basename(dirname(__DIR__)) === 'refind-dev' && !in_array(getenv('REFIND_TEST_PROFILE'), ['ui-ux-dev','xampp-stage'], true)) throw new RuntimeException('Explicit development test profile required; legacy QA discovery refused.');
-$target = (getenv('REFIND_TEST_PROFILE') === 'xampp-stage' ? dirname(dirname(__DIR__)) . '/refind-xampp-stage' : (getenv('REFIND_TEST_PROFILE') === 'ui-ux-dev' ? dirname(__DIR__) : dirname(dirname(__DIR__)) . '/ReFind_0.2.0_Test'));
+if ((basename(dirname(__DIR__)) === 'refind-v1-rc') !== (getenv('REFIND_TEST_PROFILE') === 'v1-rc')) throw new RuntimeException('The v1-rc test profile runs only from, and is required by, the refind-v1-rc worktree.');
+$target = (getenv('REFIND_TEST_PROFILE') === 'xampp-stage' ? dirname(dirname(__DIR__)) . '/refind-xampp-stage' : (in_array(getenv('REFIND_TEST_PROFILE'), ['ui-ux-dev','v1-rc'], true) ? dirname(__DIR__) : dirname(dirname(__DIR__)) . '/ReFind_0.2.0_Test'));
 require $target . '/app/repository.php';
 require __DIR__ . '/qa-guard.php';
 assert_qa_installation($target);
