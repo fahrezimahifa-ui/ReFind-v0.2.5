@@ -9,7 +9,7 @@ $(async function () {
     if (page === 'login' && session.authenticated) { window.location.replace(app.base + (session.user.role === 'BUILDING_MANAGEMENT' ? 'admin.html' : 'index.html')); return; }
     $('[data-user-name]').text(session.user?.name || '');
     // The sign-up invitation and its link appear together, only when this requester may register.
-    $('#registration-link, #registration-note').prop('hidden', !session.registration_enabled);
+    $('#registration-link, [data-registration-offer]').prop('hidden', !session.registration_enabled);
     $('#guest-home').prop('hidden', session.authenticated);
     $('#member-home').prop('hidden', !session.authenticated);
     $('#login-submit').prop('disabled', false).text('Log in');

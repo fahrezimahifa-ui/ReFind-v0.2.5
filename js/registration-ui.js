@@ -55,7 +55,9 @@ $(async function () {
     const password = $('#password').val(), confirm = $('#confirm-password').val();
     if (!name || Array.from(name).length > 120 || /[\u0000-\u001f\u007f]/u.test(name)) fieldError('name', 'Use a full name between 1 and 120 characters, without control characters.');
     if (!email || !$('#email')[0].validity.valid || email.length > 150) fieldError('email', 'Enter a valid email address of at most 150 characters.');
-    if (Array.from(password).length < 10 || new TextEncoder().encode(password).length > 72 || password.includes('\0')) fieldError('password', 'Use at least 10 characters and at most 72 bytes.');
+    // Same limits as before (10 characters, 72 UTF-8 bytes, no NUL); only the wording is student-facing.
+    if (Array.from(password).length < 10) fieldError('password', 'Use at least 10 characters.');
+    else if (new TextEncoder().encode(password).length > 72 || password.includes('\0')) fieldError('password', 'This password is too long. Use up to 72 characters; emoji and accented letters count as more than one.');
     if (!confirm || password !== confirm) fieldError('confirm_password', 'The password confirmation does not match.');
     if (form.find('[aria-invalid="true"]').length) { firstInvalid(); return; }
     sending = true; form.attr('aria-busy', 'true');

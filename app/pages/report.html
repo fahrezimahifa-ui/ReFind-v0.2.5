@@ -21,7 +21,7 @@
       <div class="field"><label for="r-date" id="r-date-label">Event date *</label><input class="form-control" id="r-date" type="date" required><span class="field-error" data-error="date" hidden></span></div>
       <div class="field"><label for="r-time">Approximate time · optional</label><input class="form-control" id="r-time" type="time"><span class="hint">Leave blank if you do not know the time.</span><span class="field-error" data-error="time" hidden></span></div>
     </div></section>
-    <details class="form-card optional-media" id="public-photo-section"><summary>3 · Public item photos<span class="hint">Optional · up to 4 photos to help others recognize the item</span></summary>
+    <details class="form-card optional-media" id="public-photo-section" open><summary>3 · Public item photos<span class="hint">Optional but recommended · up to 4 photos help others recognize the item</span></summary>
       <div id="saved-public" class="saved-media"></div><div class="upload-control" id="public-upload">
         <label class="upload-pick" for="r-photos"><span>Add public photos</span><span class="upload-choose">Choose photos</span><span class="upload-file-hint">Select or drop JPEG, PNG or WebP images</span><input class="upload-input" id="r-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
         <span class="hint">Up to 10 MB per input image. ReFind prepares smaller copies.</span><div class="upload-previews"></div><p class="upload-status" role="status"></p>
@@ -34,7 +34,10 @@
         <div class="upload-control" id="proof-upload"><label class="upload-pick" for="r-proof"><span>Add private ownership photos</span><span class="upload-choose">Choose photos</span><span class="upload-file-hint">Select or drop JPEG, PNG or WebP images</span><input class="upload-input" id="r-proof" type="file" accept="image/jpeg,image/png,image/webp" multiple></label><div class="upload-previews"></div><p class="upload-status" role="status"></p></div>
       </details></div><span class="field-error" data-error="ownershipPhotos" hidden></span>
     </section>
-  </fieldset><div class="feedback" id="form-feedback" role="alert" tabindex="-1" hidden></div><div class="sticky-form-actions"><a class="btn btn-outline" id="report-cancel" href="my-reports.html">Cancel</a><button class="btn btn-primary" id="report-submit" type="submit">Submit report</button></div></form>
+  </fieldset>
+  <div class="context-note found-next" id="found-next" hidden><strong>After you submit</strong><p>ReFind suggests your report to students with similar Lost reports. Building Management verifies any ownership claim before the item is returned.</p><p>If you still have the item, contact Building Management to ask how to hand it in.</p></div>
+  <p class="report-visibility" id="report-visibility"><strong>Who can see this report?</strong> Signed-in ReFind users see the item name, description, public photos, campus area and spot, date, and your display name and profile picture. Ownership details and private photos are seen only by Building Management.</p>
+  <div class="feedback" id="form-feedback" role="alert" tabindex="-1" hidden></div><div class="sticky-form-actions"><a class="btn btn-outline" id="report-cancel" href="my-reports.html">Cancel</a><button class="btn btn-primary" id="report-submit" type="submit">Submit report</button></div></form>
 </main>
 <script src="vendor/jquery.min.js"></script><script src="js/api.js"></script><script src="js/shell.js"></script><script src="js/student-common.js"></script><script src="js/uploads.js"></script><script src="js/student.js"></script>
 </body></html>

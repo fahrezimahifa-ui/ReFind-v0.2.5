@@ -72,32 +72,54 @@ $(async function(){
       if(state==='current')entry.attr('aria-current','step').append($('<span>').addClass('journey-now').attr('aria-hidden','true').text('Now'));
       steps.append(entry);
     });
-    const note=item.status_code==='UNDER_REVIEW'?'Building Management is reviewing this report.':closed?'Building Management archived this report as never retrieved.':'';
-    $('#journey-note').text(note).prop('hidden',!note);
+    const step=journeyNext(item);
+    $('#journey-note').text(step?.text||'').prop('hidden',!step);
+    if(step?.href)$('#journey-note').append(' ',$('<a>').addClass('text-link').attr('href',step.href).text(step.label));
     const log=$('#item-history').empty();
     [...item.history].reverse().forEach(event=>{const exact=U.date(event.at,true),time=$('<time>').attr({datetime:event.at,title:exact}).text(relativeTime(event.at)).append($('<span>').addClass('visually-hidden').text(' · '+exact));
       const meta=$('<span>').addClass('history-meta').append(time,event.actor?' · '+(actorNames[event.actor]||'ReFind'):'');
       log.append($('<li>').addClass('history-entry').append($('<div>').addClass('history-head').append(U.stateChip(event.status_code,event.status_name),meta),event.note?$('<p>').addClass('history-note').text(event.note):null));});
     if(!item.history.length)log.append($('<li>').addClass('history-entry').text('No history events recorded.'));
   }
+  // One plain next step for the current status, written for whoever is viewing (reporter, claimant or other student).
+  function journeyNext(item){
+    const own=String(item.reporter_user_id)===String(app.state.user?.id),lost=item.item_type==='LOST',claim=item.own_claim?.claim_status;
+    const invite=item.can_claim?'If this is yours, choose “I think this is mine” to send private ownership details.':item.can_report_found?'If you found this item, choose “I found this item” to report it.':'';
+    switch(item.status_code){
+      case 'OPEN':return own?{text:lost?'No possible matches yet. ReFind notifies you when a similar Found report is added.':'ReFind suggests this report to students with similar Lost reports. Building Management verifies any claim before the item is returned.'}:invite?{text:invite}:null;
+      case 'UNDER_REVIEW':return {text:'Building Management is reviewing this report.'};
+      case 'POTENTIAL_MATCH':if(own&&lost)return item.matches.length?{text:'Compare the related reports. If one is yours, open it and choose “I think this is mine”.',href:'#match-section',label:'Compare matches'}:{text:'A possible match was suggested. Open the related report to compare the details.'};
+        return own?{text:'Similar Lost reports exist. Building Management verifies any claim before the item is returned.'}:invite?{text:invite}:null;
+      case 'VERIFICATION':return claim==='NEED_MORE_INFO'?{text:'Building Management asked for more details. Choose “Update my claim” to reply.'}:claim==='PENDING'?{text:'Your claim is being reviewed. You will get a notification with the decision.'}:{text:'Building Management is reviewing a claim. Ownership has not been decided yet.'};
+      case 'HANDOVER':return claim==='APPROVED'?{text:'Your claim was approved. Building Management arranges the pickup time and place with you; see “Follow my claim”.'}:{text:'Ownership is verified. Building Management arranges pickup with the verified owner.'};
+      case 'RESOLVED':return {text:'This report is closed as returned.'};
+      case 'UNCLAIMED_CLOSED':return {text:'Building Management archived this report as never retrieved.'};
+      default:return null;
+    }
+  }
   async function itemDetail(){
     const id=params.get('id');let item,photoIndex=0;
     if(!validId(id)){showMissing();return;}
     function showPhoto(){const photo=item.photos[photoIndex];$('#gallery-image').attr({src:photo||'',alt:item.title}).prop('hidden',!photo);$('#gallery-empty').prop('hidden',!!photo);$('#gallery-open').prop('disabled',!photo);$('#gallery-thumbs button').attr('aria-pressed','false').eq(photoIndex).attr('aria-pressed','true');}
-    async function load(){clearPage();loading(true);try{item=(await get('items.php',{id})).item;document.title=U.titleParts(item.title).display+' · ReFind';$('#item-title').text(U.titleParts(item.title).display).attr('title',item.title);$('#item-description').text(item.description);$('#item-category').text(item.category_name);$('#item-location').text(U.locationText(item));$('#item-event').text(U.eventDate(item));$('#item-reporter').empty().append(shell.identity(item.reporter_name,item.reporter_avatar_url));$('#item-chips').empty().append(U.chips(item).children());
+    async function load(){clearPage();loading(true);try{item=(await get('items.php',{id})).item;document.title=U.titleParts(item.title).display+' · ReFind';$('#item-title').text(U.titleParts(item.title).display).attr('title',item.title);$('#item-description').text(item.description);$('#item-category').text(item.category_name);$('#item-location').text(U.locationText(item));$('#item-event').text(U.eventDate(item));$('#item-location-label').text(item.item_type==='FOUND'?'Found at':'Last seen at');$('#item-event-label').text(item.item_type==='FOUND'?'Date found':'Date lost');$('#item-reporter').empty().append(shell.identity(item.reporter_name,item.reporter_avatar_url));$('#item-chips').empty().append(U.chips(item).children());
       $('#gallery-thumbs').empty();item.photos.forEach((photo,index)=>$('#gallery-thumbs').append($('<button>').attr({type:'button','aria-label':'Public photo '+(index+1),'aria-pressed':String(index===0)}).append($('<img>').attr({src:U.thumbUrl(photo),alt:'',width:60,height:60})).on('click',()=>{photoIndex=index;showPhoto();})));photoIndex=0;showPhoto();
       const actions=$('#item-actions').empty(),notice=$('#item-notice').prop('hidden',true).empty(),note=text=>notice.append($('<p>').text(text)).prop('hidden',false);
       if(item.can_claim)actions.append($('<a>').addClass('btn btn-primary').attr('href',U.claimUrl(id)).text(item.own_claim?'Update my claim':'I think this is mine'));
       if(item.can_report_found)actions.append(U.navAction('I found this item',app.base+'report.html?type=found&from='+encodeURIComponent(id)));
       // The notice is built from parts so a linked pair never hides the claimant's own claim status.
       if(item.own_claim){const own=item.own_claim;note('Your claim: '+U.claimNames[own.claim_status]+(own.review_note?' · '+own.review_note:''));if(own.claim_status==='REJECTED')note('A rejected claim is final for this item.');if(own.claim_status==='APPROVED')note('Your pickup details are in My Activity.');actions.append($('<a>').addClass('btn btn-outline').attr('href',app.base+'my-reports.html?tab=claims&claim='+own.claim_id).text('Follow my claim'));}
+      // A Found report does not prove where the item is now; only the verified owner receives pickup details.
+      if(item.item_type==='FOUND'&&app.state.user?.role==='STUDENT'&&['OPEN','UNDER_REVIEW','POTENTIAL_MATCH','VERIFICATION'].includes(item.status_code)){
+        if(String(item.reporter_user_id)===String(app.state.user.id)){note('If you still have this item, contact Building Management to ask how to hand it in. They verify any claim before it is returned.');notice.append(U.deskCard(refs.pickup_desk));}
+        else note('Found items are returned only after Building Management verifies an ownership claim. The pickup time and place are shared with the verified owner.');
+      }
       if(item.can_edit)actions.append($('<a>').addClass('btn btn-outline').attr('href',app.base+'report.html?edit='+id).text('Edit report'),$('<button>').addClass('btn btn-danger-outline btn-report-delete').attr({type:'button',id:'delete-report'}).text('Delete report').on('click',function(){requestDelete(id,load,this);}));
       else if(item.edit_locked_reason)note(item.edit_locked_reason);
       if(app.state.user?.role==='BUILDING_MANAGEMENT')actions.append(U.navAction('Open in Review Queue',app.base+'admin.html?tab=reports&report='+encodeURIComponent(id)));
       if(item.matched_item_id){notice.append($('<p>').text('Verified report pair.'),U.navAction('Open linked report',U.itemUrl(item.matched_item_id))).prop('hidden',false);}
       if(['RESOLVED','UNCLAIMED_CLOSED'].includes(item.status_code))note('This report is read-only and no longer receives claims.');
       renderJourney(item);
-      $('#match-section').prop('hidden',!item.matches.length);$('#item-matches').empty();const sameScore=new Set(item.matches.map(match=>match.match_score)).size<=1;item.matches.forEach(match=>$('#item-matches').append(U.card(match,{showScore:!sameScore})));$('#item-content').prop('hidden',false);loading(false);document.body.dataset.ready='true';}catch(e){failed(e);}}
+      $('#match-section')[String(item.reporter_user_id)===String(app.state.user?.id)&&item.item_type==='LOST'&&item.matches.length?'insertBefore':'insertAfter']('.journey-section').prop('hidden',!item.matches.length);$('#item-matches').empty();const sameScore=new Set(item.matches.map(match=>match.match_score)).size<=1;item.matches.forEach(match=>$('#item-matches').append(U.card(match,{showScore:!sameScore})));$('#item-content').prop('hidden',false);loading(false);document.body.dataset.ready='true';}catch(e){failed(e);}}
     $('#gallery-open').on('click',function(){if(!item?.photos.length)return;dialogTrigger=this;$('#enlarged-photo').attr({src:item.photos[photoIndex],alt:item.title});document.querySelector('#photo-dialog').showModal();});bindRetry(load);await load();
   }
   async function reportForm(){
@@ -107,12 +129,12 @@ $(async function(){
     if(edit){try{existing=(await get('items.php',{id:edit,editable:'1'})).item;}catch(e){if(e.status===409||e.status===403){loading(false);$('#page-feedback').prop('hidden',true);$('<div>').attr('id','page-missing').append(U.empty('This report cannot be edited',e.status===409?'A claim or review is in progress, so the report is locked.':e.message,U.itemUrl(edit),'Back to report')).insertAfter('#page-feedback');document.body.dataset.ready='true';return;}throw e;}}
     let type=existing?.item_type||((params.get('type')||'').toUpperCase()==='FOUND'||validId(from)?'FOUND':'LOST'),sending=false;
     U.fillSelect('#r-category',refs.categories,'Select category');U.fillSelect('#r-location',refs.locations,'Select campus area');
-    $('#r-date').attr('max',refs.campus_today);
+    $('#r-date').attr('max',refs.campus_today);$('#found-next').append(U.deskCard(refs.pickup_desk));
     let keepPublic=existing?(existing.photo_ids||[]).map(String):[],savedProof=existing?(existing.ownership_photo_ids||[]).map(String):[];
     const busy=()=>$('#report-submit').prop('disabled',sending||publicUpload.busy||proofUpload.busy);
     const publicUpload=new PhotoUpload('#public-upload',()=>4-keepPublic.length,busy),proofUpload=new PhotoUpload('#proof-upload',()=>2-($('#keep-proof').prop('checked')?savedProof.length:0),busy);
     function updateReportMode(){const lost=type==='LOST';tabState('[data-report-type]','data-report-type',type);$('#lost-evidence').prop('hidden',!lost);$('#report-heading').text((existing?'Edit ':'Report a ')+(lost?'Lost':'Found')+' item');
-      $('#report-intro').text(lost?'Describe the item and where you last saw it. Photos are optional; verification details stay private.':'Describe the item and where you found it. Photos are optional; verification details stay private.');
+      $('#report-intro').text(lost?'Describe the item and where you last saw it. Photos help others recognize it; ownership details stay private.':'Describe the item and where you found it. Photos help the owner recognize it; your check detail stays private.');$('#found-next').prop('hidden',lost||!!existing);
       $('#r-location-label').text(lost?'Last seen campus area *':'Found campus area *');$('#r-date-label').text(lost?'Date lost *':'Date found *');
       $('#private-heading').text(lost?'4 · Ownership details for Building Management':"4 · Finder's check for Building Management");
       $('#private-intro').text(lost?'This helps Building Management verify that you are the owner and never appears on the public report. Supporting photos are visible to Building Management only.':'Note one detail that only the real owner would know, such as a mark or something inside. Building Management uses it to check claims; it never appears publicly.');
@@ -188,7 +210,7 @@ $(async function(){
       $('#report-submit').text('Saving…');
       try{
         const result=await app.request('items.php',form);
-        U.flash(existing?'Report changes saved.':'Report submitted. We will notify you about possible matches.');
+        U.flash(existing?'Report changes saved.':type==='FOUND'?'Report submitted. ReFind suggests it to students with similar Lost reports.':'Report submitted. We will notify you about possible matches.');
         location.assign(U.itemUrl(result.id));
       }catch(e){
         $('#report-fields').prop('disabled',false);
@@ -289,7 +311,7 @@ $(async function(){
       $('#claim-submit').prop('disabled',true).text('Submitting…');
       try{
         const result=await app.request('claims.php',form);
-        U.flash(own?'Claim resubmitted for review.':'Claim submitted. Building Management will review it.');
+        U.flash(own?'Claim resubmitted for review. You will get a notification when Building Management decides.':'Claim submitted. You will get a notification when Building Management decides.');
         location.assign(app.base+'my-reports.html?tab=claims&claim='+result.id);
       }catch(e){
         $('#claim-fields').prop('disabled',false);
@@ -319,7 +341,12 @@ $(async function(){
       if(returned){
         card.append($('<p>').addClass('context-note pickup-summary').text('Returned'+(pickup.completed_at?' · '+U.date(pickup.completed_at,true):'')+(pickup.pickup_location?' · '+pickup.pickup_location:'')));
       }else if(pickup){
-        card.append($('<p>').addClass('context-note pickup-summary').text(pickup.handover_status==='SCHEDULED'?'Pickup scheduled · '+U.date(pickup.scheduled_at,true)+(pickup.pickup_location?' · '+pickup.pickup_location:''):'Approved. Building Management will schedule your pickup'+(pickup.pickup_location?' at '+pickup.pickup_location:'')+'. You can also contact the desk below.'),U.deskCard(refs.pickup_desk));
+        // Only a scheduled appointment names a pickup place. Before that, the stored area is just where the item was
+        // found, so it is not presented as a pickup location. The desk card is help/contact information only.
+        const scheduled=pickup.handover_status==='SCHEDULED',late=U.pickupPastDue(pickup);
+        card.append($('<p>').addClass('context-note pickup-summary').text(scheduled?'Your pickup · '+U.date(pickup.scheduled_at,true)+(pickup.pickup_location?' · '+pickup.pickup_location:''):'Approved. Building Management will arrange a pickup time and place with you. They appear here once scheduled.'));
+        if(late)card.append($('<p>').addClass('past-due-note').text('This pickup time has passed. If you have not collected the item yet, contact Building Management to arrange a new time.'));
+        card.append($('<div>').addClass('pickup-help').append($('<p>').text(scheduled?'Questions or need a different time? Contact Building Management:':'Questions about your pickup? Contact Building Management:'),U.deskCard(refs.pickup_desk)));
       }
       if(claim.claim_status==='REJECTED')card.append($('<p>').addClass('context-note').text('A rejected claim is final for this item.'));
       if(claim.review_note)card.append($('<details>').addClass('review-history').append($('<summary>').text('Review note'),$('<p>').text(claim.review_note)).prop('open',!returned));
@@ -330,11 +357,21 @@ $(async function(){
           .text(claim.can_resubmit?(claim.claim_status==='WITHDRAWN'?'Claim again':'Update / resubmit claim'):returned?'View returned item':'View item')
       );
       if(claim.can_withdraw){
-        actions.append($('<button>').addClass('btn btn-danger-outline').attr('type','button').text('Withdraw claim').on('click',function(){
+        actions.append($('<button>').addClass('text-button danger-text').attr('type','button').text('Withdraw claim').on('click',function(){
           requestWithdraw(claim.item_id,()=>load(currentPage),this);
         }));
       }
       return card.append(actions);
+    }
+    // The next thing a reporter can do for an active report, using data already in the list.
+    function activityNext(item){
+      const lost=item.item_type==='LOST',claimsTab=app.base+'my-reports.html?tab=claims';
+      if(item.status_code==='HANDOVER')return lost?{text:'Ownership verified.',href:claimsTab,label:'See pickup details'}:{text:'Ownership verified. Building Management arranges the return with the owner.'};
+      // An own Lost report that cannot be edited while Open/Possible match is linked to an active claim.
+      if(lost&&!item.can_edit&&!item.matched_item_id&&['OPEN','POTENTIAL_MATCH'].includes(item.status_code))return {text:'',href:claimsTab,label:'Follow my claim'};
+      if(item.status_code==='POTENTIAL_MATCH')return {text:lost?'A Found report may match yours.':'A Lost report may match. Building Management verifies any claim.',href:U.itemUrl(item.item_id)+'#match-section',label:lost?'Compare matches':'See similar reports'};
+      if(item.status_code==='OPEN')return {text:lost?'No possible matches yet. You will get a notification when one is suggested.':'No possible matches yet.'};
+      return null;
     }
     async function load(next=currentPage){currentPage=next;clearPage();loading(true);tabState('[data-activity]','data-activity',tab);const box=$('#activity-results').empty().toggleClass('activity-claims',tab==='claims');try{
       let focusTarget=null;const claimTarget=tab==='claims'?highlight:null;
@@ -346,7 +383,10 @@ $(async function(){
         });if(!data.claims.length)box.append(U.empty('No claims yet','Open an eligible Found report to submit ownership details.',app.base+'browse.html?type=FOUND','Explore Found reports'));$('#activity-count').text(U.plural(data.total,'claim'));U.pager(data,next=>{highlight=null;return load(next);},'#activity-count');
       }else{const data=await get('items.php',{mine:1,page:currentPage,limit:24,...(tab==='closed'?{closed:1}:{active:1})});
         if(data.total&&currentPage>data.pages)return load(data.pages);
-        data.items.forEach(item=>{const card=U.card(item);if(item.can_edit)card.append($('<div>').addClass('own-report-actions').append(U.navAction('Edit report',app.base+'report.html?edit='+item.item_id),$('<button>').addClass('btn btn-danger-outline btn-report-delete record-delete').attr('type','button').text('Delete').on('click',function(){requestDelete(item.item_id,()=>load(currentPage),this);})));else if(item.edit_locked_reason)card.find('.discovery-body').append($('<p>').addClass('small muted').text(item.edit_locked_reason));box.append(card);});if(!data.items.length)box.append(U.empty(tab==='closed'?'No closed reports':'No active reports','Your own reports appear here.',app.base+'report.html','Report an item'));$('#activity-count').text(data.total+' '+(tab==='closed'?'closed':'active')+' report(s)');U.pager(data,next=>load(next),'#activity-count');}
+        data.items.forEach(item=>{const card=U.card(item),step=tab==='reports'?activityNext(item):null;
+          if(step){const line=$('<p>').addClass('card-next').text(step.text);if(step.href)line.append(step.text?' ':'',$('<a>').addClass('text-link').attr('href',step.href).text(step.label));card.find('.discovery-body').append(line);}
+          // Delete stays available (with its confirmation) but no longer competes visually with Edit.
+          if(item.can_edit)card.append($('<div>').addClass('own-report-actions').append(U.navAction('Edit report',app.base+'report.html?edit='+item.item_id),$('<button>').addClass('text-button danger-text btn-report-delete record-delete').attr('type','button').text('Delete').on('click',function(){requestDelete(item.item_id,()=>load(currentPage),this);})));else if(item.edit_locked_reason)card.find('.discovery-body').append($('<p>').addClass('small muted').text(item.edit_locked_reason));box.append(card);});if(!data.items.length)box.append(U.empty(tab==='closed'?'No closed reports':'No active reports','Your own reports appear here.',app.base+'report.html','Report an item'));$('#activity-count').text(U.plural(data.total,(tab==='closed'?'closed':'active')+' report'));U.pager(data,next=>load(next),'#activity-count');}
       history.replaceState(null,'',app.base+'my-reports.html?tab='+tab+(claimTarget?'&claim='+encodeURIComponent(claimTarget):''));
       if(claimTarget){const target=box.find('[data-claim-id]').filter(function(){return $(this).attr('data-claim-id')===claimTarget;});target.addClass('selected-claim').attr('tabindex','-1');focusTarget=target[0];}
       loading(false);document.body.dataset.ready='true';if(focusTarget)U.focusRecord(focusTarget);}catch(e){failed(e);}}

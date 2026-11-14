@@ -13,6 +13,8 @@ function render_page(string $file, array $values = [], int $status = 200): never
     $html = str_replace('{{APP_NAVBAR}}', file_get_contents(__DIR__ . '/app/pages/partials/navbar.html'), $html);
     // Shared UI polish layer, loaded after each page's own stylesheets.
     $html = preg_replace('~</head>~i', '<link rel="stylesheet" href="{{BASE_PATH}}css/polish.css"></head>', $html, 1);
+    // Target of the shared "Skip to main content" link in the navbar partial.
+    $html = preg_replace('~<main\b(?![^>]*\bid=)~i', '<main id="main-content" tabindex="-1"', $html, 1);
     $values['BASE_PATH'] = app_config()['base_path'];
     foreach ($values as $key => $value) $html = str_replace('{{' . $key . '}}', htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $html);
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'HEAD') echo $html;
