@@ -8,7 +8,8 @@ $(async function(){
   const fromNotifications=page==='item'&&params.get('origin')==='notifications';
   const notificationPage=validPage(params.get('notification_page'));
   const notificationId=validId(params.get('notification'))?params.get('notification'):null;
-  const backHref=fromNotifications?app.base+'notifications.html?'+new URLSearchParams({page:notificationPage,...(notificationId?{notification:notificationId}:{})}):app.base+'browse.html';
+  const notificationFilter=params.get('notification_filter')==='unread'?'unread':'';
+  const backHref=fromNotifications?app.base+'notifications.html?'+new URLSearchParams({...(notificationFilter?{filter:notificationFilter}:{}),page:notificationPage,...(notificationId?{notification:notificationId}:{})}):app.base+'browse.html';
   const backLabel=fromNotifications?'Back to Notifications':'Back to Explore';
   if(page==='item')$('#item-back').attr('href',backHref).find('span').text(backLabel);
   // First load shows skeleton cards in an empty results grid; the status text stays for screen readers.
@@ -479,7 +480,7 @@ $(async function(){
           if(!Number(note.is_read))actions.append($('<button>').addClass('text-button mark-read').attr('type','button').text('Mark as read').on('click',async function(){const button=$(this).prop('disabled',true);try{await mark();const destination=card.find('a.notification-destination').first();(destination.length?destination:heading).trigger('focus');}catch(e){U.showError(e);button.prop('disabled',false);}}));
           let target=null,label='View item';
           if(note.claim_id){if(app.state.user.role==='STUDENT'){target=app.base+'my-reports.html?tab=claims&claim='+note.claim_id;label=note.pickup_event?'View my pickup':'View my claim';}else if(note.notification_type?.startsWith('HANDOVER_')&&note.handover_id){target=app.base+'admin.html?tab=handover&handover='+note.handover_id;label='View handover';}else{target=app.base+'admin.html?tab=claims&claim='+note.claim_id;label='Review claim';}}
-          else if(note.item_id)target=U.itemUrl(note.item_id)+'&'+new URLSearchParams({origin:'notifications',notification_page:currentPage,notification:note.notification_id});
+          else if(note.item_id)target=U.itemUrl(note.item_id)+'&'+new URLSearchParams({origin:'notifications',notification_page:currentPage,notification:note.notification_id,...(filter?{notification_filter:filter}:{})});
           // Following an unread link marks it read first; modified clicks (new tab) stay native.
           if(target)actions.prepend($('<a>').addClass('text-link notification-destination').attr('href',target).text(label).on('click',async function(e){if(Number(note.is_read))return;if(e.ctrlKey||e.metaKey||e.shiftKey||e.button===1){mark().catch(()=>{});return;}e.preventDefault();try{await mark();}catch{}location.assign(target);}).on('auxclick',function(e){if(e.button===1&&!Number(note.is_read))mark().catch(()=>{});}));
           if(actions.children().length)card.append(actions);

@@ -63,6 +63,14 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(result[0], base + 'item.html?id=12&origin=notifications&notification_page=2&notification=50')
         self.assertEqual(result[1:], [base+'index.html', base+'index.html'])
 
+    def test_unread_notification_view_survives_return(self):
+        code = "require 'app/routes.php'; $u=['role'=>'STUDENT']; echo json_encode([safe_return('notifications.html?filter=unread&page=2',$u),safe_return('item.html?id=12&origin=notifications&notification_filter=unread',$u),safe_return('notifications.html?filter=all',$u),safe_return('item.html?id=12&notification_filter=read',$u)]);"
+        result = json.loads(self.php(code))
+        base = self.php("require 'app/config.php'; echo app_config()['base_path'];")
+        self.assertEqual(result[0], base + 'notifications.html?filter=unread&page=2')
+        self.assertEqual(result[1], base + 'item.html?id=12&origin=notifications&notification_filter=unread')
+        self.assertEqual(result[2:], [base+'index.html', base+'index.html'])
+
     def test_avatar_reference_is_current_token_only(self):
         code = "require 'app/auth.php'; echo json_encode([avatar_url(null),avatar_url('../private.jpg'),avatar_url('avatars/'.str_repeat('a',32).'.jpg')]);"
         result = json.loads(self.php(code))
