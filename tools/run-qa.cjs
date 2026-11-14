@@ -24,8 +24,10 @@ try{
  command('invariants-before',qa.php,[path.join(qa.target,'tools/check-workflow.php')]);
  if(!appearanceOnly){
  command('projection',qa.php,[path.join(qa.root,'tools/test-projection.php')]);
+ command('search-sql',qa.php,[path.join(qa.root,'tools/test-search-sql.php')]);
  command('registration-ui',process.execPath,['tools/test-registration-ui.cjs']);
  command('security',process.execPath,['tools/test-release-security.cjs']);
+ command('visual-disabled',process.execPath,['tools/test-visual-disabled.cjs']);
  for(const theme of ['light','dark'])command(theme+'-registration',process.execPath,['tools/test-registration.cjs'],{REFIND_THEME:theme});
  // Needs the disposable CI container's second, non-loopback host; native release-candidate QA records it as skipped.
  if(process.env.REFIND_TEST_PROFILE==='v1-rc'&&process.env.REFIND_CI_DISPOSABLE!=='1'){summary.checks.push({name:'local-access',status:'SKIPPED',reason:'CI-only: requires the disposable container network'});save();}

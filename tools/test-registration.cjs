@@ -40,7 +40,7 @@ function payload(extra = {}) {
 }
 class Session {
   cookies = new Map(); csrf = '';
-  async call(endpoint, values, options = {}) {
+  async call(endpoint, values, options = {}) {/* Let fetch evict keep-alive sockets the server closed while synchronous fixture calls blocked the event loop. */await new Promise(resolve=>setImmediate(resolve));
     const headers = {Cookie: [...this.cookies].map(([k,v]) => k + '=' + v).join('; '), ...(options.headers || {})};
     const init = {redirect: 'manual', headers, method: options.method || (values === undefined ? 'GET' : 'POST')};
     if (values !== undefined) {

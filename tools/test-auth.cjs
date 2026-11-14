@@ -36,7 +36,7 @@ class Session {
   cookies = new Map(); csrf = ''; user = null;
   cookie() {return [...this.cookies].map(([k, v]) => k + '=' + v).join('; ');}
   id() {return this.cookies.get(qaRuntime.sessionName);}
-  async call(endpoint, values, options = {}) {
+  async call(endpoint, values, options = {}) {/* Let fetch evict keep-alive sockets the server closed while synchronous fixture calls blocked the event loop. */await new Promise(resolve=>setImmediate(resolve));
     const headers = {Cookie: this.cookie(), ...(options.headers || {})};
     const init = {redirect: 'manual', headers, method: options.method || (values === undefined ? 'GET' : 'POST')};
     if (values !== undefined) {
