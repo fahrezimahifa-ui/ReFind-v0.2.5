@@ -19,8 +19,11 @@ function control(action) {
 function q(query, values = []) {
   return JSON.parse(execFileSync(qa.php, [path.join(qa.target, 'tools/b02-fixture.php')], {input: JSON.stringify({action: 'query', query, values}), encoding: 'utf8'})).rows;
 }
-function save(status = 'RUNNING') { fs.writeFileSync(receipt, JSON.stringify({run, status, scope: 'Owned synthetic QA only; no main requests', theme: process.env.REFIND_THEME, checks, browserErrors, failure}, null, 2) + '\n'); }
+const skipped = [];
+function save(status = 'RUNNING') { fs.writeFileSync(receipt, JSON.stringify({run, status, scope: 'Owned synthetic QA only; no main requests', theme: process.env.REFIND_THEME, checks, skipped, browserErrors, failure}, null, 2) + '\n'); }
 async function check(name, fn) { activeCheck=name; await fn(); checks.push(name); save(); console.log('PASS ' + name); }
+// Native release-candidate QA has no second, non-loopback host; that boundary is recorded as skipped, never passed.
+async function ciOnly(name, fn) { if (process.env.REFIND_TEST_PROFILE === 'v1-rc' && process.env.REFIND_CI_DISPOSABLE !== '1') { skipped.push(name); save(); console.log('SKIP (CI-only) ' + name); return; } await check(name, fn); }
 async function availability(enabled) {
   control(enabled?'enable':'disable');
   // Allow the server's normal configuration cache to observe a CLI-written override.
@@ -137,7 +140,7 @@ async function cleanupUsers() {
         assert.equal((await s.ok('api/session.php')).user.role,role);
       }
     });
-    await check('Private-network non-loopback requests cannot advertise or create accounts', async () => {
+    await ciOnly('Private-network non-loopback requests cannot advertise or create accounts', async () => {
       assert.equal(process.env.REFIND_CI_DISPOSABLE,'1','This network assertion requires the owned disposable Docker environment');
       const target = new URL(qa.base); target.hostname='qa';
       const bootstrap=await fetch(target+'api/session.php'); assert.equal(bootstrap.status,403);

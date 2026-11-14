@@ -27,7 +27,9 @@ try{
  command('registration-ui',process.execPath,['tools/test-registration-ui.cjs']);
  command('security',process.execPath,['tools/test-release-security.cjs']);
  for(const theme of ['light','dark'])command(theme+'-registration',process.execPath,['tools/test-registration.cjs'],{REFIND_THEME:theme});
- command('local-access',process.execPath,['tools/test-local-access.cjs']);
+ // Needs the disposable CI container's second, non-loopback host; native release-candidate QA records it as skipped.
+ if(process.env.REFIND_TEST_PROFILE==='v1-rc'&&process.env.REFIND_CI_DISPOSABLE!=='1'){summary.checks.push({name:'local-access',status:'SKIPPED',reason:'CI-only: requires the disposable container network'});save();}
+ else command('local-access',process.execPath,['tools/test-local-access.cjs']);
  for(const theme of ['light','dark'])for(const suite of ['auth','account','student','workflow','v025','ux']){
   command(theme+'-'+suite,process.execPath,['tools/test-'+suite+'.cjs',...(suite==='ux'?['--v025']:[])],{REFIND_THEME:theme});
  }
