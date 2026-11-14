@@ -1,43 +1,29 @@
 """Provision the disposable v1.0.0 release-candidate QA environment (local only).
 
 Scope: this worktree (folder `refind-v1-rc`), database `refind_db_v1rc_test`,
-MariaDB principal `refind_v1rc` granted on that database only, URL
-`/refind-v1-rc/`, session `refind_v1rc_test`, and this worktree's ignored
-`storage/`. It never reads or writes the main installation, the persistent
-QA corpus (`ReFind_0.2.0_Test`) or their databases.
+URL `/refind-v1-rc/`, session `refind_v1rc_test`, and this worktree's ignored
+`storage/`. It never reads or writes the main installation, the persistent QA
+corpus (`ReFind_0.2.0_Test`) or their databases.
 
-Admin access is used once, to create/align the scoped principal. Supply it with
-REFIND_V1RC_ADMIN_USER / REFIND_V1RC_ADMIN_PASSWORD (defaults: XAMPP root, no
-password). No password is printed.
+It uses the local XAMPP `root` login that the main and QA installations already
+use and never creates users or grants: on 14 Nov 2026 a GRANT hit a damaged
+`mysql.db` privilege table and crashed the shared server. Isolation comes from
+the exact config identity, the ownership marker and assert_v1rc_installation().
+Set REFIND_V1RC_DB_PASSWORD only if root has a password. No password is printed.
 """
 import base64
 import json
 import os
 from pathlib import Path
-import secrets
 import subprocess
 from qa_safety import php_binary, reject_links
 
 ROOT = Path(__file__).resolve().parents[1]
 MARKER = ROOT / '.refind-v1-rc.json'
 LOCAL = ROOT / 'app' / 'config.local.php'
-IDENTITY = {'db_host': '127.0.0.1', 'db_port': 3306, 'db_name': 'refind_db_v1rc_test', 'db_user': 'refind_v1rc',
+IDENTITY = {'db_host': '127.0.0.1', 'db_port': 3306, 'db_name': 'refind_db_v1rc_test', 'db_user': 'root',
             'base_path': '/refind-v1-rc/', 'session_name': 'refind_v1rc_test'}
 MARKER_VALUE = {'profile': 'v1-rc', 'database': 'refind_db_v1rc_test', 'scope': 'disposable synthetic release-candidate QA'}
-PROVISION = r'''
-$c = app_config();
-$admin = new mysqli('127.0.0.1', getenv('REFIND_V1RC_ADMIN_USER') ?: 'root', (string) getenv('REFIND_V1RC_ADMIN_PASSWORD'), '', 3306);
-foreach (['localhost', '127.0.0.1'] as $host) {
-    $exists = $admin->prepare('SELECT COUNT(*) FROM mysql.user WHERE User=? AND Host=?');
-    $user = $c['db_user']; $exists->bind_param('ss', $user, $host); $exists->execute();
-    $verb = $exists->get_result()->fetch_row()[0] ? 'ALTER' : 'CREATE';
-    // Identifiers are the fixed values validated above; the password is escaped as a string literal.
-    $admin->query($verb . " USER 'refind_v1rc'@'" . $host . "' IDENTIFIED BY '" . $admin->real_escape_string($c['db_password']) . "'");
-    $admin->query("GRANT ALL PRIVILEGES ON `refind_db_v1rc_test`.* TO 'refind_v1rc'@'" . $host . "'");
-}
-$admin->close();
-echo json_encode(['principal' => 'refind_v1rc', 'grant_scope' => 'refind_db_v1rc_test.*']), PHP_EOL;
-'''
 
 
 def php(code, env=None):
@@ -66,7 +52,7 @@ def main():
         if identity() != IDENTITY:
             raise RuntimeError('Existing local configuration does not select the release-candidate identity.')
     else:
-        values = IDENTITY | {'db_password': secrets.token_urlsafe(24)}
+        values = IDENTITY | {'db_password': os.environ.get('REFIND_V1RC_DB_PASSWORD', '')}
         encoded = base64.b64encode(json.dumps(values).encode()).decode()
         LOCAL.write_text("<?php\nreturn json_decode(base64_decode('" + encoded + "'), true, 32, JSON_THROW_ON_ERROR);\n",
                          encoding='utf-8')
@@ -78,10 +64,6 @@ def main():
     guard = subprocess.run([php_binary(), str(ROOT / 'tools/qa-guard.php'), str(ROOT)], capture_output=True, env=env)
     if guard.returncode:
         raise RuntimeError('Release-candidate isolation check failed before provisioning.')
-    result = php(PROVISION, env)
-    if result.returncode:
-        raise RuntimeError('Could not create the scoped database principal. Check the admin login variables.')
-    print(result.stdout.strip())
     for tool in ['setup-db.php', 'setup-demo.php']:
         step = subprocess.run([php_binary(), str(ROOT / 'tools' / tool)], env=env, cwd=ROOT, capture_output=True, text=True)
         if step.returncode:

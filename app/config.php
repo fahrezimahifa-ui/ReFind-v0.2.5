@@ -37,8 +37,8 @@ function validate_app_config(array $config): array
     if (!in_array($config['db_name'], ['refind_db_0_2_0', 'refind_db_0_2_0_test', 'refind_db_ui_ux_dev', 'refind_db_v1rc_test'], true)) {
         throw new RuntimeException('Unsupported application database.');
     }
-    // Disposable v1.0.0 release-candidate QA: only its own loopback principal, URL and session may select this database.
-    if ($config['db_name'] === 'refind_db_v1rc_test' && ($config['db_host'] !== '127.0.0.1' || $config['db_port'] !== 3306 || $config['db_user'] !== 'refind_v1rc' || $config['base_path'] !== '/refind-v1-rc/' || $config['session_name'] !== 'refind_v1rc_test')) throw new RuntimeException('Release-candidate QA configuration must stay isolated.');
+    // Disposable v1.0.0 release-candidate QA: only the local loopback login with its own URL and session may select this database.
+    if ($config['db_name'] === 'refind_db_v1rc_test' && ($config['db_host'] !== '127.0.0.1' || $config['db_port'] !== 3306 || $config['db_user'] !== 'root' || $config['base_path'] !== '/refind-v1-rc/' || $config['session_name'] !== 'refind_v1rc_test')) throw new RuntimeException('Release-candidate QA configuration must stay isolated.');
     if ($config['db_name'] === 'refind_db_ui_ux_dev' && (!in_array($config['db_host'], ['database','upgrade-database','recovery-database'], true) || $config['db_user'] !== 'refind_dev' || $config['base_path'] !== '/refind-dev/' || $config['session_name'] !== 'refind_ui_ux_dev')) throw new RuntimeException('Development configuration must stay isolated.');
     if (!is_string($config['base_path']) || !preg_match('~^/(?!\.{1,2}/)[A-Za-z0-9_.-]+/$~D', $config['base_path']) ||
         !is_string($config['session_name']) || !preg_match('/^[A-Za-z0-9_]+$/D', $config['session_name'])) {

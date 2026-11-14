@@ -56,7 +56,7 @@ function assert_v1rc_installation(string $target): void
     $c = app_config();
     if (getenv('REFIND_TEST_PROFILE') !== 'v1-rc' || !$resolved || !qa_same_path($resolved, $target) || basename($resolved) !== 'refind-v1-rc' ||
         ($marker['profile'] ?? '') !== 'v1-rc' || ($marker['database'] ?? '') !== 'refind_db_v1rc_test' ||
-        $c['db_host'] !== '127.0.0.1' || $c['db_port'] !== 3306 || $c['db_name'] !== 'refind_db_v1rc_test' || $c['db_user'] !== 'refind_v1rc' ||
+        $c['db_host'] !== '127.0.0.1' || $c['db_port'] !== 3306 || $c['db_name'] !== 'refind_db_v1rc_test' || $c['db_user'] !== 'root' ||
         $c['base_path'] !== '/refind-v1-rc/' || $c['session_name'] !== 'refind_v1rc_test') {
         throw new RuntimeException('Release-candidate isolation check failed.');
     }

@@ -62,7 +62,7 @@ class ReleaseTests(unittest.TestCase):
         (rc / 'app').mkdir(parents=True)
         shutil.copy2(ROOT / 'app/config.php', rc / 'app/config.php')
         good_marker = {'profile': 'v1-rc', 'database': 'refind_db_v1rc_test', 'scope': 'disposable synthetic release-candidate QA'}
-        config = {'db_host': '127.0.0.1', 'db_port': 3306, 'db_name': 'refind_db_v1rc_test', 'db_user': 'refind_v1rc',
+        config = {'db_host': '127.0.0.1', 'db_port': 3306, 'db_name': 'refind_db_v1rc_test', 'db_user': 'root',
                   'base_path': '/refind-v1-rc/', 'session_name': 'refind_v1rc_test'}
         code = 'putenv("REFIND_TEST_PROFILE=".$argv[3]); require $argv[1]."/app/config.php"; require $argv[2]; assert_qa_installation($argv[1]);'
 
@@ -74,7 +74,7 @@ class ReleaseTests(unittest.TestCase):
 
         self.assertEqual(guard(), 0)
         # Main/QA databases, the wrong port/principal/URL/session, or a missing profile are refused by the guard or config validation.
-        for overrides in [{'db_name': 'refind_db_0_2_0'}, {'db_name': 'refind_db_0_2_0_test'}, {'db_port': 3311}, {'db_user': 'root'},
+        for overrides in [{'db_name': 'refind_db_0_2_0'}, {'db_name': 'refind_db_0_2_0_test'}, {'db_port': 3311}, {'db_user': 'refind_dev'},
                           {'db_host': 'localhost'}, {'base_path': '/ReFind_0.2.3/'}, {'session_name': 'refind_020'}]:
             self.assertNotEqual(guard(overrides), 0, overrides)
         self.assertNotEqual(guard(marker={'profile': 'v1-rc', 'database': 'refind_db_0_2_0'}), 0)
@@ -84,7 +84,7 @@ class ReleaseTests(unittest.TestCase):
         shutil.copy2(ROOT / 'app/config.php', other / 'app/config.php')
         self.assertNotEqual(guard(folder=other), 0)
         # The application itself refuses the RC database under any other identity, independent of the QA guard.
-        encoded = base64.b64encode(json.dumps(config | {'db_user': 'root'}).encode()).decode()
+        encoded = base64.b64encode(json.dumps(config | {'db_user': 'refind_dev'}).encode()).decode()
         (rc / 'app/config.local.php').write_text("<?php return json_decode(base64_decode('" + encoded + "'),true);")
         refused = subprocess.run([php_binary(), '-r', 'require $argv[1]; app_config();', str(rc / 'app/config.php')], capture_output=True)
         self.assertNotEqual(refused.returncode, 0)
