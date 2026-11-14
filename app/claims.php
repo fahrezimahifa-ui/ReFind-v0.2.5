@@ -64,3 +64,28 @@ function mutate_claim(array $user, array $data): array
     cleanup_media($removed,true);
     return ['id'=>(string)$claimId,'resubmitted'=>$existing!==null];
 }
+
+// Batched claim list projection (ported from the v0.2.5 maintainability follow-up). The HTTP query scopes
+// records first; this keeps owner/BM evidence visibility and per-claim eligibility flags unchanged.
+function claim_list_projection(array $claims, array $user): array
+{
+    if(!$claims)return [];
+    $claimIds=array_map('intval',array_column($claims,'claim_id'));$itemIds=array_values(array_unique(array_map('intval',array_column($claims,'item_id'))));
+    $claimMarks=implode(',',array_fill(0,count($claimIds),'?'));$itemMarks=implode(',',array_fill(0,count($itemIds),'?'));
+    $photosByClaim=[];
+    foreach(rows("SELECT claim_id,claim_photo_id FROM claim_photos WHERE claim_id IN ($claimMarks) ORDER BY claim_photo_id",$claimIds) as $photo)$photosByClaim[(int)$photo['claim_id']][]=['claim_photo_id'=>$photo['claim_photo_id']];
+    $confirmed=[];
+    foreach(rows("SELECT lost_item_id,found_item_id FROM item_matches WHERE match_status='CONFIRMED' AND (lost_item_id IN ($itemMarks) OR found_item_id IN ($itemMarks))",array_merge($itemIds,$itemIds)) as $match){$confirmed[(int)$match['lost_item_id']]=true;$confirmed[(int)$match['found_item_id']]=true;}
+    foreach($claims as &$claim){
+        foreach(['claim_id','item_id','claimant_user_id'] as $key)$claim[$key]=(string)$claim[$key];
+        $claim['related_lost_item_id']=$claim['related_lost_item_id']!==null?(string)$claim['related_lost_item_id']:null;
+        $photos=$photosByClaim[(int)$claim['claim_id']]??[];
+        $claim['ownership_photo_count']=count($photos);$claim['ownership_photo_ids']=array_column($photos,'claim_photo_id');
+        if($user['role']==='BUILDING_MANAGEMENT')$claim['ownership_photos']=array_map(fn($p)=>app_config()['base_path'].'api/photos.php?kind=claim&id='.$p['claim_photo_id'],$photos);
+        foreach(['created_at','updated_at','reviewed_at'] as $key)$claim[$key]=utc_iso($claim[$key]);
+        $open=in_array($claim['item_status'],ACTIVE_ITEM_CODES,true)&&!isset($confirmed[(int)$claim['item_id']]);
+        $claim['can_resubmit']=in_array($claim['claim_status'],RESUBMITTABLE_CLAIM_CODES,true)&&$open;
+        $claim['can_withdraw']=$user['role']==='STUDENT'&&in_array($claim['claim_status'],['PENDING','NEED_MORE_INFO'],true);
+    }unset($claim);
+    return $claims;
+}

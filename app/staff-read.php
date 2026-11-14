@@ -41,3 +41,27 @@ function staff_claim(int $id,array $user): array
     foreach(['created_at','updated_at','reviewed_at']as $key)$raw[$key]=utc_iso($raw[$key]);
     return $raw;
 }
+
+// Batched BM report list (ported from the v0.2.5 maintainability follow-up). Raw rows feed only revisions and
+// manual-status choices; their private columns never merge into the public records. Mutations still reread under locks.
+function staff_report_list(array $records, array $user): array
+{
+    if(!$records)return [];
+    $context=item_projection_context($records,$user);
+    $ids=array_map('intval',array_column($records,'item_id'));$marks=implode(',',array_fill(0,count($ids),'?'));
+    $raw=array_column(rows("SELECT i.*,s.status_code FROM items i JOIN item_statuses s ON s.status_id=i.status_id WHERE i.item_id IN ($marks)",$ids),null,'item_id');
+    $history=array_column(rows("SELECT item_id,MAX(history_id) AS history_id FROM item_status_history WHERE item_id IN ($marks) GROUP BY item_id",$ids),'history_id','item_id');
+    $suggested=[];
+    foreach(rows("SELECT lost_item_id,found_item_id FROM item_matches WHERE match_status='SUGGESTED' AND (lost_item_id IN ($marks) OR found_item_id IN ($marks))",array_merge($ids,$ids)) as $match){$suggested[(int)$match['lost_item_id']]=true;$suggested[(int)$match['found_item_id']]=true;}
+    $reports=[];
+    foreach($records as $record){
+        $id=(int)$record['item_id'];
+        if(!isset($raw[$id]))fail('Report not found.',404,'not_found');
+        $report=safe_item($record,$user,$context);
+        $blocked=$context[$id]['match']!==null||$context[$id]['active_claim'];
+        $report['allowed_statuses']=manual_status_choices($raw[$id],$blocked,isset($suggested[$id]));
+        $report['revision']=item_revision($raw[$id],(int)($history[$id]??0));
+        $reports[]=$report;
+    }
+    return $reports;
+}
