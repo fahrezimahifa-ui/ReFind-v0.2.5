@@ -3,7 +3,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, codex/release-readiness, codex/maintainability-refactor, codex/student-self-registration]
+    branches: [main, 'release/**', codex/release-readiness, codex/maintainability-refactor, codex/student-self-registration]
   workflow_dispatch:
 permissions:
   contents: read
@@ -40,6 +40,7 @@ jobs:
       - run: npm run lint
       - run: composer analyse
       - run: php tools/test-visual-search.php
+      - run: php tools/test-search.php
       - run: python tools/test-release.py
       - run: python tools/test-registration.py
       - run: python tools/test-registration-source.py
