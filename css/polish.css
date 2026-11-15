@@ -104,14 +104,16 @@ html:has(.sticky-form-actions){scroll-padding-bottom:104px}
 /* Phones stack the three decisions; a sticky stack would cover too much of the record. */
 @media(max-width:679px){.bm-detail-actions{position:static;box-shadow:none}}
 @media(min-width:1100px){
-  .bm-main{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:16px;align-items:center}
+  /* The tabs fill the queue column exactly, so the search panel lines up with the detail panel below it. */
+  .bm-main{--bm-queue-width:320px;display:grid;grid-template-columns:var(--bm-queue-width) minmax(0,1fr);column-gap:22px;align-items:center}
   .bm-main>*{grid-column:1/-1}
   .bm-main>.page-heading{margin-bottom:16px}
   .bm-main .page-heading h1{font-size:32px;margin:2px 0 4px}
   .bm-main .page-heading p{font-size:15px}
-  .bm-main>#bm-tabs{grid-column:1;margin:0}
+  .bm-main>#bm-tabs{grid-column:1;margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .bm-main>#bm-tabs .type-tab{min-width:0;padding-inline:8px}
   .bm-main>.bm-filters{grid-column:2;margin:0;padding:10px}
-  .bm-main>.bm-layout{margin-top:16px}
+  .bm-main>.bm-layout{margin-top:16px;grid-template-columns:var(--bm-queue-width) minmax(0,1fr)}
 }
 
 /* Item page: report journey stepper and history log (calm, token-based, no motion). */
@@ -155,13 +157,6 @@ html:has(.sticky-form-actions){scroll-padding-bottom:104px}
 /* Skip link: hidden until focused, then pinned above the header. */
 .skip-link.visually-hidden-focusable:focus{position:fixed;top:8px;left:8px;z-index:2000;padding:10px 16px;border-radius:var(--radius-control);background:var(--panel);color:var(--link);font-weight:600;box-shadow:var(--glass-shadow);outline:3px solid var(--focus);outline-offset:2px}
 #main-content:focus{outline:none}
-/* Guest landing: how ReFind works. */
-.how-steps{list-style:none;counter-reset:how;display:grid;gap:var(--space-2);padding:0;margin:var(--space-3) 0}
-.how-steps li{counter-increment:how;display:grid;grid-template-columns:32px minmax(0,1fr);column-gap:12px;align-items:start}
-.how-steps li::before{content:counter(how);grid-row:span 2;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--primary-soft);color:var(--navy);font-weight:700;font-size:14px}
-.how-steps strong{font-size:16px;line-height:1.4}
-.how-steps span{color:var(--muted);font-size:14px;line-height:1.5}
-@media(min-width:768px){.how-steps{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}}
 /* Next-step lines on cards sit above the card's stretched title link so their own link stays clickable. */
 .card-next{display:flex;flex-wrap:wrap;align-items:center;column-gap:6px;margin:8px 0 0;font-size:14px;color:var(--muted)}
 .discovery-card .card-next{position:relative;z-index:2}
@@ -174,6 +169,11 @@ html:has(.sticky-form-actions){scroll-padding-bottom:104px}
 /* Quieter destructive actions: still red and confirmed, no longer button-weight. */
 .text-button.danger-text,.text-button.danger-text:hover:not(:disabled),.text-button.danger-text:active:not(:disabled){color:var(--danger)}
 .own-report-actions .danger-text{flex:0 0 auto;padding:8px 6px}
+/* Card Delete: no fill at rest; hover, press and focus get a rounded soft-red shape instead of a square block. */
+.own-report-actions .record-delete{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 14px;border-radius:var(--radius-control);background:transparent;text-decoration:none}
+.own-report-actions .record-delete:hover:not(:disabled){background:var(--delete-hover);text-decoration:none}
+.own-report-actions .record-delete:active:not(:disabled){background:var(--delete-pressed)}
+.own-report-actions .record-delete:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .claim-actions .danger-text{align-self:flex-start}
 /* Report form: finder guidance and who can see the report. */
 .found-next{margin:14px 0 0}

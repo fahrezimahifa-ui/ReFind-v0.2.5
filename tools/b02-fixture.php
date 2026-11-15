@@ -23,7 +23,7 @@ try {
         echo '{"cleared":true}';
     } elseif ($action === 'failpoint') {
         $name='b04_test_failpoint';
-        $existing=row('SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND TRIGGER_NAME=?',[$name]);
+        $existing=row('SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE EVENT_OBJECT_SCHEMA=DATABASE() AND TRIGGER_SCHEMA=DATABASE() AND TRIGGER_NAME=?',[$name]);
         if ($existing) db()->query('DROP TRIGGER `b04_test_failpoint`');
         if (($input['mode']??'')==='media') db()->query("CREATE TRIGGER b04_test_failpoint BEFORE INSERT ON item_photos FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='B04 controlled media rollback'");
         elseif (($input['mode']??'')==='claim_notification') db()->query("CREATE TRIGGER b04_test_failpoint BEFORE INSERT ON notifications FOR EACH ROW BEGIN IF NEW.notification_type='CLAIM_SUBMITTED' THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='B04 controlled claim rollback'; END IF; END");

@@ -144,6 +144,8 @@ function seedFixtures() {
       assert.equal((await staff.call('admin.html')).status, 200); assert.equal((await staff.call('index.html')).status, 302);
       assert.equal((await student.call('report.html')).status, 200, 'Authorized Student report page is implemented in B04');
       const guest = new Session(); const r = await guest.call('report.html?type=lost'); assert.equal(r.status, 302); assert.match(r.headers.get('location'), /login\.html\?return=/);
+      // Guests skip the old landing page and go straight to login, from the base path too.
+      for (const route of ['index.html', '']) { const home = await guest.call(route); assert.equal(home.status, 302, route || 'base path'); assert.equal(new URL(home.headers.get('location'), 'http://localhost').pathname, qaRuntime.basePath + 'login.html', route || 'base path'); }
       assert.equal((await guest.call('page.php?route=admin.html')).status, 404);
     });
     await test('Guest/wrong-role protected API requests reject without DB mutations', async () => {

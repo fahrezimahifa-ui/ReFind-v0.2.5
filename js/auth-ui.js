@@ -10,7 +10,6 @@ $(async function () {
     $('[data-user-name]').text(session.user?.name || '');
     // The sign-up invitation and its link appear together, only when this requester may register.
     $('#registration-link, [data-registration-offer]').prop('hidden', !session.registration_enabled);
-    $('#guest-home').prop('hidden', session.authenticated);
     $('#member-home').prop('hidden', !session.authenticated);
     $('#login-submit').prop('disabled', false).text('Log in');
     document.body.dataset.ready = 'true';

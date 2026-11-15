@@ -68,10 +68,11 @@ window.ReFindShell = (() => {
     app.state.user = user;
     if(!user)setAccount(false);
     const bm = user?.role === 'BUILDING_MANAGEMENT';
-    const home = app.base + (bm ? 'admin.html?tab=claims' : 'index.html');
+    // Guests have no home page; the brand takes them to the login page, where "Log in" would repeat itself.
+    const home = app.base + (!user ? 'login.html' : bm ? 'admin.html?tab=claims' : 'index.html');
     $('#nav-brand,#nav-home').attr('href', home);
     $('#nav-home').text(bm ? 'Review Queue' : 'Home');
-    $('#nav-login').prop('hidden', !!user);
+    $('#nav-login').prop('hidden', !!user || document.body.dataset.page === 'login');
     $('#account-disclosure').prop('hidden', !user);
     $('#account-toggle').prop('disabled', !user);
     $('[data-auth-nav]').prop('hidden',!user);

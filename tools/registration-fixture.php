@@ -48,7 +48,7 @@ try {
     } elseif (in_array($action, ['fail-on', 'fail-off', 'end'], true)) {
         require __DIR__ . '/../app/db.php';
         if ($action === 'fail-on') {
-            if ($state['trigger'] || row("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND TRIGGER_NAME='registration_qa_failpoint'")) throw new RuntimeException('QA trigger already exists.');
+            if ($state['trigger'] || row("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE EVENT_OBJECT_SCHEMA=DATABASE() AND TRIGGER_SCHEMA=DATABASE() AND TRIGGER_NAME='registration_qa_failpoint'")) throw new RuntimeException('QA trigger already exists.');
             db()->query("CREATE TRIGGER registration_qa_failpoint BEFORE INSERT ON users FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Synthetic registration rollback'");
             $state['trigger'] = true;
         } elseif ($state['trigger']) {
