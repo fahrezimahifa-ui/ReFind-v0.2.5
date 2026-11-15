@@ -1,8 +1,10 @@
-# ReFind v1.0.0-rc.1: unified release candidate
+# ReFind v1.0.0: unified release record
+
+**Status (15 November 2026):** the candidate was merged into `main` by PR #8 as merge commit `72d5e50` (parents `7aefd9e` and the tested head `7afdbb9`, identical tree) and tagged `v1.0.0-rc.1`. Version `1.0.0` is the same application with the label changed; see section 7 for the release qualification. Deployment to `/refind/` and `/refind-test/` follows [CUTOVER_RUNBOOK.md](CUTOVER_RUNBOOK.md) and has not been executed.
 
 Assembled 14 November 2026 on branch `release/v1.0.0-candidate`, worktree `C:\xampp\htdocs\refind-v1-rc`. Discovery input: the Codex report `REFIND_UNIFICATION_DISCOVERY_AND_V1_RELEASE_ASSESSMENT.md` (same date), with every material source identity re-verified before changes.
 
-This is a **local-only release candidate**. It is not deployed, not merged into GitHub main and not declared stable. The main installation (`C:\xampp\htdocs\ReFind_0.2.3`, `refind_db_0_2_0`) and the persistent QA corpus (`ReFind_0.2.0_Test`, `refind_db_0_2_0_test`) were not modified; read-only checks after every incident confirmed their schema, invariants and record counts unchanged (section 5.4).
+ReFind v1.0.0 is a **local-only release** and is not deployed yet. The main installation (`C:\xampp\htdocs\ReFind_0.2.3`, `refind_db_0_2_0`) and the persistent QA corpus (`ReFind_0.2.0_Test`, `refind_db_0_2_0_test`) were not modified; read-only checks after every incident confirmed their schema, invariants and record counts unchanged (section 5.4).
 
 ## 1. Source identities (verified at assembly)
 
@@ -166,24 +168,34 @@ PR #6/#7 receipts in `docs/verification/uiux/` and the original `output/playwrig
 | Campus SSO/mailbox verification, recovery, custody roles, disposal/no-show policy, email transport | Excluded (policy) | Not implemented; require stakeholder decisions. |
 | Physical device and screen-reader checks | Pending (manual) | Not automatable here. |
 
-## 7. Release-readiness criteria for `v1.0.0-rc.1`
+## 7. Release-readiness criteria
+
+Qualification evidence added 15 November 2026 (not re-runs of earlier results):
+
+| Evidence | Result |
+|---|---|
+| PR #8 CI on head `7afdbb9`: Release readiness / integration (`pull_request`) | **PASS** in 17 min: disposable Apache/PHP/MariaDB container, `prepare-test.py`, disposable recovery, `profile-queries.php` and the full `run-qa.cjs` matrix (including `local-access` and the non-loopback registration check) in one uninterrupted run |
+| Release readiness / static (`pull_request`) | **PASS** in 34 s: PHP lint, `check:js`, ESLint, **PHPStan**, offline visual/search/release/registration suites |
+| Security maintenance / review (`pull_request` and `push`) | **PASS**: redacted secret scan and online locked-advisory review within the reviewed exception |
+| Merge | `72d5e50` into `main`, tagged `v1.0.0-rc.1` |
+| Owner phone check (15 Nov 2026) | **PASS**: candidate reviewed on a phone; report detail page approved |
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | One reviewable source identity containing all accepted features, conflicts resolved | **PASS** (branch `release/v1.0.0-candidate`; PR review pending) |
+| 1 | One reviewable source identity containing all accepted features, conflicts resolved | **PASS** (merged as `72d5e50`, tag `v1.0.0-rc.1`) |
 | 2 | Schema compatible with main/QA without migration; no table dropped | **PASS** |
 | 3 | Visual search off for stable/default; no provider calls | **PASS** |
 | 4 | Guest/Student/BM journeys on owned synthetic data, both themes (auth, account, reports, uploads, search, claims, review, stale/concurrent, handover, return) | **PASS** per suite |
-| 5 | Security/authorization/private-media regression | **PASS** (container-only boundary pending CI) |
+| 5 | Security/authorization/private-media regression | **PASS** (incl. container-only boundary in CI) |
 | 6 | UI: layout, responsive, theme/contrast, Appearance, profile, menus, smoke | **PASS** |
-| 7 | One uninterrupted full-matrix run on the final commit | **OPEN** (blocked by host MariaDB instability; rerun now that it runs as a service, or in CI) |
-| 8 | Static analysis incl. PHPStan; container-only suites | **OPEN** (CI) |
+| 7 | One uninterrupted full-matrix run on the final commit | **PASS** (CI integration on `7afdbb9`) |
+| 8 | Static analysis incl. PHPStan; container-only suites | **PASS** (CI) |
 | 9 | Main/QA preserved and isolated from candidate testing | **PASS** |
-| 10 | Runtime/advisory qualification | **FAIL/OPEN**: MariaDB 10.4 EOL and unstable on this host; dependency policy expires 16 Nov 2026 |
-| 11 | Manual device and assistive-technology checks | **OPEN** |
-| 12 | Verified main backup/restore and rollback rehearsal | **OPEN** (cutover gate, not a candidate gate) |
+| 10 | Runtime/advisory qualification | **OPEN (environment, not code):** host MariaDB 10.4 is past end of life (now a Windows service, stable since the switch); the dependency-policy exception and native reviews fall due 16 Nov 2026 and need the owner's reassessment |
+| 11 | Manual device and assistive-technology checks | **PARTIAL:** owner phone check passed; screen-reader check not performed |
+| 12 | Verified main backup/restore and rollback rehearsal | **OPEN** (cutover gate; tooling rehearsed on disposable data, see the runbook) |
 
-**Verdict:** the branch qualifies as **`v1.0.0-rc.1` for review**: it is feature-complete for the approved scope, preserves the main schema and data contract, keeps photo search disabled, and every primary-journey suite passes on the unchanged application code. It is **not** ready to be declared v1.0.0 stable or deployed: criteria 7, 8, 10, 11 and 12 remain open.
+**Verdict:** the application qualifies as **v1.0.0 for local deployment** within the approved scope: feature-complete, CI-green on the exact merged tree, main schema and data contract preserved, photo search disabled outside the QA pilot. Remaining items are operational, not code: reassess the dependency policy (due 16 Nov 2026), plan the MariaDB LTS move, optionally add a screen-reader pass, and complete criterion 12 during the cutover before `/refind/` serves users.
 
 ## 8. Future cutover to `/refind/` and `/refind-test/` (informational; not executed)
 

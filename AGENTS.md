@@ -8,7 +8,7 @@ ReFind is one UMN campus Lost & Found product developed across **IS556 Web Desig
 2. [Current architecture and local operation](docs/ARCHITECTURE.md): source map, routing, database/storage, configuration, and verification commands.
 3. [Requirements and proposed roadmap](docs/REQUIREMENTS_AND_ROADMAP.md): implemented behavior versus research proposals and unresolved decisions.
 4. [v0.2.5 change report](docs/V025_REPORT.md) and [workflow contract](docs/WORKFLOW_CONTRACT.md) before changing business rules.
-5. On `release/v1.0.0-candidate`: [v1.0.0-rc.1 record](docs/V1_RELEASE_CANDIDATE.md) for per-feature sources, the isolated `v1-rc` QA profile, test results and open release criteria.
+5. [v1.0.0 release record](docs/V1_RELEASE_CANDIDATE.md) for per-feature sources, the isolated `v1-rc` QA profile, test results and release criteria, and the [cutover runbook](docs/CUTOVER_RUNBOOK.md) for moving to `/refind/` and `/refind-test/`.
 
 Consult [role/API contracts](docs/ROLE_ROUTE_MATRIX.md), [data dictionary](docs/DATA_DICTIONARY.md), and [decision history](docs/SOURCES_AND_DECISIONS.md) for deeper work. Earlier batch reports describe their historical checkpoint; later v0.2.5 updates supersede older behavior.
 

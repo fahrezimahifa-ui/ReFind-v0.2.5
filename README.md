@@ -1,6 +1,6 @@
-# ReFind v0.2.5 (release candidate v1.0.0-rc.1 on this branch)
+# ReFind v1.0.0
 
-> Branch `release/v1.0.0-candidate` assembles GitHub main, refind-dev UX work and the installed app's QA-only visual-search schema into **v1.0.0-rc.1**. Read [the release-candidate record](docs/V1_RELEASE_CANDIDATE.md) for sources, verification, open criteria and the cutover plan. It is a candidate for review, not a stable release.
+> **v1.0.0** unifies GitHub main, refind-dev UX work and the installed app's QA-only visual-search schema (PR #8, tagged `v1.0.0-rc.1`). Read [the release record](docs/V1_RELEASE_CANDIDATE.md) for sources, verification and readiness, and [the cutover runbook](docs/CUTOVER_RUNBOOK.md) before moving the installations to `/refind/` and `/refind-test/`. The sections below keep their v0.2.5-era history.
 
 UMN campus Lost & Found, built with procedural PHP, MariaDB/InnoDB, local jQuery/Bootstrap and a mobile-first interface. Student reports, rule-based suggestions, private ownership claims, BM review, pickup and Returned history use server-side sessions and transactions.
 
