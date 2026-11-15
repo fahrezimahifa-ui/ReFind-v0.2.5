@@ -37,7 +37,7 @@ Role/ownership/API contract berikut direverifikasi lewat regression dan fresh-in
 
 | Route | Guest | Student | BM |
 |---|---|---|---|
-| index.html | Landing | Student Home | Redirect Review Queue |
+| index.html | Redirect Log in | Student Home | Redirect Review Queue |
 | login.html | Login | Redirect Home | Redirect Review Queue |
 | register.html | Enabled/local guest signup; otherwise redirect Login | Redirect Home | Redirect Review Queue |
 | browse.html, item.html | Login + safe return | Public report content | Public report content |

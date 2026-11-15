@@ -36,6 +36,10 @@ try {
         $url = $user ? landing_url($user) : $base . 'login.html';
         session_write_close(); header('Location: ' . $url, true, 302); exit;
     }
+    // Guests have no home page of their own: the login page carries the introduction and the sign-up offer.
+    if (!$user && $route === 'index.html') {
+        session_write_close(); header('Location: ' . $base . 'login.html', true, 302); exit;
+    }
     if ($definition['roles'] && !$user) {
         $return = safe_return($base . $route . (($_SERVER['QUERY_STRING'] ?? '') ? '?' . $_SERVER['QUERY_STRING'] : ''));
         session_write_close(); header('Location: ' . $base . 'login.html?return=' . rawurlencode($return), true, 302); exit;

@@ -108,7 +108,7 @@ The actual route allowlist is [app/routes.php](../app/routes.php). `admin.html` 
 
 | Route | Access/use |
 |---|---|
-| `index.html`, `login.html` | Guest landing/login; authenticated role-specific landing/redirects |
+| `index.html`, `login.html` | Guests are sent to login; authenticated role-specific landing/redirects |
 | `register.html` | Enabled/local guests register; otherwise login redirect; authenticated users return to their role landing |
 | `browse.html`, `item.html` | Signed-in Student/BM discovery and report details |
 | `report.html`, `claim.html`, `my-reports.html` | Student reports, ownership claims and personal activity |
