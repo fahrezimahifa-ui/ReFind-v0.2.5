@@ -85,6 +85,10 @@ def main():
         list_sql = "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='{}' AND TABLE_TYPE='BASE TABLE' ORDER BY TABLE_NAME"
         source_tables = [row[0] for row in query(list_sql.format(args.source_db))]
         restored_tables = [row[0] for row in query(list_sql.format(scratch))]
+        # Seen once on 15 Nov 2026: an empty source list, which an immediate re-run did not reproduce. Report it plainly.
+        if not source_tables or not restored_tables:
+            report['error'] = 'empty table list (source {}, restored {}); re-run once and stop if it repeats'.format(len(source_tables), len(restored_tables))
+        report['checks']['tables_listed'] = bool(source_tables) and bool(restored_tables)
         report['checks']['same_tables'] = source_tables == restored_tables
         tables = {}
         for table in source_tables:

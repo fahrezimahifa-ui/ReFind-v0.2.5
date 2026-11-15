@@ -35,3 +35,6 @@ releases/*.zip
 
 # Disposable v1.0.0 release-candidate QA marker
 .refind-v1-rc.json
+
+# Persistent QA ownership marker (deployment-local, written during the cutover)
+.refind-b02-test.json

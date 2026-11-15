@@ -1,6 +1,6 @@
 # ReFind v1.0.0: unified release record
 
-**Status (15 November 2026):** the candidate was merged into `main` by PR #8 as merge commit `72d5e50` (parents `7aefd9e` and the tested head `7afdbb9`, identical tree) and tagged `v1.0.0-rc.1`. Version `1.0.0` is the same application with the label changed; see section 7 for the release qualification. Deployment to `/refind/` and `/refind-test/` follows [CUTOVER_RUNBOOK.md](CUTOVER_RUNBOOK.md) and has not been executed.
+**Status (15 November 2026):** the candidate was merged into `main` by PR #8 as merge commit `72d5e50` (parents `7aefd9e` and the tested head `7afdbb9`, identical tree) and tagged `v1.0.0-rc.1`. Version `1.0.0` (PR #9, merge `5481c79`, tag `v1.0.0`) is the same application with the label changed; see section 7 for the release qualification. **Deployed on 15 November 2026** following [CUTOVER_RUNBOOK.md](CUTOVER_RUNBOOK.md): main at `http://localhost/refind/` and QA at `http://localhost/refind-test/`, both checked out at `v1.0.0`, with the old URLs blocked and verified backups in `C:\ReFind-Backups`.
 
 Assembled 14 November 2026 on branch `release/v1.0.0-candidate`, worktree `C:\xampp\htdocs\refind-v1-rc`. Discovery input: the Codex report `REFIND_UNIFICATION_DISCOVERY_AND_V1_RELEASE_ASSESSMENT.md` (same date), with every material source identity re-verified before changes.
 
@@ -192,10 +192,10 @@ Qualification evidence added 15 November 2026 (not re-runs of earlier results):
 | 8 | Static analysis incl. PHPStan; container-only suites | **PASS** (CI) |
 | 9 | Main/QA preserved and isolated from candidate testing | **PASS** |
 | 10 | Runtime/advisory qualification | **OPEN (environment, not code):** host MariaDB 10.4 is past end of life (now a Windows service, stable since the switch); the dependency-policy exception and native reviews fall due 16 Nov 2026 and need the owner's reassessment |
-| 11 | Manual device and assistive-technology checks | **PARTIAL:** owner phone check passed; screen-reader check not performed |
-| 12 | Verified main backup/restore and rollback rehearsal | **OPEN** (cutover gate; tooling rehearsed on disposable data, see the runbook) |
+| 11 | Manual device and assistive-technology checks | **PASS (owner):** phone check and post-cutover sign-in with real accounts completed; a screen-reader pass was not performed |
+| 12 | Verified main backup/restore and rollback rehearsal | **PASS:** main and QA backups taken with writes paused and proven by restore into scratch databases (all 15 tables, row counts and checksums matched); rollback is removing the two Apache deny blocks, with the old folders untouched |
 
-**Verdict:** the application qualifies as **v1.0.0 for local deployment** within the approved scope: feature-complete, CI-green on the exact merged tree, main schema and data contract preserved, photo search disabled outside the QA pilot. Remaining items are operational, not code: reassess the dependency policy (due 16 Nov 2026), plan the MariaDB LTS move, optionally add a screen-reader pass, and complete criterion 12 during the cutover before `/refind/` serves users.
+**Verdict:** **v1.0.0 is released and deployed locally** within the approved scope: feature-complete, CI-green on the exact merged tree, main schema and data preserved through the cutover (record counts unchanged), photo search disabled outside the QA pilot. Remaining items are operational, not code: reassess the dependency policy (due 16 Nov 2026), plan the MariaDB LTS move, and optionally add a screen-reader pass.
 
 ## 8. Future cutover to `/refind/` and `/refind-test/` (informational; not executed)
 

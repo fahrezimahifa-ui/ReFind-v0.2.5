@@ -1,10 +1,10 @@
 # ReFind v1.0.0 cutover runbook: `/refind/` (main) and `/refind-test/` (QA)
 
-Prepared 15 November 2026 on `release/v1.0.0-candidate`. **Nothing in this runbook has been executed.** Every step marked **CUTOVER DAY** changes the live installations and needs the owner's explicit go-ahead at that time. Background and readiness criteria: [V1_RELEASE_CANDIDATE.md](V1_RELEASE_CANDIDATE.md).
+Prepared and **executed on 15 November 2026**: main moved at 09:42–09:47 and QA at 09:47–09:50 (local time), with both old URLs blocked and verified backups in `C:\ReFind-Backups`. Sections 5 and 6 record the procedure as it was run, including the fixes found on the day; reuse them for future moves. Every step that changes the live installations needs the owner's explicit go-ahead. Background and readiness: [V1_RELEASE_CANDIDATE.md](V1_RELEASE_CANDIDATE.md).
 
-## 1. Today and target
+## 1. Before and after
 
-| | Today | Target |
+| | Before (until 15 Nov 2026) | After the cutover |
 |---|---|---|
 | Main (real data) | `C:\xampp\htdocs\ReFind_0.2.3` → `/ReFind_0.2.3/`, session `refind_020`, sign-up on, photo search off, v0.2.5 code | `C:\xampp\htdocs\refind` → `/refind/`, session `refind_v1`, same settings, v1.0.0 code |
 | QA (synthetic corpus) | `C:\xampp\htdocs\ReFind_0.2.0_Test` → `/ReFind_0.2.0_Test/`, session `refind_020_test`, photo-search pilot (1 allowlisted Student, key file), scheduled indexer | `C:\xampp\htdocs\refind-test` → `/refind-test/`, session `refind_test`, same pilot settings, v1.0.0 code |
@@ -45,10 +45,14 @@ cd C:\xampp\htdocs\ReFind_0.2.3;     php tools\fingerprint.php > C:\ReFind-Backu
 
 Record record counts (users, items, claims, handovers, item_photos, claim_photos, notifications, history; QA embeddings READY).
 
-## 5. Main → `/refind/` (CUTOVER DAY)
+## 5. Main → `/refind/` (CUTOVER DAY; executed 15 Nov 2026)
 
-1. **Pause writes.** Stop Apache in XAMPP (MySQL keeps running as a service). From here until step 8 no browser traffic reaches ReFind.
-2. **Back up main** (private: SQL, storage, local config, receipt):
+1. **Pause writes.** XAMPP's `apache_stop.bat` is broken (it still contains an unreplaced `@@BITROCK_INSTALLDIR@@` installer placeholder), so stop Apache by ending its processes. MySQL keeps running as a service; main receives no writes until step 9.
+   ```powershell
+   Get-Process httpd | Stop-Process -Force
+   Remove-Item C:\xampp\apache\logs\httpd.pid -ErrorAction SilentlyContinue
+   ```
+2. **Back up the deployment** (private SQL, storage, local config, receipt). Run the tool that lives in the folder being backed up; on 15 Nov that was `ReFind_0.2.3`, from now on it is `refind`:
    ```powershell
    cd C:\xampp\htdocs\ReFind_0.2.3
    python tools\backup-project.py --writes-paused        # prints the backup folder under storage\setup\backups\
@@ -61,60 +65,70 @@ Record record counts (users, items, claims, handovers, item_photos, claim_photos
    cd C:\xampp\htdocs\refind-v1-rc
    python tools\verify-restore.py --backup-dir C:\ReFind-Backups\<folder> --source-db refind_db_0_2_0   # must print "passed": true
    ```
-   Stop here if it fails.
-4. **Create the stable checkout** at the tag (detached, from the shared repository):
+   On 15 Nov the first attempt returned an empty table list and failed closed; an immediate re-run passed every check. The tool now reports an empty table list as an explicit error. Re-run once; stop if it fails again.
+4. **Create the checkout** at the release tag (detached, from the shared repository):
    ```powershell
    git -C C:\xampp\htdocs\refind-v1-rc fetch v025 --tags
    git -C C:\xampp\htdocs\refind-v1-rc worktree add --detach C:\xampp\htdocs\refind <TAG>
    ```
-5. **Configure it.** Copy main's private config and change only the URL and session:
+5. **Configure it** from main's private config, changing only the URL and session (validated, refuses to overwrite):
    ```powershell
-   Copy-Item C:\xampp\htdocs\ReFind_0.2.3\app\config.local.php C:\xampp\htdocs\refind\app\config.local.php
-   # edit: 'base_path' => '/refind/', 'session_name' => 'refind_v1'   (keep database, sign-up, pickup desk values)
+   php C:\xampp\htdocs\refind\tools\derive-config.php C:\xampp\htdocs\ReFind_0.2.3 C:\xampp\htdocs\refind /refind/ refind_v1
    ```
-6. **Copy private media and auth state** (not sessions):
+   From Git Bash prefix `MSYS_NO_PATHCONV=1`, otherwise `/refind/` is rewritten into a Windows path and validation refuses it.
+6. **Copy private media and auth state, then create an empty sessions folder** (old sessions are not copied; without the folder every page returns 500):
    ```powershell
    foreach ($d in 'items','evidence','claims','avatars','auth','setup') {
      robocopy C:\xampp\htdocs\ReFind_0.2.3\storage\$d C:\xampp\htdocs\refind\storage\$d /E /COPY:DAT /XD backups }
+   New-Item -ItemType Directory -Force C:\xampp\htdocs\refind\storage\sessions
    ```
+   Robocopy exit codes below 8 mean success.
 7. **Verify offline:**
    ```powershell
    cd C:\xampp\htdocs\refind; php tools\check-database.php; php tools\check-workflow.php    # 9/9, 18/18, 0 missing/orphan media
    php tools\fingerprint.php > C:\ReFind-Backups\main-fingerprint-refind.json             # "tables" and "schema_sha256" identical to before; private_files differs only because the config changed
    ```
-8. **Start Apache and verify online:** open `http://localhost/refind/login.html`, sign in with an existing Student and the BM account, open a report with a private ownership photo as BM, open My Activity, check Settings shows the released version label (bump `1.0.0-rc.1` in a commit before tagging).
-9. **Block the old main URL immediately** so two write-active copies never share `refind_db_0_2_0` with different media folders. Recommended: an Apache rule outside the repositories, e.g. in `C:\xampp\apache\conf\extra\httpd-xampp.conf`:
+8. **Block the old URL before Apache starts**, so two copies never write to the same database. Back up `C:\xampp\apache\conf\extra\httpd-xampp.conf`, append, and run `C:\xampp\apache\bin\httpd.exe -t` (must print `Syntax OK`):
    ```apache
    <Directory "C:/xampp/htdocs/ReFind_0.2.3">
+       AllowOverride None
        Require all denied
    </Directory>
    ```
-   then restart Apache. The old folder and its files stay untouched for rollback.
-
-## 6. QA → `/refind-test/` (CUTOVER DAY, after main is accepted)
-
-1. **Disable the indexer task** (it runs every minute against the old folder):
+   `AllowOverride None` is required: without it the old folder's own `.htaccess` `Require` rule overrides the deny.
+9. **Start Apache and verify online.** Start it as an independent process (or from the XAMPP Control Panel):
    ```powershell
+   Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{CommandLine='C:\xampp\apache\bin\httpd.exe'; CurrentDirectory='C:\xampp\apache'}
+   ```
+   `/refind/login.html` and `/refind/api/session.php` return 200, the old URL returns 403, the session cookie is `refind_v1` with path `/refind/`, and the owner signs in with real Student and BM accounts.
+
+## 6. QA → `/refind-test/` (CUTOVER DAY; executed 15 Nov 2026)
+
+1. **Check the indexer has no queued work, then disable it** (re-enabling with pending rows would call the paid provider):
+   ```powershell
+   & C:\xampp\mysql\bin\mysql.exe --host=127.0.0.1 --user=root refind_db_0_2_0_test -e "SELECT status, COUNT(*) FROM item_photo_embeddings GROUP BY status"
    Disable-ScheduledTask -TaskName 'ReFind Visual Search QA'
    ```
-2. Stop Apache; back up QA the same way (`mysqldump` of `refind_db_0_2_0_test` + a zip of its `storage\` and `app\config.local.php`) into `C:\ReFind-Backups\qa-<date>\`, then `verify-restore.py --dump ... --source-db refind_db_0_2_0_test`.
-3. Create the QA checkout: `git -C C:\xampp\htdocs\refind-v1-rc worktree add --detach C:\xampp\htdocs\refind-test <TAG>`.
-4. Config: copy `ReFind_0.2.0_Test\app\config.local.php` and change only `'base_path' => '/refind-test/'`, `'session_name' => 'refind_test'` (keep the test database, photo-search flag, allowlist, key file, limits, timeout). The key file must stay outside `htdocs`.
-5. Ownership marker (source must be the sibling stable checkout):
+2. **Pause QA without taking main down:** append the same `<Directory>` block for `C:/xampp/htdocs/ReFind_0.2.0_Test`, run `httpd.exe -t`, then restart Apache (stop as in 5.1, start as in 5.9). Main is unavailable for a few seconds.
+3. **Back up QA and prove it restores.** From v1.0.0 deployments run `python tools\backup-project.py --writes-paused` inside `C:\xampp\htdocs\refind-test` (it now accepts the QA database and includes the ownership marker). The legacy QA folder had no copy of the tool, so on 15 Nov an equivalent snapshot was taken into `C:\ReFind-Backups\qa-before-20261115-094758`. Then `verify-restore.py --backup-dir <folder> --source-db refind_db_0_2_0_test`.
+4. **Create the checkout:** `git -C C:\xampp\htdocs\refind-v1-rc worktree add --detach C:\xampp\htdocs\refind-test <TAG>`.
+5. **Configure it:** `php C:\xampp\htdocs\refind-test\tools\derive-config.php C:\xampp\htdocs\ReFind_0.2.0_Test C:\xampp\htdocs\refind-test /refind-test/ refind_test` (keeps the test database, photo-search flag, allowlist, key file and timeout; the key file stays outside `htdocs`).
+6. **Ownership marker** (source must be the sibling main checkout; git-ignored):
    ```powershell
    # UTF-8 without a byte-order mark (Windows PowerShell's Set-Content -Encoding utf8 adds one, which json_decode rejects)
    [IO.File]::WriteAllText('C:\xampp\htdocs\refind-test\.refind-b02-test.json', '{"source": "C:\\xampp\\htdocs\\refind", "scope": "owned isolated QA"}')
    ```
-6. Copy `storage\{items,evidence,claims,avatars,auth,setup}` from `ReFind_0.2.0_Test` with `robocopy` as in section 5 (this carries `visual-calibration.json` and demo receipts).
-7. Recompile the indexer launcher for the new folder and repoint the task:
+7. **Copy storage and create the sessions folder** exactly as in 5.6 (this carries `visual-calibration.json`, the demo receipts and the old launcher builds).
+8. **Rebuild both launchers for the new folder, repoint and re-enable the task:**
    ```powershell
-   $csc='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
-   & $csc -nologo -target:winexe -out:C:\xampp\htdocs\refind-test\storage\setup\visual-index-task-quiet.exe C:\xampp\htdocs\refind-test\tools\visual-index-task-launcher.cs
-   $a = New-ScheduledTaskAction -Execute 'C:\xampp\htdocs\refind-test\storage\setup\visual-index-task-quiet.exe' -WorkingDirectory 'C:\xampp\htdocs\refind-test'
-   Set-ScheduledTask -TaskName 'ReFind Visual Search QA' -Action $a
+   $csc='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'; $setup='C:\xampp\htdocs\refind-test\storage\setup'
+   & $csc -nologo -target:winexe "-out:$setup\visual-index-task-quiet.exe" C:\xampp\htdocs\refind-test\tools\visual-index-task-launcher.cs
+   & $csc -nologo -target:exe "-out:$setup\visual-index-task.exe" C:\xampp\htdocs\refind-test\tools\visual-index-task-launcher.cs
+   $a = New-ScheduledTaskAction -Execute "$setup\visual-index-task-quiet.exe" -WorkingDirectory 'C:\xampp\htdocs\refind-test'
+   Set-ScheduledTask -TaskName 'ReFind Visual Search QA' -Action $a; Enable-ScheduledTask -TaskName 'ReFind Visual Search QA'
+   Start-ScheduledTask -TaskName 'ReFind Visual Search QA'   # last result 0; refind-test\storage\setup\visual-index-last.json updates
    ```
-8. Verify: `php tools\check-database.php` / `check-workflow.php` in `refind-test` (9/9, 18/18), record counts equal to QA's (101 reports, 81 READY embeddings at the 14 Nov audit), `php tools\qa-guard.php C:\xampp\htdocs\refind-test` prints `{"qa_isolated":true}`, and signed in as the allowlisted Student the session reports `visual_search_enabled: true`. No provider call is needed to verify.
-9. Start Apache, block `/ReFind_0.2.0_Test/` like step 5.9, then `Enable-ScheduledTask -TaskName 'ReFind Visual Search QA'` and confirm `storage\setup\visual-index-last.json` updates.
+9. **Verify:** in `refind-test`, `check-database.php` 9/9 and `check-workflow.php` 18/18; record counts unchanged (15 Nov: 101 reports, 81 READY embeddings); `php tools\qa-guard.php C:\xampp\htdocs\refind-test` prints `{"qa_isolated":true}`; signed in as the allowlisted synthetic Student the session reports `visual_search_enabled: true` and any other Student `false`; the cookie is `refind_test` with path `/refind-test/`; the old QA URL returns 403.
 
 ## 7. Rollback
 
