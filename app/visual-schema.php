@@ -23,10 +23,15 @@ function verify_visual_schema(): void
             throw new RuntimeException('Visual index column differs: ' . $expected['name']);
         }
     }
-    $foreign = rows("SELECT k.COLUMN_NAME,k.REFERENCED_TABLE_NAME,k.REFERENCED_COLUMN_NAME,r.DELETE_RULE
-        FROM information_schema.KEY_COLUMN_USAGE k JOIN information_schema.REFERENTIAL_CONSTRAINTS r
-        ON r.CONSTRAINT_SCHEMA=k.CONSTRAINT_SCHEMA AND r.TABLE_NAME=k.TABLE_NAME AND r.CONSTRAINT_NAME=k.CONSTRAINT_NAME
-        WHERE k.TABLE_SCHEMA=DATABASE() AND k.TABLE_NAME=?", [$table]);
+    // Two single-table lookups, matched here. Joining REFERENTIAL_CONSTRAINTS makes MariaDB open every table on the
+    // server ("Scanned all databases"), so one damaged table in an unrelated database could crash it.
+    $rules = array_column(rows('SELECT CONSTRAINT_NAME,DELETE_RULE FROM information_schema.REFERENTIAL_CONSTRAINTS
+        WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME=?', [$table]), 'DELETE_RULE', 'CONSTRAINT_NAME');
+    $foreign = [];
+    foreach (rows('SELECT CONSTRAINT_NAME,COLUMN_NAME,REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME FROM information_schema.KEY_COLUMN_USAGE
+        WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? ORDER BY CONSTRAINT_NAME,ORDINAL_POSITION', [$table]) as $key) {
+        if (isset($rules[$key['CONSTRAINT_NAME']])) $foreign[] = [$key['COLUMN_NAME'], $key['REFERENCED_TABLE_NAME'], $key['REFERENCED_COLUMN_NAME'], $rules[$key['CONSTRAINT_NAME']]];
+    }
     $index = array_column(rows("SELECT COLUMN_NAME FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
         AND TABLE_NAME=? AND INDEX_NAME='idx_visual_pending' ORDER BY SEQ_IN_INDEX", [$table]), 'COLUMN_NAME');
     $check = row("SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=DATABASE()
