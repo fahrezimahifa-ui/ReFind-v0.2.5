@@ -9,16 +9,16 @@ Application topology was reviewed at `857acea`; `8331d90` adds the preserved vis
 Student registration adds guest-only `register.html` and `api/register.php`. It defaults to disabled and local-only; session bootstrap reports effective availability for the current requester. See [registration](STUDENT_SELF_REGISTRATION.md) and [local activation safeguards](XAMPP_REGISTRATION_INTEGRATION.md).
 
 
-| Setting | Existing local installation |
+| Setting | Local deployments since the v1.0.0 cutover (15 Nov 2026) |
 |---|---|
-| App version | **0.2.5** |
-| Codex/source root | `C:\xampp\htdocs\ReFind_0.2.3` |
-| Login URL | `http://localhost/ReFind_0.2.3/login.html` |
-| Effective URL base | `/ReFind_0.2.3/` |
-| Main MariaDB database | `refind_db_0_2_0` at `127.0.0.1:3306` |
-| Owned QA app/database | `ReFind_0.2.0_Test` / `refind_db_0_2_0_test` |
+| App version | **1.0.0** (tag `v1.0.0`) |
+| Main | `C:\xampp\htdocs\refind` → `http://localhost/refind/login.html`, session `refind_v1` |
+| QA (persistent synthetic corpus) | `C:\xampp\htdocs\refind-test` → `http://localhost/refind-test/login.html`, session `refind_test` |
+| Main / QA databases | `refind_db_0_2_0` / `refind_db_0_2_0_test` at `127.0.0.1:3306` (service `mysql`) |
+| Disposable test target | `C:\xampp\htdocs\refind-v1-rc` (`REFIND_TEST_PROFILE=v1-rc`, `refind_db_v1rc_test`) |
 | Source defaults | `app/config.php` |
-| Local override | Ignored `app/config.local.php`, returning the current `base_path` |
+| Local override | Ignored `app/config.local.php` per deployment (URL, session, sign-up, photo-search flags) |
+| Retired, kept for rollback | `ReFind_0.2.3` and `ReFind_0.2.0_Test`, denied in Apache; see [CUTOVER_RUNBOOK.md](CUTOVER_RUNBOOK.md) |
 
 The folder/database labels retain earlier versions. **The original v0.2.5 release required no schema migration.** The profile enhancement adds a nullable avatar reference; see [the upgrade guide](UI_PROFILE_ENHANCEMENTS.md). The source default URL remains `/ReFind_0.2.0/`; this installation's local override is essential.
 

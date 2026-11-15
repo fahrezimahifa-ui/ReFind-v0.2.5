@@ -14,11 +14,12 @@ Consult [role/API contracts](docs/ROLE_ROUTE_MATRIX.md), [data dictionary](docs/
 
 ## Workspace identity
 
-- Local project: `C:\xampp\htdocs\ReFind_0.2.3`.
-- Local login: `http://localhost/ReFind_0.2.3/login.html`.
-- Effective local `base_path`: `/ReFind_0.2.3/`, set in ignored `app/config.local.php`.
-- Main database: `refind_db_0_2_0` at `127.0.0.1:3306`; isolated QA database: `refind_db_0_2_0_test`.
-- App version **0.2.5**, folder label **0.2.3**, and database label **0.2.0** are intentional. A version-label change does not imply a database migration.
+- Since the 15 Nov 2026 cutover ([runbook](docs/CUTOVER_RUNBOOK.md)), ReFind **v1.0.0** runs as two detached worktrees of this repository at tag `v1.0.0`:
+  - Main (real data): `C:\xampp\htdocs\refind` → `http://localhost/refind/`, session `refind_v1`, database `refind_db_0_2_0`.
+  - QA (persistent synthetic corpus, photo-search pilot): `C:\xampp\htdocs\refind-test` → `http://localhost/refind-test/`, session `refind_test`, database `refind_db_0_2_0_test`; the "ReFind Visual Search QA" task runs its `storage\setup\visual-index-task-quiet.exe`.
+- Each deployment keeps its URL, session and flags in its ignored `app/config.local.php` and its private media/auth state in its ignored `storage/`. Deploy by checking out a new reviewed tag in these worktrees, never by editing them in place.
+- The old `ReFind_0.2.3` and `ReFind_0.2.0_Test` folders are kept for rollback only and are denied in `C:\xampp\apache\conf\extra\httpd-xampp.conf`. Verified pre-cutover backups are in `C:\ReFind-Backups`.
+- MariaDB 3306 runs as the Windows service `mysql`. Database names keep their 0.2.0 labels; a version or URL change does not imply a database migration.
 - Runtime: Apache/XAMPP, PHP 8.2 with mysqli/mysqlnd, mbstring, fileinfo, GD (JPEG/PNG/WebP) and sessions, MariaDB; frontend HTML/CSS/JS with local jQuery/Bootstrap.
 
 ## Working conventions
@@ -45,6 +46,6 @@ Consult [role/API contracts](docs/ROLE_ROUTE_MATRIX.md), [data dictionary](docs/
 
 Choose checks that exercise the changed behavior. PHP/JS syntax checks do not require starting the website; API/browser suites do.
 
-Mutation suites use the owned `ReFind_0.2.0_Test` sibling and `_test` database. `tools/prepare-test.py` writes that copy and runs its setup, so inspect its ownership marker and configuration before use. Browser smoke/login checks also write session/throttle state. See the commands and prerequisites in [ARCHITECTURE.md](docs/ARCHITECTURE.md#verification-and-tooling).
+Mutation suites run against the disposable `refind-v1-rc` worktree (`REFIND_TEST_PROFILE=v1-rc`, database `refind_db_v1rc_test`, provisioned by `tools/prepare-v1rc.py`) or the CI container, never against `/refind/` or the persistent `/refind-test/` corpus. The legacy `tools/prepare-test.py` flow targets the retired `ReFind_0.2.0_Test` sibling. Browser smoke/login checks also write session/throttle state. See the commands and prerequisites in [ARCHITECTURE.md](docs/ARCHITECTURE.md#verification-and-tooling).
 
 Separate historical recorded test results from checks run for the current task. Keep source links and implemented/proposed labels current when updating these guides.

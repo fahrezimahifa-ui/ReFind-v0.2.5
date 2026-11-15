@@ -17,8 +17,9 @@ if not args.writes_paused:
     parser.error('Pause application writes, then explicitly supply --writes-paused. No backup was started.')
 PHP = php_binary()
 config = json.loads(subprocess.check_output([PHP, '-r', "require 'app/config.php'; echo json_encode(app_config());"], cwd=ROOT))
-if config['db_name'] != 'refind_db_0_2_0' or config['db_port'] != 3306:
-    raise RuntimeError('This checkpoint backs up the main demo only')
+# Run from the deployment being backed up: main (refind_db_0_2_0) or the persistent QA corpus (refind_db_0_2_0_test).
+if config['db_name'] not in ('refind_db_0_2_0', 'refind_db_0_2_0_test') or config['db_port'] != 3306:
+    raise RuntimeError('This checkpoint backs up the main or persistent QA deployment only')
 parent = ROOT / 'storage' / 'setup'
 if not parent.is_dir():
     raise RuntimeError('Run application setup before backup')
@@ -35,9 +36,10 @@ with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as bundle:
     for file in (ROOT / 'storage').rglob('*'):
         if file.is_file() and 'backups' not in file.relative_to(ROOT / 'storage').parts:
             bundle.write(file, file.relative_to(ROOT))
-    if (ROOT / 'app/config.local.php').is_file():
-        bundle.write(ROOT / 'app/config.local.php', 'app/config.local.php')
-receipt = {'scope': 'Private main SQL + storage + local configuration; operator confirmed writes paused', 'database': config['db_name'],
+    for relative in ['app/config.local.php', '.refind-b02-test.json']:
+        if (ROOT / relative).is_file():
+            bundle.write(ROOT / relative, relative)
+receipt = {'scope': 'Private SQL + storage + local configuration (+ QA marker); operator confirmed writes paused', 'database': config['db_name'],
            'files': {file.name: hashlib.sha256(file.read_bytes()).hexdigest() for file in (sql, archive)}}
 (target / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
 print(json.dumps({'backup': str(target), 'database': config['db_name'], 'private': True, 'sql_and_storage': True}, indent=2))
