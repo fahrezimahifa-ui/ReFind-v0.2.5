@@ -12,9 +12,10 @@ function claim_revision(array $claim): string
     $claim['evidence']=json_encode(array_column(rows('SELECT claim_photo_id FROM claim_photos WHERE claim_id=? ORDER BY claim_photo_id',[(int)$claim['claim_id']]),'claim_photo_id'),JSON_THROW_ON_ERROR);
     return record_revision($claim,['claim_id','item_id','related_lost_item_id','claimant_user_id','ownership_answer','claim_status','review_note','reviewed_at','updated_at','evidence']);
 }
-function item_revision(array $item): string
+// Lists may pass a preloaded latest history id; mutations omit it and keep the fresh locked read.
+function item_revision(array $item, ?int $historyId = null): string
 {
-    $item['history_id']=row('SELECT COALESCE(MAX(history_id),0) AS id FROM item_status_history WHERE item_id=?',[(int)$item['item_id']])['id'];
+    $item['history_id']=$historyId??row('SELECT COALESCE(MAX(history_id),0) AS id FROM item_status_history WHERE item_id=?',[(int)$item['item_id']])['id'];
     return record_revision($item,['item_id','reporter_user_id','category_id','location_id','item_type','title','description','verification_clue','status_id','updated_at','resolved_at','history_id']);
 }
 function handover_revision(array $handover): string
@@ -75,7 +76,7 @@ function create_approved_pickup(array &$locked, array $claim, int $actorId): str
         status_change($lost, 'HANDOVER', $actorId, 'Ownership verified; matched item is ready for pickup.', false);
         unset($lost);
     }
-    status_change($found, 'HANDOVER', $actorId, 'Ownership verified by BM. Item is ready for pickup.');
+    status_change($found, 'HANDOVER', $actorId, 'Ownership verified by Building Management. Item is ready for pickup.');
     sql("INSERT INTO handovers(claim_id,pickup_location_id,handled_by_user_id,notes) VALUES (?,?,?,'Awaiting a pickup appointment.')", [$claimId, $found['location_id'] ? (int) $found['location_id'] : null, $actorId]);
     // Later history/notification inserts also change insert_id, so capture it immediately.
     return (string) db()->insert_id;
@@ -192,14 +193,21 @@ function review_claim(array $user, array $data): array
         }
     });
 }
-function allowed_manual_statuses(array $item): array
+// Shared by single-record checks and batched staff lists; $blocked means a confirmed pair or an active claim references the report.
+function manual_status_choices(array $item, bool $blocked, bool $hasSuggestion): array
 {
-    $id=(int)$item['item_id'];
-    if(in_array($item['status_code'],['RESOLVED','UNCLAIMED_CLOSED','HANDOVER'],true)||confirmed_match($id)||row("SELECT claim_id FROM claims WHERE (item_id=? OR related_lost_item_id=?) AND claim_status IN ('PENDING','NEED_MORE_INFO','APPROVED') LIMIT 1",[$id,$id]))return[];
+    if(in_array($item['status_code'],['RESOLVED','UNCLAIMED_CLOSED','HANDOVER'],true)||$blocked)return[];
     $choices=['OPEN','UNDER_REVIEW','UNCLAIMED_CLOSED'];
-    if(has_suggestion($id))$choices[]='POTENTIAL_MATCH';
+    if($hasSuggestion)$choices[]='POTENTIAL_MATCH';
     if($item['item_type']==='LOST')$choices[]='RESOLVED';
     return array_values(array_diff($choices,[$item['status_code']]));
+}
+function allowed_manual_statuses(array $item): array
+{
+    if(in_array($item['status_code'],['RESOLVED','UNCLAIMED_CLOSED','HANDOVER'],true))return[];
+    $id=(int)$item['item_id'];
+    $blocked=confirmed_match($id)!==null||active_claim_for_report($id)!==null;
+    return manual_status_choices($item,$blocked,!$blocked&&has_suggestion($id));
 }
 function staff_status(array $user, array $data): array
 {
@@ -218,7 +226,7 @@ function staff_status(array $user, array $data): array
             if (!in_array($status, allowed_manual_statuses($item), true)) {
                 fail('Finish the active claim/handover or choose an eligible transition.', 409, 'state_conflict');
             }
-            status_change($item, $status, (int) $user['user_id'], $status === 'RESOLVED' ? 'BM recorded recovery of this Lost report.' : 'Operational status updated by BM.', false);
+            status_change($item, $status, (int) $user['user_id'], $status === 'RESOLVED' ? 'Building Management recorded recovery of this Lost report.' : 'Operational status updated by Building Management.', false);
             if (in_array($status, ['RESOLVED','UNCLAIMED_CLOSED'], true)) {
                 sql("DELETE FROM item_matches WHERE match_status='SUGGESTED' AND (lost_item_id=? OR found_item_id=?)", [$id, $id]);
                 settle_potential_states($locked, (int) $user['user_id']);
@@ -330,7 +338,7 @@ function mutate_handover(array $user, array $data): array
                 if ($action === 'complete') {
                     status_change($item, 'RESOLVED', (int) $user['user_id'], 'Verified item returned; handover completed.', $notifyFinder);
                 } elseif ($action === 'release') {
-                    settle_idle_status($item, (int) $user['user_id'], 'Pickup released by BM; the report is available again.', $notifyFinder);
+                    settle_idle_status($item, (int) $user['user_id'], 'Pickup released by Building Management; the report is available again.', $notifyFinder);
                 } else {
                     history_event($item, (int) $user['user_id'], $action === 'cancel_schedule' ? 'Pickup appointment cancelled; verified ownership retained.' : 'Pickup appointment scheduled or updated.');
                 }

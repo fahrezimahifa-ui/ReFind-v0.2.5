@@ -35,6 +35,5 @@ if(isset($_GET['type'])&&$_GET['type']!==''){$type=strtoupper(text($_GET,'type',
 if($search!==''){$where[]="LOCATE(?,CONCAT_WS(' ',v.title,v.category_name,v.location_name,v.location_detail,v.floor_name,v.reporter_name))>0";$values[]=$search;}
 $clause=$where?' WHERE '.implode(' AND ',$where):'';$total=(int)row('SELECT COUNT(*) AS n FROM v_items_overview v'.$clause,$values)['n'];
 $reports=rows('SELECT '.public_columns().',u.avatar_path AS reporter_avatar_path FROM v_items_overview v JOIN users u ON u.user_id=v.reporter_user_id'.$clause.' ORDER BY v.created_at DESC,v.item_id DESC LIMIT ? OFFSET ?',array_merge($values,[$limit,$offset]));
-$reports=safe_items($reports,$user);
-foreach($reports as &$report){$raw=find_item((int)$report['item_id']);$report['allowed_statuses']=allowed_manual_statuses($raw);$report['revision']=item_revision($raw);}unset($report);
+$reports=staff_report_list($reports,$user);
 json_response(['reports'=>$reports,'total'=>$total,'page'=>$page,'pages'=>max(1,(int)ceil($total/$limit))]);

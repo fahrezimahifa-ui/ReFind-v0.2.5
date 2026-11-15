@@ -21,20 +21,27 @@
       <div class="field"><label for="r-date" id="r-date-label">Event date *</label><input class="form-control" id="r-date" type="date" required><span class="field-error" data-error="date" hidden></span></div>
       <div class="field"><label for="r-time">Approximate time · optional</label><input class="form-control" id="r-time" type="time"><span class="hint">Leave blank if you do not know the time.</span><span class="field-error" data-error="time" hidden></span></div>
     </div></section>
-    <details class="form-card optional-media" id="public-photo-section"><summary>3 · Public item photos<span class="hint">Optional · up to 4 photos to help others recognize the item</span></summary>
+    <details class="form-card optional-media" id="public-photo-section" open><summary>3 · Public item photos<span class="hint">Optional but recommended · up to 4 photos help others recognize the item</span></summary>
       <div id="saved-public" class="saved-media"></div><div class="upload-control" id="public-upload">
         <label class="upload-pick" for="r-photos"><span>Add public photos</span><span class="upload-choose">Choose photos</span><span class="upload-file-hint">Select or drop JPEG, PNG or WebP images</span><input class="upload-input" id="r-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
         <span class="hint">Up to 10 MB per input image. ReFind prepares smaller copies.</span><div class="upload-previews"></div><p class="upload-status" role="status"></p>
       </div><span class="field-error" data-error="photos" hidden></span>
     </details>
-    <section class="form-card private-card"><h2 id="private-heading">4 · Ownership details for BM</h2><p id="private-intro">This helps BM verify the owner and never appears on the public report.</p>
+    <div id="visual-report-consent" class="context-note" hidden>
+      <label><input type="checkbox" id="visual-report-opt-in"> Make my new public demo photos searchable by image</label>
+      <p class="hint">ReFind sends opted-in photos to Google Gemini. Use cleared demo photos without personal information.</p>
+    </div>
+    <section class="form-card private-card"><h2 id="private-heading">4 · Ownership details for Building Management</h2><p id="private-intro">This helps Building Management verify the owner and never appears on the public report.</p>
       <div class="field"><label for="r-clue" id="r-clue-label">A detail only the owner would know *</label><textarea class="form-control" id="r-clue" rows="3" maxlength="1000" required placeholder="For example, a small tear inside a pocket or a mark under the cover"></textarea><span class="field-error" data-error="clue" hidden></span></div>
       <div id="lost-evidence"><details class="optional-media"><summary>Private supporting photos<span class="hint">Optional · max 2 photos including any saved evidence</span></summary>
         <p id="saved-proof-count" hidden></p><label class="retain-choice" id="saved-proof-choice" hidden><input type="checkbox" id="keep-proof" checked> Keep saved private supporting photos</label>
         <div class="upload-control" id="proof-upload"><label class="upload-pick" for="r-proof"><span>Add private ownership photos</span><span class="upload-choose">Choose photos</span><span class="upload-file-hint">Select or drop JPEG, PNG or WebP images</span><input class="upload-input" id="r-proof" type="file" accept="image/jpeg,image/png,image/webp" multiple></label><div class="upload-previews"></div><p class="upload-status" role="status"></p></div>
       </details></div><span class="field-error" data-error="ownershipPhotos" hidden></span>
     </section>
-  </fieldset><div class="feedback" id="form-feedback" role="alert" tabindex="-1" hidden></div><div class="sticky-form-actions"><a class="btn btn-outline" id="report-cancel" href="my-reports.html">Cancel</a><button class="btn btn-primary" id="report-submit" type="submit">Submit report</button></div></form>
+  </fieldset>
+  <div class="context-note found-next" id="found-next" hidden><strong>After you submit</strong><p>ReFind suggests your report to students with similar Lost reports. Building Management verifies any ownership claim before the item is returned.</p><p>If you still have the item, contact Building Management to ask how to hand it in.</p></div>
+  <p class="report-visibility" id="report-visibility"><strong>Who can see this report?</strong> Signed-in ReFind users see the item name, category, description, public photos, campus area and spot, date and approximate time, status, and your display name and profile picture. Ownership details and private photos are seen only by Building Management.</p>
+  <div class="feedback" id="form-feedback" role="alert" tabindex="-1" hidden></div><div class="sticky-form-actions"><a class="btn btn-outline" id="report-cancel" href="my-reports.html">Cancel</a><button class="btn btn-primary" id="report-submit" type="submit">Submit report</button></div></form>
 </main>
 <script src="vendor/jquery.min.js"></script><script src="js/api.js"></script><script src="js/shell.js"></script><script src="js/student-common.js"></script><script src="js/uploads.js"></script><script src="js/student.js"></script>
 </body></html>

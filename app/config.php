@@ -11,6 +11,9 @@ function app_defaults(): array
         'login_window_seconds' => 900, 'login_pair_limit' => 5, 'login_ip_limit' => 30,
         'registration_enabled' => false, 'registration_window_seconds' => 900, 'registration_ip_limit' => 10,
         'registration_local_only' => true,
+        'visual_search_enabled' => false, 'visual_search_students' => [], 'visual_search_key_file' => '',
+        'visual_search_student_per_minute' => 6, 'visual_search_calls_per_minute' => 20,
+        'visual_search_timeout_seconds' => 8,
         // Shown to students after approval. Demo values; override them in config.local.php for a real desk.
         'pickup_desk_name' => 'Building Management service desk', 'pickup_desk_location' => 'Gedung A lobby, ground floor',
         'pickup_desk_hours' => 'Monday–Friday, 08:00–16:00 WIB', 'pickup_desk_contact' => 'bm@refind.test',
@@ -31,9 +34,11 @@ function validate_app_config(array $config): array
         !is_string($config['db_password']) || str_contains($config['db_password'], "\0")) {
         throw new RuntimeException('Invalid database configuration.');
     }
-    if (!in_array($config['db_name'], ['refind_db_0_2_0', 'refind_db_0_2_0_test', 'refind_db_ui_ux_dev'], true)) {
+    if (!in_array($config['db_name'], ['refind_db_0_2_0', 'refind_db_0_2_0_test', 'refind_db_ui_ux_dev', 'refind_db_v1rc_test'], true)) {
         throw new RuntimeException('Unsupported application database.');
     }
+    // Disposable v1.0.0 release-candidate QA: only the local loopback login with its own URL and session may select this database.
+    if ($config['db_name'] === 'refind_db_v1rc_test' && ($config['db_host'] !== '127.0.0.1' || $config['db_port'] !== 3306 || $config['db_user'] !== 'root' || $config['base_path'] !== '/refind-v1-rc/' || $config['session_name'] !== 'refind_v1rc_test')) throw new RuntimeException('Release-candidate QA configuration must stay isolated.');
     if ($config['db_name'] === 'refind_db_ui_ux_dev' && (!in_array($config['db_host'], ['database','upgrade-database','recovery-database'], true) || $config['db_user'] !== 'refind_dev' || $config['base_path'] !== '/refind-dev/' || $config['session_name'] !== 'refind_ui_ux_dev')) throw new RuntimeException('Development configuration must stay isolated.');
     if (!is_string($config['base_path']) || !preg_match('~^/(?!\.{1,2}/)[A-Za-z0-9_.-]+/$~D', $config['base_path']) ||
         !is_string($config['session_name']) || !preg_match('/^[A-Za-z0-9_]+$/D', $config['session_name'])) {
@@ -43,6 +48,20 @@ function validate_app_config(array $config): array
     if (!is_bool($config['registration_local_only'])) throw new RuntimeException('Invalid registration scope.');
     foreach (['idle_seconds', 'absolute_seconds', 'login_window_seconds', 'login_pair_limit', 'login_ip_limit', 'registration_window_seconds', 'registration_ip_limit'] as $key) {
         if (!is_int($config[$key]) || $config[$key] < 1) throw new RuntimeException('Invalid timeout/limit.');
+    }
+    if (!is_bool($config['visual_search_enabled']) || !is_string($config['visual_search_key_file']) ||
+        !is_array($config['visual_search_students']) || !array_is_list($config['visual_search_students']) ||
+        count($config['visual_search_students']) > 50 ||
+        array_filter($config['visual_search_students'], fn($id) => !is_int($id) || $id < 1 || $id > 4294967295)) {
+        throw new RuntimeException('Invalid Visual Search configuration.');
+    }
+    foreach (['visual_search_student_per_minute', 'visual_search_calls_per_minute'] as $key) {
+        if (!is_int($config[$key]) || $config[$key] < 1 || $config[$key] > 60) {
+            throw new RuntimeException('Invalid Visual Search call limit.');
+        }
+    }
+    if (!is_int($config['visual_search_timeout_seconds']) || $config['visual_search_timeout_seconds'] < 2 || $config['visual_search_timeout_seconds'] > 20) {
+        throw new RuntimeException('Invalid Visual Search request timeout.');
     }
     foreach (['pickup_desk_name', 'pickup_desk_location', 'pickup_desk_hours', 'pickup_desk_contact'] as $key) {
         if (!is_string($config[$key]) || !mb_check_encoding($config[$key], 'UTF-8') || trim($config[$key]) === '' || mb_strlen($config[$key], 'UTF-8') > 160) {

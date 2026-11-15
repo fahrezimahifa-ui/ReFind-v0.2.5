@@ -1,0 +1,143 @@
+# ReFind Visual Search
+
+Visual Search helps a Student find reports when a photo is easier to provide than a description. It returns **Possible Visual Matches**. Building Management verifies ownership through the existing claims workflow.
+
+## Data flow
+
+1. An approved QA Student opts in when adding new public report photos. ReFind commits the photo and a pending index row together. Private ownership photos, claim evidence, and avatars are outside this flow.
+2. The background worker reads an eligible photo, verifies its SHA-256 and storage path, and re-encodes it as JPEG to remove metadata. PHP sends just that JPEG to Gemini over HTTPS and stores its unit-normalized 768-value vector as little-endian float32 in MariaDB.
+3. A search uses one temporary JPG or PNG and the current structured Explore filters. The query vector stays in memory. PHP computes cosine similarity as the dot product of unit vectors, keeps the highest score per report, and applies the frozen validation cutoff. The browser receives ordinary card fields and authorized photo URLs.
+4. Replacing or deleting a report photo cascades to its embedding row. Indexing status on My Activity is visible to the approved report owner.
+
+Hosted multimodal embeddings fit the existing PHP stack. Self-hosted CLIP would add model deployment and inference infrastructure. Conventional object detection identifies classes and bounding boxes, while this task compares whole item photos. V1 uses pure cosine. Image-only queries carry no keyword weight.
+
+## Isolated Windows QA
+
+The source baseline is `5b6bcdd`. The feature defaults off and requires the owned `ReFind_0.2.0_Test` application, `_test` database, isolated session configuration, and an explicit list of synthetic Student IDs. Keep QA loopback-only. Keep the main checkout, database, uploads, and accounts separate.
+
+The [local integration procedure](VISUAL_SEARCH_INTEGRATION.md) installs source and the empty additive table in the existing main app with processing still disabled. QA data and key configuration stay separate. The published pilot limitations remain applicable.
+
+From the feature worktree, point QA tooling at the owner checkout and sync the sources. This preserves the ownership marker and local override. Check the ownership guard before any write. Use the dedicated migration on an existing QA database that has a ready pre-Visual Search receipt. On a fresh disposable installation use the existing setup and synthetic demo account tools.
+
+~~~powershell
+$env:REFIND_QA_OWNER_ROOT = 'C:\xampp\htdocs\ReFind_0.2.3'
+python tools/prepare-test.py --sync-only
+$qa = 'C:\xampp\htdocs\ReFind_0.2.0_Test'
+& C:\xampp\php\php.exe "$qa\tools\qa-guard.php" $qa
+& C:\xampp\php\php.exe "$qa\tools\migrate-visual-search.php"
+& C:\xampp\php\php.exe "$qa\tools\check-database.php"
+~~~
+
+Set these options only in the ignored QA `app/config.local.php`. The IDs must come from the private QA demo account receipt.
+
+- `visual_search_enabled` set to true
+- `visual_search_students` set to the approved synthetic Student IDs as integers
+- `visual_search_key_file` set to the absolute path of an ACL-restricted private file outside Apache's document root, with only the key on one line. Alternatively inject `GEMINI_API_KEY` into both PHP process environments.
+- `visual_search_student_per_minute` and `visual_search_calls_per_minute` default to 6 and 20. Lower them for the provider project's actual limits.
+- `visual_search_timeout_seconds` defaults to 8 and is bounded to 2–20. Current native QA uses 20 after measured slow provider responses; worker requests must fit inside its existing launcher budget. Report actual latency against the proposed gate.
+
+Restrict the key file to the QA operator and the Apache runtime identity as needed. Keep credentials out of the repository, chat, shell arguments, and captures. Google can use unpaid service inputs for product improvement and human review. Use only authorized nonsensitive demo assets and confirm the applicable terms, billing and quotas before live calls. [Gemini data terms](https://ai.google.dev/gemini-api/terms) · [Project quotas](https://ai.google.dev/gemini-api/docs/rate-limits)
+
+~~~powershell
+& C:\xampp\php\php.exe "$qa\tools\index-visual-photos.php" --probe 'C:\private\approved-probe.jpg'
+& C:\xampp\php\php.exe "$qa\tools\index-visual-photos.php" --status
+~~~
+
+## Automatic indexing and recovery
+
+Use one launcher in the running QA installation. The native task is **ReFind Visual Search QA** in the Task Scheduler Library. Run it under the signed-in QA operator with a once trigger that repeats every minute indefinitely. Enable **Run task as soon as possible after a scheduled start is missed**, set a 55-second runtime limit, and select **Do not start a new instance**.
+
+Build the GUI launcher from the feature worktree after the QA guard passes.
+
+~~~powershell
+$csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+$launcher = Join-Path $qa 'storage\setup\visual-index-task-quiet.exe'
+& $csc /nologo /target:winexe "/out:$launcher" (Resolve-Path 'tools/visual-index-task-launcher.cs').Path
+~~~
+
+~~~text
+Program   C:\xampp\htdocs\ReFind_0.2.0_Test\storage\setup\visual-index-task-quiet.exe
+Arguments (leave empty)
+Start in  C:\xampp\htdocs\ReFind_0.2.0_Test
+~~~
+
+The launcher starts the original PHP CLI with Windows' CREATE_NO_WINDOW flag. A job object ties the PHP process to the launcher, and the worker exit code is reported to Task Scheduler. Its latest output and existing worker status are in private QA storage. The task's **Hidden** setting affects its listing in Task Scheduler.
+
+Use **Disable** on this task to prevent new ticks. Let an active tick finish within its 55-second limit. If you used the fallback, run its stop command and wait for it to return. To resume, stop the fallback first, confirm the task uses visual-index-task-quiet.exe, then select **Enable**. Turning off the QA feature flag makes scheduled drains exit before indexing and makes the fallback loop exit on its next tick.
+
+If Scheduler cannot register or run reliably, disable the task if it exists and run the fallback in an existing PowerShell session. Its PHP children start without a console. Use a second existing session for the stop command.
+
+~~~powershell
+& "$qa\tools\visual-index-loop.ps1"
+& "$qa\tools\visual-index-loop.ps1" -Stop
+~~~
+
+Check `--status` for queue counts, sanitized failure reasons, and the latest worker tick. The fallback also records its launcher status in private QA storage. Qualify automatic processing by creating a cleared report through the Student form, checking that its photo moves from pending to searchable without invoking the CLI, and repeating after a QA database restart. The worker drains up to five jobs per minute under one database-scoped lock. Transient errors retry after one and five minutes. Quota delays honor `Retry-After` or use 15 minutes. After correcting a terminal failure, run `--retry PHOTO_ID` and let the launcher drain it. Manual `--drain` is available for recovery.
+
+## Audit and backfill
+
+Use a private manifest for positively identified disposable QA report photos. Start with `report_id` and `photo_id` entries. Run `--audit MANIFEST` to collect hashes, missing-file findings, and possible duplicates. Review the suggestions and the actual photos on their authorized report pages. Use distinct item photos that match their report descriptions. Record the hash and reason for each decision, and record the source and approval for each inclusion.
+
+~~~json
+{
+  "photos": [
+    {
+      "report_id": 101,
+      "photo_id": 151,
+      "sha256": "<SHA-256 of the approved original bytes>",
+      "decision": "include",
+      "source": "Operator-approved independent photograph",
+      "approved": true,
+      "reason": "Cleared public item photo"
+    }
+  ]
+}
+~~~
+
+Run `--dry-run MANIFEST`, then `--backfill MANIFEST`. Only listed and approved public photos can be enqueued. Use `exclude` and the recorded hash to remove a previously indexed disposable photo from the derived index. Its report and upload remain available. Re-add it through a revised, cleared manifest if appropriate. Omit unindexed missing files when no hash can be verified. The manifest and assets remain private.
+
+## Calibration and held-out evaluation
+
+The reproducible [QA corpus](VISUAL_DATASET.md) supplies separate ten-report pilot galleries with four targets and six distractors in each. Each gallery has four separately photographed source-session views, four distinct look-alike objects, and ten visually irrelevant queries. Keep validation, held-out and demo objects disjoint. Use separate existing campus area filters to isolate each gallery. Prepare JPG or PNG queries at no more than 250 KB and 1,200 pixels per side. Keep each query photo next to its private manifest. Retain the documented source-session and domain limitations when interpreting pilot accuracy.
+
+~~~json
+{
+  "split": "validation",
+  "filters": { "location_id": 37 },
+  "gallery": [
+    { "report_id": 101, "photo_id": 151, "sha256": "<gallery photo SHA-256>" }
+  ],
+  "queries": [
+    { "group": "same_object", "expected_ids": [101], "image": "view-b.jpg", "sha256": "<query photo SHA-256>" },
+    { "group": "lookalike", "expected_ids": [101], "image": "lookalike.jpg", "sha256": "<query photo SHA-256>" },
+    { "group": "irrelevant", "expected_ids": [], "image": "unrelated.jpg", "sha256": "<query photo SHA-256>" }
+  ]
+}
+~~~
+
+After gallery indexing, run `calibrate-visual-search.php --calibrate VALIDATION_MANIFEST` in the QA copy. It checks exact gallery membership, compares candidate cutoffs and freezes the winner under `storage/setup/visual-calibration.json`. It maximizes same-object Hit@5 under the 10% visually irrelevant return cap, with MRR, fewer irrelevant returns, and the lower cutoff breaking ties. Look-alikes are tracked separately. If no cutoff qualifies, search stays unavailable. Calls are paced at no more than six per minute so the worker retains budget; the full validation score matrix is retained privately and linked by hash from the cutoff receipt.
+
+Use `held_out` as the split for the independent test manifest. From the feature worktree run the held-out browser evaluation twice with distinct private receipt paths.
+
+~~~powershell
+node tools/evaluate-visual-search.cjs 'C:\private\held-out.json' 'C:\private\live-run-1.json'
+node tools/evaluate-visual-search.cjs 'C:\private\held-out.json' 'C:\private\live-run-2.json'
+~~~
+
+The receipt records planned/attempted/successful counts by group, same-object Hit@1, Hit@5 and MRR, visually irrelevant false positives, look-alike returns and ranks, browser latency, and provider errors. Incomplete API runs do not qualify as complete accuracy evaluations. Repeated queries measure reliability. The 20-positive expanded gates are proposed benchmarks and require their own untouched final held-out set. After a missed gate, retain the evidence and diagnose using validation data. Preserve old receipts before recalibrating.
+
+For each of two live demo runs, submit a new approved report, confirm background indexing within 120 seconds with a clear queue, retrieve it using a separate capture of the object, follow the actual report link, and demonstrate rejection of an irrelevant photo. Verify login, keyword search, reports and claims separately. Disable the flag and stop the QA launcher to roll back. Leave original media and the additive table in place.
+
+## Verification status
+
+The 10 November 2026 rehearsal used disposable Windows Apache and MariaDB processes on dedicated loopback ports. The main XAMPP application and its database were outside the rehearsal.
+
+- PHPStan, PHP and JavaScript syntax checks, and focused ESLint passed.
+- The disposable fresh schema, upgrade from the pre-feature receipt, and repeat migration passed. The index, exclusion, retry, and browser checks passed with a mock Gemini transport in light mobile and dark desktop configurations.
+- Existing authentication, Student, Building Management, and v0.2.5 suites passed 103 scenario groups, followed by the workflow invariant checks.
+- A temporary Scheduled Task invoked the guarded worker. The PowerShell fallback independently completed two automatic ticks. Both reported missing project configuration. These runs verified invocation, while processing and recovery with Gemini still require the approved live pilot.
+
+- `php tools/test-visual-search.php` checks cosine, ranking, rejection, validation-only calibration, image preparation, and provider error mapping without Gemini.
+- `node tools/test-visual-search.cjs` requires a disposable Apache and MariaDB stack with an explicit nonstandard database port and an empty test index. For this test stack only, point Apache `auto_prepend_file` at `tools/test-visual-http-prepend.php` and set `REFIND_VISUAL_DISPOSABLE_DB_PORT` in Apache and the test runner. This fixture exercises real browser, API, SQL and upload paths with a deterministic provider. The fixture file is excluded from ordinary QA sync.
+- On 11 November 2026 the configured project returned a genuine 768-value embedding and all 80 allowlisted native QA gallery photos were indexed with Gemini. Validation-only calibration completed on the frozen 4/4/10 query pilot. The new [dataset runbook](VISUAL_DATASET.md) describes provenance, reproduction, rollback, and the separate live held-out/browser checks. These checks do not establish expanded academic or campus performance.
+- The [live QA report](VISUAL_SEARCH_QA_2026-11-11.md) records two complete 18-query runs, two genuine automatic-indexing demonstrations, and retained failed runs. Same-object retrieval was 4/4 at rank 1, while irrelevant false returns were 4/10 and p95 was 15.1–17.4 seconds. Quality/latency goals are not met. Main installation/database changes, Git merges and pushes remain on hold.

@@ -1,0 +1,327 @@
+{
+  "date": "2026-11-11",
+  "status": "QA live; quality and latency gates not met; main changes, Git merges and pushes held by user",
+  "scope": "Owned native QA only; consented nonsensitive licensed assets; no real-user image processing",
+  "configuration": {
+    "model": "gemini-embedding-2",
+    "dimensions": 768,
+    "preprocessing": "jpeg-white-v1",
+    "ranking": "pure cosine, max per report",
+    "qa_request_timeout_seconds": 20,
+    "source_default_timeout_seconds": 8,
+    "student_calls_per_minute": 6,
+    "installation_calls_per_minute": 20
+  },
+  "dataset": {
+    "seed_reports": 100,
+    "seed_images": 100,
+    "seed_indexed_images": 80,
+    "workflow_reports_excluded_from_index": 20,
+    "claims": 20,
+    "handovers": 5,
+    "validation_gallery_reports": 10,
+    "held_out_gallery_reports": 10,
+    "unique_positive_queries_per_split": 4,
+    "lookalike_queries_per_split": 4,
+    "irrelevant_queries_per_split": 10,
+    "expanded_academic_gates": "unevaluated"
+  },
+  "calibration": {
+    "threshold": 0.7116861306510103,
+    "validation_sha256": "9f63c30010efa83adb7712a112465e250d7657b21340b174b422ee054245bb64",
+    "metrics": {
+      "same_object": {
+        "total": 4,
+        "hit1": 4,
+        "hit5": 4,
+        "mrr": 1
+      },
+      "irrelevant": {
+        "total": 10,
+        "returns": 0,
+        "rate": 0
+      },
+      "lookalike": {
+        "total": 4,
+        "returns": 4,
+        "hit5": 4
+      }
+    },
+    "held_out_used_for_tuning": false
+  },
+  "initial_8_second_run": {
+    "successful": 8,
+    "planned": 18,
+    "attempted": 18,
+    "accuracy_complete": false,
+    "same_object": {
+      "total": 1,
+      "hit1": 1,
+      "hit5": 1,
+      "mrr": 1
+    },
+    "irrelevant": {
+      "total": 7,
+      "returns": 3,
+      "rate": 0.42857142857142855
+    },
+    "lookalike": {
+      "total": 0,
+      "returns": 0,
+      "candidate_ranks": []
+    },
+    "p50_ms": 2968,
+    "p95_ms": 6242,
+    "all_responses_p95_ms": 8244,
+    "group_counts": {
+      "same_object": {
+        "planned": 4,
+        "attempted": 4,
+        "successful": 1
+      },
+      "lookalike": {
+        "planned": 4,
+        "attempted": 4,
+        "successful": 0
+      },
+      "irrelevant": {
+        "planned": 10,
+        "attempted": 10,
+        "successful": 7
+      }
+    },
+    "tested_revision": "ce4f2a893b5c04ead5d3e27df6b18aa44c2e6fbb",
+    "working_tree_clean": true,
+    "api_errors": [
+      {
+        "case": 2,
+        "code": "visual_timeout"
+      },
+      {
+        "case": 3,
+        "code": "visual_timeout"
+      },
+      {
+        "case": 4,
+        "code": "visual_timeout"
+      },
+      {
+        "case": 5,
+        "code": "visual_timeout"
+      },
+      {
+        "case": 6,
+        "code": "visual_rate_limited"
+      },
+      {
+        "case": 7,
+        "code": "visual_timeout"
+      },
+      {
+        "case": 8,
+        "code": "visual_rate_limited"
+      },
+      {
+        "case": 11,
+        "code": "visual_timeout"
+      },
+      {
+        "case": 13,
+        "code": "visual_rate_limited"
+      },
+      {
+        "case": 15,
+        "code": "visual_rate_limited"
+      }
+    ]
+  },
+  "final_20_second_runs": [
+    {
+      "successful": 18,
+      "planned": 18,
+      "attempted": 18,
+      "accuracy_complete": true,
+      "same_object": {
+        "total": 4,
+        "hit1": 4,
+        "hit5": 4,
+        "mrr": 1
+      },
+      "irrelevant": {
+        "total": 10,
+        "returns": 4,
+        "rate": 0.4
+      },
+      "lookalike": {
+        "total": 4,
+        "returns": 2,
+        "candidate_ranks": [
+          [
+            1
+          ],
+          [],
+          [
+            2
+          ],
+          []
+        ]
+      },
+      "p50_ms": 4153,
+      "p95_ms": 15074,
+      "all_responses_p95_ms": 15074,
+      "group_counts": {
+        "same_object": {
+          "planned": 4,
+          "attempted": 4,
+          "successful": 4
+        },
+        "lookalike": {
+          "planned": 4,
+          "attempted": 4,
+          "successful": 4
+        },
+        "irrelevant": {
+          "planned": 10,
+          "attempted": 10,
+          "successful": 10
+        }
+      },
+      "tested_revision": "4263007630077fe164e2f8b7bbbb93f5e470a666",
+      "working_tree_clean": true,
+      "api_errors": []
+    },
+    {
+      "successful": 18,
+      "planned": 18,
+      "attempted": 18,
+      "accuracy_complete": true,
+      "same_object": {
+        "total": 4,
+        "hit1": 4,
+        "hit5": 4,
+        "mrr": 1
+      },
+      "irrelevant": {
+        "total": 10,
+        "returns": 4,
+        "rate": 0.4
+      },
+      "lookalike": {
+        "total": 4,
+        "returns": 2,
+        "candidate_ranks": [
+          [
+            1
+          ],
+          [],
+          [
+            2
+          ],
+          []
+        ]
+      },
+      "p50_ms": 4641,
+      "p95_ms": 17445,
+      "all_responses_p95_ms": 17445,
+      "group_counts": {
+        "same_object": {
+          "planned": 4,
+          "attempted": 4,
+          "successful": 4
+        },
+        "lookalike": {
+          "planned": 4,
+          "attempted": 4,
+          "successful": 4
+        },
+        "irrelevant": {
+          "planned": 10,
+          "attempted": 10,
+          "successful": 10
+        }
+      },
+      "tested_revision": "4263007630077fe164e2f8b7bbbb93f5e470a666",
+      "working_tree_clean": true,
+      "api_errors": []
+    }
+  ],
+  "repeat_results_identical": true,
+  "live_demonstrations": [
+    {
+      "run": 1,
+      "initial_status": "PENDING",
+      "indexed_ms": 10315,
+      "final_index_status": "READY",
+      "matching_http": 200,
+      "correct_report_link": true,
+      "irrelevant_http": 200,
+      "irrelevant_state": "no_match"
+    },
+    {
+      "run": 2,
+      "initial_status": "PENDING",
+      "indexed_ms": 41931,
+      "final_index_status": "READY",
+      "matching_http": 200,
+      "correct_report_link": true,
+      "irrelevant_http": 200,
+      "irrelevant_state": "no_match"
+    }
+  ],
+  "injected_ui_faults": [
+    {
+      "source": "browser response injection; no Gemini call",
+      "http": 429,
+      "state": "visual_rate_limited",
+      "ms": 64,
+      "ids": []
+    },
+    {
+      "source": "browser response injection; no Gemini call",
+      "http": 503,
+      "state": "visual_timeout",
+      "ms": 71,
+      "ids": []
+    },
+    {
+      "source": "browser response injection; no Gemini call",
+      "http": 503,
+      "state": "visual_unavailable",
+      "ms": 63,
+      "ids": []
+    }
+  ],
+  "native_configuration_fault_checks": {
+    "scope": "Real isolated QA configuration faults, no key-file edits or provider calls",
+    "checks": [
+      {
+        "missing_credentials_http": 503,
+        "truthful_ui": true
+      },
+      {
+        "disabled_worker_exit": 0,
+        "provider_not_called": true
+      }
+    ],
+    "configuration_restored": true
+  },
+  "regressions": {
+    "auth": 28,
+    "student": 24,
+    "workflow": 27,
+    "v025": 24,
+    "scope": "Current-task native QA regression runs before the transport-only follow-up; focused unit/static and live checks followed."
+  },
+  "source_verification": {
+    "source_revision": "4263007630077fe164e2f8b7bbbb93f5e470a666",
+    "verified_runtime_files": 111,
+    "equivalent": true
+  },
+  "remaining_blockers": [
+    "Held-out irrelevant return rate 4/10 exceeds the intended conservative rejection tradeoff.",
+    "Final browser p95 15.074 and 17.445 seconds exceeds the proposed 8-second gate.",
+    "Expanded independent campus-photo evaluation is not available.",
+    "Project quota/billing ceilings require operator inspection in AI Studio; successful calls do not establish the maximum."
+  ],
+  "distinct_positive_queries": 4
+}

@@ -55,7 +55,7 @@ function mutate_claim(array $user, array $data): array
             sql("UPDATE claims SET ownership_answer=?,related_lost_item_id=?,claim_status='PENDING',reviewed_by_user_id=NULL,review_note=NULL,reviewed_at=NULL WHERE claim_id=?",[$answer,$lostId,$claimId]);
         } else {sql('INSERT INTO claims(item_id,related_lost_item_id,claimant_user_id,ownership_answer) VALUES (?,?,?,?)',[$itemId,$lostId,(int)$user['user_id'],$answer]);$claimId=(int)db()->insert_id;}
         foreach ($uploads as $image) sql('INSERT INTO claim_photos(claim_id,file_path) VALUES (?,?)',[$claimId,save_upload($image,'claims',$created)]);
-        $prior=$found['status_code'];status_change($found,'VERIFICATION',(int)$user['user_id'],'Ownership claims are awaiting manual BM review.');
+        $prior=$found['status_code'];status_change($found,'VERIFICATION',(int)$user['user_id'],'Ownership claims are awaiting manual review by Building Management.');
         if ($prior==='VERIFICATION') history_event($found,(int)$user['user_id'],$existing?'Ownership claim updated for review.':'Ownership claim submitted for review.');
         notification((int)$user['user_id'],'CLAIM_SUBMITTED',$existing?'Claim resubmitted':'Claim submitted','Your identifying detail was sent to Building Management for manual review.',$itemId,$claimId);
         foreach (rows("SELECT user_id FROM users WHERE role='BUILDING_MANAGEMENT' AND is_active=1") as $staff) notification((int)$staff['user_id'],'CLAIM_QUEUED',$existing?'Claim resubmitted for review':'New claim to review',$existing?'A claimant updated their ownership details.':'An ownership claim is waiting for review.',$itemId,$claimId);
@@ -63,4 +63,29 @@ function mutate_claim(array $user, array $data): array
     } catch (Throwable $error) {db()->rollback();cleanup_media($created);if ($error instanceof mysqli_sql_exception&&in_array($error->getCode(),[1205,1213,1062],true)) fail('The claim changed while saving. Reload and retry.',409,'state_conflict');throw $error;}
     cleanup_media($removed,true);
     return ['id'=>(string)$claimId,'resubmitted'=>$existing!==null];
+}
+
+// Batched claim list projection (ported from the v0.2.5 maintainability follow-up). The HTTP query scopes
+// records first; this keeps owner/BM evidence visibility and per-claim eligibility flags unchanged.
+function claim_list_projection(array $claims, array $user): array
+{
+    if(!$claims)return [];
+    $claimIds=array_map('intval',array_column($claims,'claim_id'));$itemIds=array_values(array_unique(array_map('intval',array_column($claims,'item_id'))));
+    $claimMarks=implode(',',array_fill(0,count($claimIds),'?'));$itemMarks=implode(',',array_fill(0,count($itemIds),'?'));
+    $photosByClaim=[];
+    foreach(rows("SELECT claim_id,claim_photo_id FROM claim_photos WHERE claim_id IN ($claimMarks) ORDER BY claim_photo_id",$claimIds) as $photo)$photosByClaim[(int)$photo['claim_id']][]=['claim_photo_id'=>$photo['claim_photo_id']];
+    $confirmed=[];
+    foreach(rows("SELECT lost_item_id,found_item_id FROM item_matches WHERE match_status='CONFIRMED' AND (lost_item_id IN ($itemMarks) OR found_item_id IN ($itemMarks))",array_merge($itemIds,$itemIds)) as $match){$confirmed[(int)$match['lost_item_id']]=true;$confirmed[(int)$match['found_item_id']]=true;}
+    foreach($claims as &$claim){
+        foreach(['claim_id','item_id','claimant_user_id'] as $key)$claim[$key]=(string)$claim[$key];
+        $claim['related_lost_item_id']=$claim['related_lost_item_id']!==null?(string)$claim['related_lost_item_id']:null;
+        $photos=$photosByClaim[(int)$claim['claim_id']]??[];
+        $claim['ownership_photo_count']=count($photos);$claim['ownership_photo_ids']=array_column($photos,'claim_photo_id');
+        if($user['role']==='BUILDING_MANAGEMENT')$claim['ownership_photos']=array_map(fn($p)=>app_config()['base_path'].'api/photos.php?kind=claim&id='.$p['claim_photo_id'],$photos);
+        foreach(['created_at','updated_at','reviewed_at'] as $key)$claim[$key]=utc_iso($claim[$key]);
+        $open=in_array($claim['item_status'],ACTIVE_ITEM_CODES,true)&&!isset($confirmed[(int)$claim['item_id']]);
+        $claim['can_resubmit']=in_array($claim['claim_status'],RESUBMITTABLE_CLAIM_CODES,true)&&$open;
+        $claim['can_withdraw']=$user['role']==='STUDENT'&&in_array($claim['claim_status'],['PENDING','NEED_MORE_INFO'],true);
+    }unset($claim);
+    return $claims;
 }

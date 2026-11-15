@@ -36,7 +36,7 @@ function account(label,role='STUDENT') {
 class Session {
   cookies=new Map();csrf='';user=null;
   id() { return this.cookies.get(qaRuntime.sessionName); }
-  async call(endpoint,values,options={}) {
+  async call(endpoint,values,options={}) {/* Let fetch evict keep-alive sockets the server closed while synchronous fixture calls blocked the event loop. */await new Promise(resolve=>setImmediate(resolve));
     const headers={Cookie:[...this.cookies].map(([k,v])=>k+'='+v).join('; '),...(options.headers||{})};
     const init={headers,redirect:'manual'};
     if(values!==undefined) { const form=new FormData();Object.entries(values).forEach(([k,v])=>form.append(k,v));init.method='POST';init.body=form;headers['X-CSRF-Token']=options.csrf===undefined?this.csrf:options.csrf; }

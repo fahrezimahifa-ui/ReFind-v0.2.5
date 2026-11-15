@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "reviewed_on": "2026-11-02",
+  "exceptions": [
+    {
+      "ecosystem": "npm",
+      "package": "minimatch",
+      "version": "10.2.6",
+      "id": "GHSA-g3hv-75wg-m249",
+      "owner": "ReFind repository maintainers",
+      "expires": "2026-11-16",
+      "classification": "Affected development dependency; application does not execute Node.",
+      "decision": "Temporary tooling exception. The vendor attack requires attacker-controlled glob patterns with optimizationLevel >= 2. Lint patterns are repository-controlled; ReFind HTTP requests do not reach this package. ESLint 10.14.0 still requires minimatch ^10.2.6, so do not force minimatch 11 across an incompatible parent range. Review a compatible upstream fix or isolate/replace tooling after tests; bound CI execution time.",
+      "advisory": "https://github.com/isaacs/minimatch/security/advisories/GHSA-g3hv-75wg-m249",
+      "fixed_version": "11.0.1",
+      "latest_observed": "11.0.4"
+    }
+  ],
+  "native_reviews": [
+    {
+      "component": "Installed PHP/Apache/MariaDB/phpMyAdmin and separately versioned native libraries",
+      "owner": "ReFind repository maintainers",
+      "review_due": "2026-11-16",
+      "decision": "Installed stack remains affected; live containment/cutover require owner approval. This policy is a review gate, not deployment clearance. See the approved audit and runtime implementation record."
+    },
+    {
+      "component": "Windows-native QA candidate PHP 8.4.27-1 / Apache 2.4.69 / Node 24.22.2 / MariaDB 11.4.13",
+      "owner": "ReFind repository maintainers",
+      "review_due": "2026-11-16",
+      "decision": "Verify package hashes, loaded native paths and support/advisory applicability separately. Unused PHP OpenSSL/cURL and Apache Brotli/cURL modules are omitted; their archive presence is not a patched-version claim."
+    }
+  ]
+}

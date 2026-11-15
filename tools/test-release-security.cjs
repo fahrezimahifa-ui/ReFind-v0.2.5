@@ -9,7 +9,7 @@ function save(){fs.writeFileSync(path.join(out,'security-results.json'),JSON.str
 async function check(name,fn){await fn();results.checks.push(name);save();console.log('PASS '+name);}
 class Session{
  cookies=new Map();csrf='';
- async call(endpoint,values,headers={},files={}){
+ async call(endpoint,values,headers={},files={}){/* Let fetch evict keep-alive sockets the server closed while synchronous fixture calls blocked the event loop. */await new Promise(resolve=>setImmediate(resolve));
   const init={redirect:'manual',headers:{Cookie:[...this.cookies].map(([k,v])=>k+'='+v).join('; '),...headers}};
   if(values!==undefined){const form=new FormData();for(const[k,v]of Object.entries(values))form.append(k,v);for(const[k,v]of Object.entries(files))form.append(k,new Blob([v.bytes],{type:v.type}),v.name);init.method='POST';init.body=form;init.headers['X-CSRF-Token']??=this.csrf;}
   const r=await fetch(qa.base+endpoint,init);for(const c of r.headers.getSetCookie()){const pair=c.split(';')[0],i=pair.indexOf('=');this.cookies.set(pair.slice(0,i),pair.slice(i+1));}
