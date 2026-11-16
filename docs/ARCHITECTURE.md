@@ -11,14 +11,16 @@ Student registration adds guest-only `register.html` and `api/register.php`. It 
 
 | Setting | Local deployments since the v1.0.0 cutover (15 Nov 2026) |
 |---|---|
-| App version | **1.0.0** (tag `v1.0.0`) |
+| App version | **1.0.0** baseline (tag `v1.0.0`) plus reviewed merges on `v025/main`; check a folder with `git -C <folder> log -1` |
 | Main | `C:\xampp\htdocs\refind` → `http://localhost/refind/login.html`, session `refind_v1` |
 | QA (persistent synthetic corpus) | `C:\xampp\htdocs\refind-test` → `http://localhost/refind-test/login.html`, session `refind_test` |
 | Main / QA databases | `refind_db_0_2_0` / `refind_db_0_2_0_test` at `127.0.0.1:3306` (service `mysql`) |
 | Disposable test target | `C:\xampp\htdocs\refind-v1-rc` (`REFIND_TEST_PROFILE=v1-rc`, `refind_db_v1rc_test`) |
+| Development worktree | `C:\xampp\htdocs\refind-dev` (feature branches; Docker-style local config, not served by XAMPP) |
 | Source defaults | `app/config.php` |
 | Local override | Ignored `app/config.local.php` per deployment (URL, session, sign-up, photo-search flags) |
-| Retired, kept for rollback | `ReFind_0.2.3` and `ReFind_0.2.0_Test`, denied in Apache; see [CUTOVER_RUNBOOK.md](CUTOVER_RUNBOOK.md) |
+| Retired, kept for rollback | `ReFind_0.2.3` and `ReFind_0.2.0_Test`, denied in Apache; see [CUTOVER_RUNBOOK.md](CUTOVER_RUNBOOK.md). `ReFind_0.2.3` also holds the shared `.git` for every worktree |
+| Folder map, deploy flow and local hazards | [AGENTS.md](../AGENTS.md) |
 
 The folder/database labels retain earlier versions. **The original v0.2.5 release required no schema migration.** The profile enhancement adds a nullable avatar reference; see [the upgrade guide](UI_PROFILE_ENHANCEMENTS.md). The source default URL remains `/ReFind_0.2.0/`; this installation's local override is essential.
 
