@@ -104,6 +104,8 @@ html:has(.sticky-form-actions),html:has(.bm-detail-actions){scroll-padding-botto
 :root{--action-bar-pad:10px;--radius-action-bar:calc(var(--radius-control) + var(--action-bar-pad))}
 .sticky-form-actions,.bm-detail-actions{padding:var(--action-bar-pad);border:1px solid var(--line);border-radius:var(--radius-action-bar);background:var(--glass-popup);box-shadow:var(--glass-shadow);bottom:calc(var(--space-2) + env(safe-area-inset-bottom))}
 .bm-detail-actions{position:sticky;z-index:3}
+/* Wider screens: the form bar hugs its buttons at the right instead of a mostly empty full-width slab over the cards. */
+@media(min-width:680px){.sticky-form-actions{width:fit-content;max-width:100%;margin-left:auto}}
 /* Phones stack the three decisions; a sticky stack would cover too much of the record. */
 @media(max-width:679px){.bm-detail-actions{position:static;box-shadow:none}}
 @media(min-width:1100px){
