@@ -1,6 +1,6 @@
 # ReFind development context
 
-ReFind is one UMN campus Lost & Found product developed across **IS556 Web Design and Development (WDD)** and **IS301 User Experience (UX)**. This workspace contains the **PHP/MariaDB application v0.2.5**. The similarly versioned serverless WDD submission template is a separate artifact.
+ReFind is one UMN campus Lost & Found product developed across **IS556 Web Design and Development (WDD)** and **IS301 User Experience (UX)**. This workspace contains the **PHP/MariaDB application**, developed through v0.2.5 and released as **v1.0.0**. The similarly versioned serverless WDD submission template is a separate artifact.
 
 ## Read first
 
@@ -14,13 +14,36 @@ Consult [role/API contracts](docs/ROLE_ROUTE_MATRIX.md), [data dictionary](docs/
 
 ## Workspace identity
 
-- Since the 15 Nov 2026 cutover ([runbook](docs/CUTOVER_RUNBOOK.md)), ReFind **v1.0.0** runs as two detached worktrees of this repository at tag `v1.0.0`:
-  - Main (real data): `C:\xampp\htdocs\refind` → `http://localhost/refind/`, session `refind_v1`, database `refind_db_0_2_0`.
-  - QA (persistent synthetic corpus, photo-search pilot): `C:\xampp\htdocs\refind-test` → `http://localhost/refind-test/`, session `refind_test`, database `refind_db_0_2_0_test`; the "ReFind Visual Search QA" task runs its `storage\setup\visual-index-task-quiet.exe`.
-- Each deployment keeps its URL, session and flags in its ignored `app/config.local.php` and its private media/auth state in its ignored `storage/`. Deploy by checking out a new reviewed tag in these worktrees, never by editing them in place.
-- The old `ReFind_0.2.3` and `ReFind_0.2.0_Test` folders are kept for rollback only and are denied in `C:\xampp\apache\conf\extra\httpd-xampp.conf`. Verified pre-cutover backups are in `C:\ReFind-Backups`.
+All working copies live in `C:\xampp\htdocs\` and are worktrees of **one** git repository. Check what a folder runs with `git -C <folder> log -1`. Tag `v1.0.0` (15 Nov 2026 cutover, [runbook](docs/CUTOVER_RUNBOOK.md)) is the baseline; later reviewed merges on `v025/main` are deployed on top of it.
+
+| Folder | Role | URL / database |
+|---|---|---|
+| `refind` | **Main, real data.** Detached worktree; never edit in place. | `http://localhost/refind/`, session `refind_v1`, `refind_db_0_2_0` |
+| `refind-test` | **QA:** persistent synthetic corpus and photo-search pilot; the "ReFind Visual Search QA" task runs its `storage\setup\visual-index-task-quiet.exe`. Detached worktree; never edit in place. | `http://localhost/refind-test/`, session `refind_test`, `refind_db_0_2_0_test` |
+| `refind-v1-rc` | Disposable target for mutation and browser suites (`REFIND_TEST_PROFILE=v1-rc`). Detached worktree. | `http://localhost/refind-v1-rc/`, `refind_db_v1rc_test` |
+| `refind-dev` | Development worktree for feature branches. Its local config targets a Docker setup, so XAMPP does not serve it; verify changes through `refind-v1-rc`. | none |
+| `ReFind_0.2.3` | Retired main, denied in Apache, kept for rollback. **It also holds the shared `.git` for every worktree above: never delete, move or clean it.** | denied |
+| `ReFind_0.2.0_Test` | Retired QA, denied in Apache, kept for rollback. | denied |
+| `refind-xampp-stage`, `ReFind_0.2.0_Fresh_*` | Old staging and fresh-install test copies, not part of the current setup. Leave them unless the owner asks. | not maintained |
+
+- GitHub: remote `v025` (`fahrezimahifa-ui/ReFind-v0.2.5`) is the live repository; base all work on `v025/main`. Remote `origin` is the older `ReFind-v0.2.0` repository, and the local `main` branch is stale.
+- Each deployment keeps its URL, session and flags in its ignored `app/config.local.php` and its private media/auth state in its ignored `storage/`. The Apache deny blocks are in `C:\xampp\apache\conf\extra\httpd-xampp.conf`; verified pre-cutover backups are in `C:\ReFind-Backups`.
 - MariaDB 3306 runs as the Windows service `mysql`. Database names keep their 0.2.0 labels; a version or URL change does not imply a database migration.
 - Runtime: Apache/XAMPP, PHP 8.2 with mysqli/mysqlnd, mbstring, fileinfo, GD (JPEG/PNG/WebP) and sessions, MariaDB; frontend HTML/CSS/JS with local jQuery/Bootstrap.
+
+## Change and deploy flow
+
+1. Branch from `v025/main` in `refind-dev` (or a fresh worktree). Never commit in `refind`, `refind-test` or `refind-v1-rc`.
+2. Verify on `refind-v1-rc`: `git -C C:\xampp\htdocs\refind-v1-rc checkout --detach <commit>`, then run the relevant suites from that folder (see Verification).
+3. Push the branch to `v025` and open a pull request against `main`. The GitHub CLI is not installed; use the repository's compare page. The owner reviews and merges.
+4. Deploy only a reviewed tag or merge commit on `v025/main`. Note each folder's current commit first (rollback is checking it out again). Run `git -C C:\xampp\htdocs\refind-test checkout --detach <commit>` and smoke-test it: guest redirect, login page, the changed behavior, MariaDB up. Then do the same for `C:\xampp\htdocs\refind`. A checkout changes tracked source files only; data stays in MariaDB and the ignored `storage/`.
+5. A change that alters the schema needs its own migration plan and a verified backup first (see the [runbook](docs/CUTOVER_RUNBOOK.md)); a checkout alone never migrates a database.
+
+## Local hazards
+
+- **The shared MariaDB server hosts other, unrelated projects, and one of them has a damaged InnoDB table.** Any query that makes MariaDB open every table on the server stops the whole server, taking `/refind/` down with it. Examples: an `information_schema` join without its own schema filter on each joined table, or tools that list every database's tables. Before running a new metadata query, `EXPLAIN` it: the Extra column must say `Scanned 0 databases` or `Scanned 1 database`, never `Scanned all databases`. ReFind's own setup and test scripts are safe from commit `6ed1089` on, which includes all current `main`.
+- Starting or restarting the `mysql` service needs administrator rights: the XAMPP Control Panel run as administrator, or an elevated `Start-Service mysql`. Apache runs as a plain process, not a service, so start it from the XAMPP Control Panel after a reboot.
+- Bootstrap enables smooth scrolling (`scroll-behavior: smooth`) unless the user prefers reduced motion. Browser checks of scroll or focus positions must let scrolling settle (at least 800 ms) or emulate reduced motion. Measuring mid-animation produces false failures.
 
 ## Working conventions
 
