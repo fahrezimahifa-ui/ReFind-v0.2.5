@@ -81,8 +81,8 @@
 /* Forms: read-only account facts read as text, not as disabled inputs. They stay focusable for copying. */
 .form-control.readonly-control{background:transparent!important;border-color:transparent;padding-left:0;padding-right:0;color:var(--ink);font-weight:600;box-shadow:none;cursor:text}
 .form-control.readonly-control:focus{border-color:transparent;box-shadow:none}
-/* The sticky Submit bar never covers a field that is scrolled to or focused. */
-html:has(.sticky-form-actions){scroll-padding-bottom:104px}
+/* The sticky action bars never cover a field or control that is scrolled to or focused. */
+html:has(.sticky-form-actions),html:has(.bm-detail-actions){scroll-padding-bottom:104px}
 
 /* Report form: one Lost/Found switch at the top, styled as a segmented control. */
 .report-type-switch{display:inline-grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin:0 0 var(--space-3);padding:4px;border:1px solid var(--glass-edge);border-radius:calc(var(--radius-control) + 4px);background:var(--glass-panel)}
@@ -99,8 +99,13 @@ html:has(.sticky-form-actions){scroll-padding-bottom:104px}
 
 /* BM Review Queue: compact header so the two panes fit the screen; decisions stay in view. */
 .queue-open{display:none}
-.bm-detail-actions{position:sticky;bottom:0;z-index:3;padding:12px 0;background:var(--glass-popup);border-top:1px solid var(--line)}
-@media(max-width:1099px){.bm-detail-actions{bottom:calc(8px + env(safe-area-inset-bottom));padding:10px;border:1px solid var(--line);border-radius:var(--radius-control);box-shadow:var(--glass-shadow)}}
+/* Floating action bars (Report/Claim forms, BM decisions) share one glass pill. Its radius is the buttons' radius
+   plus the bar's padding, so the outer corners wrap the buttons evenly instead of looking tighter than them. */
+:root{--action-bar-pad:10px;--radius-action-bar:calc(var(--radius-control) + var(--action-bar-pad))}
+.sticky-form-actions,.bm-detail-actions{padding:var(--action-bar-pad);border:1px solid var(--line);border-radius:var(--radius-action-bar);background:var(--glass-popup);box-shadow:var(--glass-shadow);bottom:calc(var(--space-2) + env(safe-area-inset-bottom))}
+.bm-detail-actions{position:sticky;z-index:3}
+/* Wider screens: the form bar hugs its buttons at the right instead of a mostly empty full-width slab over the cards. */
+@media(min-width:680px){.sticky-form-actions{width:fit-content;max-width:100%;margin-left:auto}}
 /* Phones stack the three decisions; a sticky stack would cover too much of the record. */
 @media(max-width:679px){.bm-detail-actions{position:static;box-shadow:none}}
 @media(min-width:1100px){
@@ -114,6 +119,10 @@ html:has(.sticky-form-actions){scroll-padding-bottom:104px}
   .bm-main>#bm-tabs .type-tab{min-width:0;padding-inline:8px}
   .bm-main>.bm-filters{grid-column:2;margin:0;padding:10px}
   .bm-main>.bm-layout{margin-top:16px;grid-template-columns:var(--bm-queue-width) minmax(0,1fr)}
+  /* Here the detail panel is the scroll container: its own padding is the bar's inset, so a stuck bar sits as far from
+     the panel's bottom edge as from its sides, and scrolled-to controls stay clear of it. */
+  .bm-detail{scroll-padding-bottom:104px}
+  .bm-detail .bm-detail-actions{bottom:0}
 }
 
 /* Item page: report journey stepper and history log (calm, token-based, no motion). */
